@@ -15,7 +15,7 @@
   <ul class="job-rows">
     {% for posting in postings %}
       <li>
-        <a class="job-row{% if posting.pk == selected_pk %} is-selected{% endif %}" href="{% url 'job_detail' posting.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}">
+        <a class="job-row{% if posting.pk == selected_pk %} is-selected{% endif %}" href="{% url 'job_detail' posting.pk %}{% if filter_query %}?{{ filter_query }}{% endif %}">
           <span class="job-row-title">{{ posting.title }}</span>
           <span class="job-row-wage">{{ posting.hourly_wage }} €</span>
           <span class="job-row-meta">{{ posting.company.name }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>
