@@ -115,6 +115,9 @@ class JobPosting(models.Model):
     def effective_wage(self):
         """Bruttolohn pro Stunde, wenn man die Fahrzeit als Arbeitszeit mitzählt."""
         hours = Decimal(self.hours_per_week)
+        if hours == 0:
+            # Im Admin sind 0 Stunden möglich; ohne Arbeitszeit gibt es nichts zu verteilen.
+            return self.hourly_wage
         wage = self.hourly_wage * hours / (hours + self.commute_hours_per_week)
         return wage.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 

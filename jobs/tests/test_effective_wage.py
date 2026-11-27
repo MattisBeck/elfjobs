@@ -89,3 +89,12 @@ def test_seed_examples_have_the_effective_wages_from_the_spec():
     assert effective("Promoter*in", "Weihmann GbR", 7) == Decimal("13.66")
     assert effective("Werkstudent*in Controlling", "Bauer", 10) == Decimal("13.39")
     assert effective("Aushilfe Lager", "Holsten Förster AG & Co. OHG", 11) == Decimal("10.62")
+
+
+@pytest.mark.django_db
+def test_zero_hours_do_not_break_the_list(client):
+    # Im Admin lässt sich eine Stelle mit 0 Stunden anlegen; die Liste darf daran nicht abstürzen.
+    posting = make_posting(Workplace.ONSITE, Schedule.FLEXIBLE, "15.00", 0, 20)
+
+    assert posting.effective_wage == Decimal("15.00")
+    assert client.get("/jobs/").status_code == 200
