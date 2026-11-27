@@ -120,7 +120,10 @@ def create_curriculum():
     """Studiengänge und Module aus studies/curriculum.py, fehlende Tags werden angelegt.
 
     Studiengänge und Module werden aktualisiert statt gelöscht, damit Profile ihre
-    Auswahl behalten.
+    Auswahl behalten. Ein Modul wird wie bei import_lehrplan über sein Kürzel gefunden.
+    Hat der Import es umbenannt (z. B. „Programmiertechnik 1“), bleibt der Name aus dem
+    Katalog. Ältere Datenbanken kennen manche Module noch unter einem alten Kürzel
+    (z. B. MOD1 statt MO), die findet der Seed über den Namen.
     """
     for name, abbreviation, university, standard_semesters, courses in CURRICULUM:
         program, _ = StudyProgram.objects.update_or_create(
@@ -129,11 +132,14 @@ def create_curriculum():
             defaults={"name": name, "standard_semesters": standard_semesters},
         )
         for semester, short_name, course_name, skills in courses:
-            course, _ = Course.objects.update_or_create(
-                program=program,
-                name=course_name,
-                defaults={"short_name": short_name, "semester": semester},
+            course = (
+                Course.objects.filter(program=program, short_name=short_name).first()
+                or Course.objects.filter(program=program, name=course_name).first()
+                or Course(program=program, name=course_name)
             )
+            course.short_name = short_name
+            course.semester = semester
+            course.save()
             course.skills.set([Tag.objects.get_or_create(name=skill)[0] for skill in skills])
 
 
