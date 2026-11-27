@@ -59,20 +59,29 @@ def summary(requirements):
 
 
 def verdict(requirements):
-    """Ermutigendes Urteil für eine Stelle (#86), gegen die Angst vorm Bewerben.
+    """Ermutigendes Urteil für eine Stelle (#86, Wording #98), gegen die Angst vorm Bewerben.
 
-    - alles gelernt (oder keine Anforderungen) → „✓ Du bist qualifiziert“
-    - der Rest kommt noch im eigenen Studium → „✓ Passt zu deinem Studium“ plus was wann kommt
+    - keine Anforderungen → „✓ Du bist qualifiziert“, „Vorkenntnisse braucht es hier nicht.“
+    - alles gelernt → „✓ Du bist qualifiziert“, „Du bringst mit: Git aus PT1.“
+    - der Rest kommt noch im eigenen Studium → „✓ Passt zu deinem Studium“,
+      „Du bringst mit: Git aus PT1. Kommt noch im Studium: SQL ab 3. Semester.“
     - sonst None, dann bleibt es beim Hinweis aus summary()
 
     Gibt {"level", "label", "detail"} zurück; level ist "kannst" oder "bald" (für die CSS-Klasse).
+    Die Zeile „detail“ steht nur im Stellendetail.
     """
     if not requirements:
-        return {"level": "kannst", "label": "✓ Keine Vorkenntnisse nötig", "detail": ""}
+        return {"level": "kannst", "label": "✓ Du bist qualifiziert", "detail": "Vorkenntnisse braucht es hier nicht."}
     if any(requirement["status"] == NOT_IN_STUDIES for requirement in requirements):
         return None
+    learned = [r for r in requirements if r["status"] == LEARNED]
     upcoming = [r for r in requirements if r["status"] == UPCOMING]
+    sentences = []
+    if learned:
+        sentences.append("Du bringst mit: " + ", ".join(f"{r['tag'].name} {r['text']}" for r in learned) + ".")
+    if upcoming:
+        sentences.append("Kommt noch im Studium: " + ", ".join(f"{r['tag'].name} {r['text']}" for r in upcoming) + ".")
+    detail = " ".join(sentences)
     if not upcoming:
-        return {"level": "kannst", "label": "✓ Du bist qualifiziert", "detail": ""}
-    later = ", ".join(f"{r['tag'].name} {r['text']}" for r in upcoming)
-    return {"level": "bald", "label": "✓ Passt zu deinem Studium", "detail": f"Den Rest lernst du noch: {later}."}
+        return {"level": "kannst", "label": "✓ Du bist qualifiziert", "detail": detail}
+    return {"level": "bald", "label": "✓ Passt zu deinem Studium", "detail": detail}

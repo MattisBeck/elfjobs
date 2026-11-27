@@ -78,6 +78,7 @@ Alle Ideen aus der Ideenschmiede und vom Ranking-Board. Status: **Issue** = wird
 | Planbarkeit: Schichten über die Plattform abstimmen | Issue #10, #11 |
 | Effektiver Stundenlohn inkl. Pendelzeit | Issue #12 |
 | Lehrpläne: Skills aus belegten Modulen | Issue #30, #40, #41 |
+| Badge „Du bist qualifiziert“ gegen die Angst vorm Bewerben | Issue #86, Wording #98 |
 | Skills aus dem Lebenslauf | Issue #50 |
 | Matching / „Jobfindealgorithmus“ | Issue #42 |
 | Closed Access, Account-Verifikation per Uni-Mail | Issue #6, #31 |
