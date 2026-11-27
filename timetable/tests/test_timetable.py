@@ -69,7 +69,7 @@ def test_lectures_entirely_outside_the_day_are_ignored():
 @pytest.fixture
 def mia(db):
     user = User.objects.create_user("mia@student.hpi.uni-potsdam.de", first_name="Mia")
-    StudentProfile.objects.create(user=user, study_program="ITSE", semester=1)
+    StudentProfile.objects.create(user=user, semester=1)  # Studiengang ist hier egal
     return user
 
 

@@ -444,6 +444,12 @@ a {
   font-weight: 500;
 }
 
+/* Skill, den die Studentin schon hat (aus Modul oder Profil), siehe docs/design.md „Qualifikation“. */
+.tag-learned {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
 .job-title {
   margin: 12px 0 4px;
   font-size: 26px;

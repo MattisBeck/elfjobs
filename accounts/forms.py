@@ -3,7 +3,10 @@ from django.conf import settings
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 
-from .models import StudentProfile
+from jobs.models import Tag
+from studies.models import Course, StudyProgram
+
+from .models import ProfileSkill, StudentProfile
 
 
 def is_uni_email(email):
@@ -11,11 +14,18 @@ def is_uni_email(email):
     return any(domain == d or domain.endswith("." + d) for d in settings.UNI_EMAIL_DOMAINS)
 
 
+def default_courses(program, semester):
+    """Module des Studiengangs bis zum aktuellen Semester, z. B. für die Vorauswahl."""
+    if program is None or semester is None:
+        return Course.objects.none()
+    return Course.objects.filter(program=program, semester__lte=semester)
+
+
 class SignupForm(UserCreationForm):
     """Registrierung nur mit Uni-Mail. Die Mail ist zugleich der Benutzername."""
 
     email = forms.EmailField(label="Uni-Mail", help_text="Zum Start nur mit HPI-Mail, z. B. vorname.nachname@student.hpi.uni-potsdam.de")
-    study_program = forms.CharField(label="Studiengang", max_length=100)
+    study_program = forms.ModelChoiceField(label="Studiengang", queryset=StudyProgram.objects.all())
     semester = forms.IntegerField(label="Semester", min_value=1, max_value=20)
 
     class Meta(UserCreationForm.Meta):
@@ -40,11 +50,13 @@ class SignupForm(UserCreationForm):
         user.username = self.cleaned_data["email"]
         if commit:
             user.save()
-            StudentProfile.objects.create(
+            profile = StudentProfile.objects.create(
                 user=user,
                 study_program=self.cleaned_data["study_program"],
                 semester=self.cleaned_data["semester"],
             )
+            # Vorauswahl: alle Module bis zum aktuellen Semester, abwählen geht im Profil.
+            profile.courses.set(default_courses(profile.study_program, profile.semester))
         return user
 
 
@@ -62,7 +74,50 @@ class NameForm(forms.ModelForm):
 
 
 class ProfileForm(forms.ModelForm):
+    # Nur die selbst eingetragenen Skills (Quelle "profil"). Skills aus dem Lebenslauf (#50)
+    # und aus Modulen bleiben beim Speichern unberührt.
+    skills = forms.ModelMultipleChoiceField(
+        label="Skills", queryset=Tag.objects.all(), required=False, widget=forms.CheckboxSelectMultiple
+    )
+
     class Meta:
         model = StudentProfile
-        fields = ("study_program", "semester", "home_town", "skills")
-        widgets = {"skills": forms.CheckboxSelectMultiple}
+        fields = ("study_program", "semester", "home_town", "courses")
+        widgets = {"courses": forms.CheckboxSelectMultiple}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        profile = self.instance
+
+        if not self.is_bound:
+            # Zur Auswahl stehen nur die Module des eigenen Studiengangs.
+            self.fields["courses"].queryset = Course.objects.filter(program_id=profile.study_program_id)
+            self.initial["skills"] = Tag.objects.filter(
+                profile_skills__profile=profile, profile_skills__source=ProfileSkill.Source.PROFILE
+            )
+            if not profile.courses.exists():
+                self.initial["courses"] = default_courses(profile.study_program, profile.semester)
+
+    def clean_courses(self):
+        # Wer den Studiengang wechselt, verliert die Module des alten. Beim nächsten Öffnen
+        # sind dann die Module des neuen Studiengangs vorausgewählt.
+        program = self.cleaned_data.get("study_program")
+        return [course for course in self.cleaned_data["courses"] if course.program == program]
+
+    def save(self, commit=True):
+        profile = super().save(commit=commit)
+        if commit:
+            self.save_profile_skills()
+        return profile
+
+    def save_profile_skills(self):
+        profile = self.instance
+        selected = set(self.cleaned_data["skills"])
+        ProfileSkill.objects.filter(profile=profile, source=ProfileSkill.Source.PROFILE).exclude(
+            tag__in=selected
+        ).delete()
+        for tag in selected:
+            # Steht der Skill schon aus dem Lebenslauf drin, bleibt diese Quelle.
+            ProfileSkill.objects.get_or_create(
+                profile=profile, tag=tag, defaults={"source": ProfileSkill.Source.PROFILE}
+            )
