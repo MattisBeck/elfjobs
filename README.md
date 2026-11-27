@@ -47,7 +47,7 @@ Stack: Python 3.12, uv, Django 5.2, PostgreSQL 17, Docker Compose (Services `bac
 
 Danach ist das Admin unter http://localhost:8000/admin erreichbar. Ein Frontend gibt es noch nicht.
 
-Demo-Login für die Seite: `mia@student.hpi.uni-potsdam.de` mit dem Passwort `DEMO_PASSWORD` aus `.env`. Registrieren geht zum Start nur mit HPI-Mail (`UNI_EMAIL_DOMAINS` in `config/settings.py`).
+Demo-Login für die Seite: `mia@student.hpi.uni-potsdam.de` mit dem Passwort `DEMO_PASSWORD` aus `.env`. Dazu legt `seed` 500 Demo-Studierende mit Stundenplänen an: Login als `studi-001@student.hpi.uni-potsdam.de` bis `studi-500@student.hpi.uni-potsdam.de` mit demselben Passwort wie Mia. Registrieren geht zum Start nur mit HPI-Mail (`UNI_EMAIL_DOMAINS` in `config/settings.py`).
 
 Jede Person hat ihre eigene lokale Datenbank. `seed` erzeugt bei allen dieselben Demo-Daten, den Admin-Benutzer legt jede Person selbst an.
 

@@ -4,6 +4,7 @@ import random
 from datetime import date, time
 from decimal import Decimal
 
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
@@ -18,6 +19,7 @@ from timetable.models import LectureSlot
 SEED = 42
 NUM_COMPANIES = 20
 NUM_POSTINGS = 200
+NUM_STUDENTS = 500
 
 FAIRS = [
     ("Jobmesse Potsdam 2027", date(2027, 3, 11), "Potsdam"),
@@ -225,6 +227,123 @@ def create_demo_student(password):
     for weekday, start, end, title in DEMO_LECTURES:
         LectureSlot.objects.create(profile=profile, weekday=weekday, start=start, end=end, title=title)
 
+# Demo-Studierende (#79): studi-001@… bis studi-500@…, alle mit DEMO_PASSWORD.
+STUDENT_EMAIL = "studi-{number:03d}@student.hpi.uni-potsdam.de"
+# Gewicht je Studiengang in der Reihenfolge von CURRICULUM: ITSE etwa 40 %, der Rest verteilt sich.
+PROGRAM_WEIGHTS = [40, 15, 15, 15, 15]
+HOME_TOWNS = [
+    "Potsdam", "Potsdam", "Potsdam", "Berlin-Kreuzberg", "Berlin-Neukölln",
+    "Berlin-Friedrichshain", "Berlin-Prenzlauer Berg", "Berlin-Mitte", "Berlin-Charlottenburg",
+    "Teltow", "Falkensee",
+]
+# Zeitraster wie am HPI: fünf Blöcke pro Tag, Mo–Fr.
+TIME_GRID = [
+    (time(9, 15), time(10, 45)),
+    (time(11, 0), time(12, 30)),
+    (time(13, 30), time(15, 0)),
+    (time(15, 15), time(16, 45)),
+    (time(17, 0), time(18, 30)),
+]
+GRID_CELLS = [(weekday, block) for weekday in range(5) for block in range(len(TIME_GRID))]
+SLOTS_PER_COURSE = 2  # Vorlesung + Übung
+ELECTIVE_TITLES = ["Wahlpflichtmodul", "Seminar", "Sprachkurs Englisch", "Projektseminar"]
+MIN_LECTURES, MAX_LECTURES = 4, 9
+TAKES_COURSE_CHANCE = 0.9
+# Nach `import_lehrplan` hat ein Semester viele Wahlpflichtmodule. Mehr als so viele
+# belegt niemand, sonst wäre die Woche voll.
+MAX_COURSES_PER_SEMESTER = 5
+
+
+def assign_course_cells(courses, rng):
+    """Feste Zeitraster-Felder je Modul: gleich für alle, ohne Überschneidung im selben Studiengang-Semester."""
+    cells_by_course = {}
+    free_by_group = {}
+    for course in courses:
+        group = (course.program_id, course.semester)
+        if group not in free_by_group:
+            free_by_group[group] = rng.sample(GRID_CELLS, len(GRID_CELLS))
+        free = free_by_group[group]
+        cells_by_course[course.id] = [free.pop() for _ in range(min(SLOTS_PER_COURSE, len(free)))]
+    return cells_by_course
+
+
+def make_student_lectures(profile_courses, cells_by_course, rng):
+    """Termine einer Person als Liste von (Wochentag, Block, Titel): Module + Wahlmodule, ohne Überschneidung."""
+    lectures = []
+    taken = set()
+    for course in profile_courses:
+        if rng.random() < TAKES_COURSE_CHANCE:
+            for cell in cells_by_course[course.id]:
+                lectures.append((*cell, course.name))
+                taken.add(cell)
+    free = [cell for cell in GRID_CELLS if cell not in taken]
+    rng.shuffle(free)
+    wanted = max(rng.randint(MIN_LECTURES, MAX_LECTURES), 1)
+    while len(lectures) < wanted and free:
+        lectures.append((*free.pop(), rng.choice(ELECTIVE_TITLES)))
+    return lectures
+
+
+def create_demo_students(password):
+    """500 Demo-Studierende mit Profil, Modulen, Skills und Stundenplan (#79).
+
+    Eigener Zufallsgenerator und eigener Faker, damit Stellen und Firmen gleich bleiben.
+    Ein Passwort-Hash für alle, weil 500-mal Hashen zu langsam wäre. Alles per bulk_create.
+    """
+    rng = random.Random(SEED + 79)
+    fake = Faker("de_DE")
+    fake.seed_instance(SEED + 79)
+
+    # Alte Demo-Studierende löschen, Mia und alle anderen Konten bleiben.
+    User.objects.filter(
+        username__startswith="studi-", username__endswith="@student.hpi.uni-potsdam.de"
+    ).delete()
+
+    programs = [
+        StudyProgram.objects.get(university=university, abbreviation=abbreviation)
+        for _, abbreviation, university, _, _ in CURRICULUM
+    ]
+    courses = list(Course.objects.filter(program__in=programs).order_by("program_id", "semester", "id"))
+    courses_by_program = {program.id: [] for program in programs}
+    for course in courses:
+        courses_by_program[course.program_id].append(course)
+    # Feste Termine nur für Module im Lehrplan-Semester; jedes Modul bekommt sie einmal.
+    cells_by_course = assign_course_cells(courses, rng)
+    tags = list(Tag.objects.filter(name__in=TAGS).order_by("name"))
+
+    password_hash = make_password(password)
+    users, details = [], []
+    for number in range(1, NUM_STUDENTS + 1):
+        email = STUDENT_EMAIL.format(number=number)
+        users.append(User(
+            username=email, email=email, password=password_hash,
+            first_name=fake.first_name(), last_name=fake.last_name(),
+        ))
+        details.append((rng.choices(programs, weights=PROGRAM_WEIGHTS)[0], rng.randint(1, 6)))
+    User.objects.bulk_create(users)
+
+    profiles = [
+        StudentProfile(user=user, study_program=program, semester=semester, home_town=rng.choice(HOME_TOWNS))
+        for user, (program, semester) in zip(users, details)
+    ]
+    StudentProfile.objects.bulk_create(profiles)
+
+    through = StudentProfile.courses.through
+    course_links, skills, lecture_slots = [], [], []
+    for profile, (program, semester) in zip(profiles, details):
+        done = [c for c in courses_by_program[program.id] if c.semester <= semester]
+        course_links += [through(studentprofile_id=profile.id, course_id=c.id) for c in done]
+        for tag in rng.sample(tags, rng.randint(0, 3)):
+            skills.append(ProfileSkill(profile=profile, tag=tag, source=ProfileSkill.Source.PROFILE))
+        current = [c for c in done if c.semester == semester]
+        current = rng.sample(current, min(len(current), MAX_COURSES_PER_SEMESTER))
+        for weekday, block, title in make_student_lectures(current, cells_by_course, rng):
+            start, end = TIME_GRID[block]
+            lecture_slots.append(LectureSlot(profile=profile, weekday=weekday, start=start, end=end, title=title))
+    through.objects.bulk_create(course_links)
+    ProfileSkill.objects.bulk_create(skills)
+    LectureSlot.objects.bulk_create(lecture_slots)
+
 
 class Command(BaseCommand):
     help = "Füllt die Datenbank mit reproduzierbaren Beispieldaten (Messen, Firmen, Tags, Stellen, Lehrpläne)."
@@ -322,10 +441,11 @@ class Command(BaseCommand):
             posting.tags.add(*Tag.objects.filter(name__in=names))
 
         create_demo_student(demo_password)
+        create_demo_students(demo_password)
 
         self.stdout.write(self.style.SUCCESS(
             f"{NUM_POSTINGS} Stellen von {NUM_COMPANIES} Firmen angelegt "
             f"({len(fairs)} Messen, {Tag.objects.count()} Tags, "
             f"{StudyProgram.objects.count()} Studiengänge mit {Course.objects.count()} Modulen), "
-            f"Demo-Login: {DEMO_EMAIL}."
+            f"{NUM_STUDENTS} Demo-Studierende, Demo-Login: {DEMO_EMAIL}."
         ))
