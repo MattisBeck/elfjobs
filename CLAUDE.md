@@ -13,13 +13,19 @@ Geplante Bausteine, in etwa in dieser Reihenfolge: Frontend zum Durchsuchen der 
 - Konfiguration und Secrets kommen aus Umgebungsvariablen (`.env`, Vorlage `.env.example`).
 - Fasse nur die Dateien an, die zur Aufgabe gehören. Was dir darüber hinaus auffällt, meldest du zurück.
 
-## Git: Branches und Pull Requests
+## Zusammenarbeit: Issue → Branch → Pull Request
 
-`main` ändert sich nur durch gemergte Pull Requests.
+Fünf Leute arbeiten parallel. Die GitHub-Issues sind die einzige Liste dessen, was gerade gebaut wird. Wer einem Issue zugewiesen ist, arbeitet daran, alle anderen nicht.
 
-- Vor jeder Änderung einen eigenen Branch von aktuellem `main` anlegen: `git switch main && git pull && git switch -c <typ>/<kurzbeschreibung>` (z. B. `feature/stellen-liste`, `fix/seed-loehne`, `docs/readme`).
-- Commits und Pushes gehen auf diesen Branch, dann Pull Request in `main`.
-- Gemergt wird erst, wenn die Tests grün sind.
+1. **Issue klären**: `gh issue list` ansehen. Zu deiner Aufgabe gibt es ein Issue? Dann prüfe die Zuweisung. Es ist jemand anderem zugewiesen? Dann stopp und sprich mit der Person. Kein Issue vorhanden? Dann lege eines an (`gh issue create`): was gebaut wird, was ausdrücklich nicht dazugehört, woran man erkennt, dass es fertig ist.
+2. **Reservieren**: Weise dir das Issue zu, bevor du Code schreibst (`gh issue edit <nr> --add-assignee @me`).
+3. **Branch** vom aktuellen `main`: `git switch main && git pull && git switch -c <typ>/<nr>-<kurzbeschreibung>`, z. B. `feature/12-stellen-liste`, `fix/15-seed-loehne`. Commits und Pushes nie auf `main`; `main` ändert sich nur durch gemergte Pull Requests.
+4. **Früh sichtbar machen**: Nach dem ersten Commit pushen und einen Draft-Pull-Request öffnen (`gh pr create --draft`), Beschreibung mit `Closes #<nr>`.
+5. **Fertig**: Tests grün, Pull Request auf „Ready for review“, eine andere Person reviewt und merged.
+
+Ein Issue ist **klein**: in ein bis zwei Tagen fertig. Größere Features werden in mehrere Issues geteilt. Wenn du merkst, dass deine Arbeit ein fremdes Issue berührt, schreib einen Kommentar dort.
+
+**Migrationen** kollidieren, wenn zwei Branches gleichzeitig Migrationen in derselben App anlegen. Hole vor `makemigrations` den aktuellen `main` in deinen Branch (`git pull origin main`). Kommt nach dem Merge trotzdem ein Konflikt: deine eigene Migration löschen und `makemigrations` neu ausführen.
 
 ## Portabilität: fünf Rechner, ein Setup
 
