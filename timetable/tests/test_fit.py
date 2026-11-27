@@ -233,6 +233,28 @@ def test_plan_chip_and_search_filters_keep_each_other(client, mia, four_postings
     assert ("plan", "aus") in off.context["filter_form"]["search_hidden"]
 
 
+def map_titles(response):
+    return sorted(p.title for p in response.context["nearby"] + response.context["remote"])
+
+
+def test_map_uses_the_plan_filter_and_keeps_plan_off(client, mia, four_postings):
+    client.force_login(mia)
+
+    on = client.get("/jobs/karte/?lat=52.5&lon=13.4")
+    assert map_titles(on) == ["Flexibel", "Passt"]
+    assert on.context["chips"][0]["url"] == "/jobs/karte/?plan=aus&lat=52.5&lon=13.4"
+
+    off = client.get("/jobs/karte/?plan=aus&lat=52.5&lon=13.4")
+    assert map_titles(off) == ["Flexibel", "Kollidiert", "Passt", "Teils"]
+    by_label = {chip["label"]: chip for chip in off.context["chips"]}
+    assert by_label["Passt in meinen Plan"]["url"] == "/jobs/karte/?lat=52.5&lon=13.4"
+    assert by_label["Kurzjob"]["url"] == "/jobs/karte/?filter=kurzjob&plan=aus&lat=52.5&lon=13.4"
+    assert [link["url"] for link in off.context["sort_links"]] == [
+        "/jobs/karte/?plan=aus&lat=52.5&lon=13.4",
+        "/jobs/karte/?plan=aus&lat=52.5&lon=13.4&sortierung=anreise",
+    ]
+
+
 def test_logged_out_has_no_chip_no_fit_and_full_list(client, four_postings):
     response = client.get("/jobs/")
 

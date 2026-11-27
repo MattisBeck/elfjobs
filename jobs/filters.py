@@ -1,11 +1,12 @@
 """Suchfilter für Stellenliste, Stellendetail und Karte (#71).
 
 Die Werte kommen als GET-Parameter, damit man eine Suche teilen kann:
-min_lohn (€ pro Stunde, effektiv), max_anreise (Minuten, einfach),
+min_lohn (Stundenlohn ab, brutto), max_anreise (Minuten, einfach),
 min_stunden und max_stunden (pro Woche) und auf der Karte max_km (Luftlinie).
 Ungültige Werte (Text, negativ, zu groß) werden ignoriert, ebenso Werte
 auf der „egal“-Stellung der Schieberegler (siehe SLIDERS). Werte werden auf
-zwei Nachkommastellen gerundet, ein Minimum von 0 ist also kein Filter.
+zwei Nachkommastellen gerundet; ein Lohn bis zum Mindestlohn und ein Minimum
+von 0 sind also kein Filter.
 """
 
 from decimal import Decimal, InvalidOperation
@@ -21,12 +22,22 @@ MAX_VALUE = Decimal(10000)
 # Auf zwei Nachkommastellen runden, damit z. B. 1e-50 nicht als Chip mit 50 Stellen erscheint.
 CENT = Decimal("0.01")
 
+# Regler „Stundenlohn ab“ (#77): beginnt beim gesetzlichen Mindestlohn 2026, darunter gibt es
+# keine Stelle. Ein Wert bis zum Mindestlohn heißt „egal“ und wird nicht als Filter gezählt.
+LEGAL_MINIMUM_WAGE = Decimal("13.90")
+WAGE_SCALE_MAX = Decimal(25)
+
 # Schieberegler im Filterformular: Spanne, Schrittweite und die „egal“-Stellung.
 # Als Text, damit Django im Template kein deutsches Komma daraus macht ("0,5").
 # Die „egal“-Stellung filtert nicht: bei min_* alles bis dahin, bei max_* alles ab dort.
-# Werte außerhalb der Spanne (z. B. ?min_lohn=40) bleiben gültige Filter.
+# Werte außerhalb der Spanne (z. B. ?min_lohn=40) bleiben gültige Filter, der Regler wird dann länger.
 SLIDERS = {
-    "min_lohn": {"min": "0", "max": "25", "step": "0.5", "neutral": "0"},
+    "min_lohn": {
+        "min": f"{LEGAL_MINIMUM_WAGE.normalize():f}",
+        "max": f"{WAGE_SCALE_MAX:f}",
+        "step": "0.1",
+        "neutral": f"{LEGAL_MINIMUM_WAGE.normalize():f}",
+    },
     "max_anreise": {"min": "0", "max": "60", "step": "5", "neutral": "60"},
     "max_km": {"min": "1", "max": "30", "step": "1", "neutral": "30"},
     "min_stunden": {"min": "0", "max": "40", "step": "1", "neutral": "0"},
@@ -84,12 +95,15 @@ def filter_number_params(filters):
 
 
 def slider_settings(filters):
-    """Einstellungen je Regler mit Startwert: aktiver Filter (am Rand der Spanne), sonst „egal“."""
+    """Einstellungen je Regler mit Startwert: aktiver Filter, sonst „egal“.
+
+    Liegt der Filter rechts über der Spanne (z. B. ?min_lohn=40), wird der Regler länger (#77).
+    """
     sliders = {}
     for name, spec in SLIDERS.items():
-        value = filters.get(name, Decimal(spec["neutral"]))
-        value = min(max(value, Decimal(spec["min"])), Decimal(spec["max"]))
-        sliders[name] = {**spec, "value": format_number(value, ".")}
+        value = max(filters.get(name, Decimal(spec["neutral"])), Decimal(spec["min"]))
+        high = max(Decimal(spec["max"]), value)
+        sliders[name] = {**spec, "max": format_number(high, "."), "value": format_number(value, ".")}
     return sliders
 
 
@@ -106,7 +120,7 @@ def commute_minutes(posting):
 
 def matches(posting, filters):
     """Passt die Stelle zu den Filtern? max_km prüft die Karte selbst (braucht den Startpunkt)."""
-    if "min_lohn" in filters and posting.effective_wage < filters["min_lohn"]:
+    if "min_lohn" in filters and posting.hourly_wage < filters["min_lohn"]:
         return False
     if "max_anreise" in filters and commute_minutes(posting) > filters["max_anreise"]:
         return False
@@ -126,7 +140,7 @@ def filter_labels(filters):
     """Texte für die aktiven Filter und welche Parameter ein Klick auf ✕ entfernt."""
     labels = []
     if "min_lohn" in filters:
-        labels.append((f"ab {format_number(filters['min_lohn'])} €", ["min_lohn"]))
+        labels.append((f"ab {format_number(filters['min_lohn'])} € brutto", ["min_lohn"]))
     if "max_anreise" in filters:
         labels.append((f"max. {format_number(filters['max_anreise'])} min Anreise", ["max_anreise"]))
     if "max_km" in filters:

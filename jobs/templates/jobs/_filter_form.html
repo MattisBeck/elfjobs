@@ -7,14 +7,15 @@
       <input type="hidden" name="{{ name }}" value="{{ value }}">
     {% endfor %}
 
+    {# Regler ab dem gesetzlichen Mindestlohn (#77). Ganz links heißt „egal“, das zählt nicht als Filter. #}
     {% with slider=filter_form.sliders.min_lohn %}
       <div class="filter-field">
         <div class="filter-slider-head">
-          <label for="filter-min-lohn">Mindestlohn pro Stunde</label>
+          <label for="filter-min-lohn">Stundenlohn ab</label>
           <output for="filter-min-lohn"></output>
         </div>
-        <input type="range" id="filter-min-lohn" name="min_lohn" min="{{ slider.min }}" max="{{ slider.max }}" step="{{ slider.step }}" value="{{ slider.value }}" data-neutral="{{ slider.neutral }}" data-text="ab {} €" data-decimals="2">
-        <small>Effektiv, die Fahrzeit ist eingerechnet.</small>
+        <input type="range" id="filter-min-lohn" name="min_lohn" min="{{ slider.min }}" max="{{ slider.max }}" step="{{ slider.step }}" value="{{ slider.value }}" data-neutral="{{ slider.neutral }}" data-text="{} € brutto" data-decimals="2">
+        <small>Brutto. Ganz links: alle Stellen ab Mindestlohn.</small>
       </div>
     {% endwith %}
 

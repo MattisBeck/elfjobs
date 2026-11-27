@@ -93,7 +93,7 @@ def test_chips_on_detail_page_keep_the_posting_open(client, posting):
 
 
 def test_week_view_is_kept_by_filter_form_chips_and_search(client, posting):
-    response = client.get(f"/jobs/{posting.pk}/?ansicht=woche&min_lohn=10")
+    response = client.get(f"/jobs/{posting.pk}/?ansicht=woche&min_lohn=15")
     content = response.content.decode()
     form = content.split('class="filter-form"')[1].split("</form>")[0]
     search = content.split('role="search"')[1].split("</form>")[0]
@@ -101,11 +101,11 @@ def test_week_view_is_kept_by_filter_form_chips_and_search(client, posting):
     assert '<input type="hidden" name="ansicht" value="woche">' in form
     assert '<input type="hidden" name="ansicht" value="woche">' in search
     by_label = {chip["label"]: chip["url"] for chip in response.context["chips"]}
-    assert by_label["Kurzjob"] == f"/jobs/{posting.pk}/?filter=kurzjob&min_lohn=10&ansicht=woche"
-    assert by_label["ab 10 €"] == f"/jobs/{posting.pk}/?ansicht=woche"
+    assert by_label["Kurzjob"] == f"/jobs/{posting.pk}/?filter=kurzjob&min_lohn=15&ansicht=woche"
+    assert by_label["ab 15 € brutto"] == f"/jobs/{posting.pk}/?ansicht=woche"
     # Die Tabs setzen die Ansicht selbst.
-    assert response.context["details_url"] == f"/jobs/{posting.pk}/?min_lohn=10"
-    assert response.context["week_url"] == f"/jobs/{posting.pk}/?min_lohn=10&ansicht=woche"
+    assert response.context["details_url"] == f"/jobs/{posting.pk}/?min_lohn=15"
+    assert response.context["week_url"] == f"/jobs/{posting.pk}/?min_lohn=15&ansicht=woche"
 
 
 def test_details_view_adds_no_hidden_view_field(client, posting):
