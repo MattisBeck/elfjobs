@@ -15,6 +15,44 @@
     {{ profile_form.as_div }}
     <button type="submit" class="button button-primary">Speichern</button>
   </form>
+
+  {# Lebenslauf (#50): vorerst nur Beispiel-Lebensläufe, der echte Upload kommt mit #38. #}
+  <section id="lebenslauf" class="cv-section">
+    <h2>Lebenslauf</h2>
+    <form method="post" action="{% url 'cv_select' %}" class="form">
+      {% csrf_token %}
+      {{ cv_form.as_div }}
+      <button type="submit" class="button">Auslesen</button>
+    </form>
+
+    {% if user.profile.cv_sample %}
+      <p class="muted"><a href="{% url 'cv_pdf' %}" target="_blank">Lebenslauf ansehen (PDF)</a></p>
+
+      {% if cv_new_skills %}
+        <form method="post" action="{% url 'cv_accept' %}" class="form">
+          {% csrf_token %}
+          <p class="cv-heading">Aus deinem Lebenslauf: {{ cv_new_skills|join:", " }}</p>
+          <div class="skill-choices">
+            {% for tag in cv_new_skills %}
+              <label><input type="checkbox" name="skills" value="{{ tag.id }}" checked> {{ tag }}</label>
+            {% endfor %}
+          </div>
+          <button type="submit" class="button button-primary">Übernehmen</button>
+        </form>
+      {% elif not cv_existing_skills %}
+        <p class="muted">In diesem Lebenslauf haben wir keine Skills gefunden. Ist er eingescannt? Dann enthält er keinen Text, den wir lesen können.</p>
+      {% endif %}
+
+      {% if cv_existing_skills %}
+        <p class="cv-heading">Hast du schon:</p>
+        <ul class="tags">
+          {% for tag, source in cv_existing_skills %}
+            <li class="tag tag-learned">✓ {{ tag }} · {{ source }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endif %}
+  </section>
   <form method="post" action="{% url 'logout' %}" class="logout-form">
     {% csrf_token %}
     <button type="submit" class="button">Abmelden</button>

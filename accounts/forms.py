@@ -121,3 +121,11 @@ class ProfileForm(forms.ModelForm):
             ProfileSkill.objects.get_or_create(
                 profile=profile, tag=tag, defaults={"source": ProfileSkill.Source.PROFILE}
             )
+
+
+class CvSampleForm(forms.ModelForm):
+    """Auswahl eines Beispiel-Lebenslaufs (#50), bis der echte Upload (#38) da ist."""
+
+    class Meta:
+        model = StudentProfile
+        fields = ("cv_sample",)
