@@ -17,6 +17,7 @@ from .filters import (
     filter_labels,
     filter_number_params,
     parse_filters,
+    slider_settings,
 )
 from .geo import BERLIN_MITTE, haversine_km, parse_start
 from .models import JobPosting
@@ -157,12 +158,12 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
         for posting in postings:
             posting.skill_hint = summary(classify(skills, posting.tags.all()))
 
-    # Formular „Filter“: Zahlenfelder plus versteckt alles andere, damit nichts verloren geht.
+    # Formular „Filter“: Schieberegler plus versteckt alles andere, damit nichts verloren geht.
     # Die Suche in der Kopfzeile behält alles außer q (das ist ihr eigenes Feld).
     other_params = [("filter", f) for f in active] + plan_params + list(keep_params)
     filter_form = {
         "action": request.path,
-        "values": dict(number_params),
+        "sliders": slider_settings(filters),
         "hidden": other_params + search_params,
         "search_hidden": other_params + number_params,
         "show_km": "max_km" in fields,

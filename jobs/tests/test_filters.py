@@ -263,9 +263,71 @@ def test_filter_form_keeps_chips_search_and_start(client, postings):
     assert '<input type="hidden" name="filter" value="kurzjob">' in form
     assert '<input type="hidden" name="q" value="Firma">' in form
     assert '<input type="hidden" name="lat" value="52.5219">' in form
-    assert 'name="min_lohn" min="0" step="0.01" inputmode="decimal" value="15"' in form
+    assert 'type="range" id="filter-min-lohn" name="min_lohn" min="0" max="25" step="0.5" value="15"' in form
     assert 'name="max_km"' in form
     assert '<details class="filter-panel" open>' in content
+
+
+# Schieberegler
+
+def test_sliders_start_at_url_values(client, postings):
+    content = client.get(f"/jobs/karte/?{START}&min_lohn=14,5&max_anreise=30&max_km=10&min_stunden=10&max_stunden=20").content.decode()
+    form = content.split('class="filter-form"')[1].split("</form>")[0]
+
+    assert 'name="min_lohn" min="0" max="25" step="0.5" value="14.5" data-neutral="0"' in form
+    assert 'name="max_anreise" min="0" max="60" step="5" value="30" data-neutral="60"' in form
+    assert 'name="max_km" min="1" max="30" step="1" value="10" data-neutral="30"' in form
+    assert 'name="min_stunden" min="0" max="40" step="1" value="10" data-neutral="0"' in form
+    assert 'name="max_stunden" min="0" max="40" step="1" value="20" data-neutral="40"' in form
+    assert '<label for="filter-min-lohn">' in form
+
+
+def test_sliders_start_neutral_without_filters(client, postings):
+    form = client.get(f"/jobs/karte/?{START}").content.decode().split('class="filter-form"')[1].split("</form>")[0]
+
+    assert 'name="min_lohn" min="0" max="25" step="0.5" value="0"' in form
+    assert 'name="max_anreise" min="0" max="60" step="5" value="60"' in form
+    assert 'name="max_km" min="1" max="30" step="1" value="30"' in form
+    assert 'name="min_stunden" min="0" max="40" step="1" value="0"' in form
+    assert 'name="max_stunden" min="0" max="40" step="1" value="40"' in form
+
+
+@pytest.mark.parametrize("query", [
+    "min_lohn=0", "max_anreise=60", "max_anreise=90", "min_stunden=0", "max_stunden=40", "max_stunden=45",
+    "min_lohn=0&max_anreise=60&min_stunden=0&max_stunden=40",
+])
+def test_neutral_slider_values_do_not_filter(client, postings, query):
+    response = client.get(f"/jobs/?{query}")
+
+    assert titles(response) == ["Hybrid", "Remote", "Nah", "Fern"]
+    assert remove_chips(response) == {}
+    assert '<details class="filter-panel">' in response.content.decode()
+
+
+@pytest.mark.parametrize("query", ["max_km=30", "max_km=50"])
+def test_neutral_distance_does_not_filter(client, postings, query):
+    response = client.get(f"/jobs/karte/?{START}&{query}")
+
+    assert titles(response, "nearby") == ["Nah", "Hybrid", "Fern"]
+    assert remove_chips(response) == {}
+
+
+def test_neutral_slider_values_are_left_out_of_links(client, postings):
+    response = client.get("/jobs/?min_lohn=0&max_anreise=60&min_stunden=10")
+
+    urls = {chip["label"]: chip["url"] for chip in response.context["chips"]}
+    assert urls["Remote"] == "/jobs/?filter=remote&min_stunden=10"
+
+
+def test_values_beyond_slider_range_still_filter(client, postings):
+    response = client.get("/jobs/?min_lohn=15,1")
+    assert titles(response) == ["Hybrid"]
+
+    response = client.get("/jobs/?min_lohn=40")
+    assert titles(response) == []
+    assert "ab 40 €" in remove_chips(response)
+    # Der Regler steht dann am rechten Rand.
+    assert 'name="min_lohn" min="0" max="25" step="0.5" value="25"' in response.content.decode()
 
 
 def test_filter_panel_closed_without_filters(client, postings):

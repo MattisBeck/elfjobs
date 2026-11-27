@@ -351,15 +351,45 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
+.filter-field legend {
+  width: 100%;
+}
+
+/* Schieberegler: Bezeichnung links, aktueller Wert rechts darüber. */
+.filter-slider-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.filter-slider-head output {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-ink);
+  white-space: nowrap;
+}
+
+.filter-field input[type="range"] {
+  padding: 0;
+  border: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 .filter-range {
   grid-column: 1 / -1;
 }
 
 .filter-range-inputs {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: 8px 12px;
+}
+
+.filter-range-inputs label {
+  color: var(--muted);
 }
 
 .filter-form .button {
@@ -376,6 +406,10 @@ a {
 
   .filter-form {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .filter-range-inputs {
+    grid-template-columns: auto minmax(0, 1fr);
   }
 }
 

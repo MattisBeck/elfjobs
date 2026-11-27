@@ -3,8 +3,9 @@
 Die Werte kommen als GET-Parameter, damit man eine Suche teilen kann:
 min_lohn (€ pro Stunde, effektiv), max_anreise (Minuten, einfach),
 min_stunden und max_stunden (pro Woche) und auf der Karte max_km (Luftlinie).
-Ungültige Werte (Text, negativ, zu groß) werden ignoriert. Werte werden auf
-zwei Nachkommastellen gerundet; ein Minimum von 0 ist kein Filter.
+Ungültige Werte (Text, negativ, zu groß) werden ignoriert, ebenso Werte
+auf der „egal“-Stellung der Schieberegler (siehe SLIDERS). Werte werden auf
+zwei Nachkommastellen gerundet, ein Minimum von 0 ist also kein Filter.
 """
 
 from decimal import Decimal, InvalidOperation
@@ -19,6 +20,26 @@ MAP_FILTER_FIELDS = FILTER_FIELDS + ["max_km"]
 MAX_VALUE = Decimal(10000)
 # Auf zwei Nachkommastellen runden, damit z. B. 1e-50 nicht als Chip mit 50 Stellen erscheint.
 CENT = Decimal("0.01")
+
+# Schieberegler im Filterformular: Spanne, Schrittweite und die „egal“-Stellung.
+# Als Text, damit Django im Template kein deutsches Komma daraus macht ("0,5").
+# Die „egal“-Stellung filtert nicht: bei min_* alles bis dahin, bei max_* alles ab dort.
+# Werte außerhalb der Spanne (z. B. ?min_lohn=40) bleiben gültige Filter.
+SLIDERS = {
+    "min_lohn": {"min": "0", "max": "25", "step": "0.5", "neutral": "0"},
+    "max_anreise": {"min": "0", "max": "60", "step": "5", "neutral": "60"},
+    "max_km": {"min": "1", "max": "30", "step": "1", "neutral": "30"},
+    "min_stunden": {"min": "0", "max": "40", "step": "1", "neutral": "0"},
+    "max_stunden": {"min": "0", "max": "40", "step": "1", "neutral": "40"},
+}
+
+
+def is_neutral(name, number):
+    """Steht der Wert auf (oder hinter) der „egal“-Stellung des Reglers?"""
+    neutral = Decimal(SLIDERS[name]["neutral"])
+    if name.startswith("min_"):
+        return number <= neutral
+    return number >= neutral
 
 
 def parse_number(value):
@@ -41,10 +62,9 @@ def parse_filters(get, fields=FILTER_FIELDS):
     filters = {}
     for name in fields:
         number = parse_number(get.get(name, ""))
-        # "ab 0 €" schränkt nichts ein, also kein Filter. Bei max_* heißt 0 dagegen etwas (z. B. nur remote).
-        if number is None or (name.startswith("min_") and number == 0):
-            continue
-        filters[name] = number
+        # „egal“ filtert nicht, z. B. "ab 0 €". Bei max_* heißt 0 dagegen etwas (z. B. nur remote).
+        if number is not None and not is_neutral(name, number):
+            filters[name] = number
     # "von 20 bis 10 Stunden" passt zu keiner Stelle, also beide ignorieren.
     if "min_stunden" in filters and "max_stunden" in filters:
         if filters["max_stunden"] < filters["min_stunden"]:
@@ -61,6 +81,16 @@ def format_number(number, separator=","):
 def filter_number_params(filters):
     """Filter als (Name, Wert)-Paare für Links, in fester Reihenfolge."""
     return [(name, format_number(filters[name], ".")) for name in MAP_FILTER_FIELDS if name in filters]
+
+
+def slider_settings(filters):
+    """Einstellungen je Regler mit Startwert: aktiver Filter (am Rand der Spanne), sonst „egal“."""
+    sliders = {}
+    for name, spec in SLIDERS.items():
+        value = filters.get(name, Decimal(spec["neutral"]))
+        value = min(max(value, Decimal(spec["min"])), Decimal(spec["max"]))
+        sliders[name] = {**spec, "value": format_number(value, ".")}
+    return sliders
 
 
 def commute_minutes(posting):
