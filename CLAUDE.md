@@ -13,6 +13,16 @@ Geplante Bausteine, in etwa in dieser Reihenfolge: Frontend zum Durchsuchen der 
 - Konfiguration und Secrets kommen aus Umgebungsvariablen (`.env`, Vorlage `.env.example`).
 - Fasse nur die Dateien an, die zur Aufgabe gehören. Was dir darüber hinaus auffällt, meldest du zurück.
 
+## Portabilität: fünf Rechner, ein Setup
+
+Fünf Leute arbeiten parallel auf macOS, Windows (WSL2) und Linux. Das Projekt muss auf jedem Rechner nur mit Docker und Git starten, und zwar mit genau den Schritten aus dem README.
+
+- Alles läuft im Container: `docker compose exec backend uv run ...`. Lokal ist uv nur für die Editor-Autovervollständigung da.
+- Keine Pfade, Ports oder Werkzeuge, die nur auf deinem Rechner existieren. Dateipfade im Code relativ zu `BASE_DIR`.
+- Jede neue Umgebungsvariable kommt mit Platzhalter in `.env.example`. Jeder neue Setup-Schritt kommt ins README (Abschnitt „Erster Start“ oder „Häufige Probleme“).
+- Demo-Daten nur über `seed`, deterministisch, damit alle dasselbe sehen. Wenn du ein Model erweiterst, ergänze `seed`.
+- Zeilenenden sind LF (`.gitattributes`).
+
 ## Pakete: nur uv
 
 - Neue Pakete nur mit `uv add <paket>`, Dev-Werkzeuge mit `uv add --dev <paket>`. Dadurch bleiben `pyproject.toml` und `uv.lock` synchron. Beide gehören in denselben Commit.
