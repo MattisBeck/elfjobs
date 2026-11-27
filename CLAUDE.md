@@ -13,12 +13,14 @@ Aus den Interviews: Zeitmangel und Planbarkeit sind das größte Problem. Viele 
 
 **Priorität der Features** (Ranking der Gruppe nach Nutzen und Umsetzbarkeit):
 
-1. Sortieren nach Distanz, Stundenlohn inklusive Pendelzeit und Bewertung
-2. Lehrpläne und Closed Access (nur Studierende) ⭐
-3. Eventhub: Jobmessen und Events, Alerts für passende Jobs
+1. Sortieren nach Distanz, Stundenlohn inklusive Pendelzeit und Bewertung (#12, #22, #32)
+2. Lehrpläne und Closed Access ⭐: Registrieren nur mit Uni-Mail, zum Start nur HPI (#6, #31). Aus belegten Modulen folgen Skills (wer PT1 belegt hat, kann C-Grundlagen), damit sich Studierende mehr zutrauen und Arbeitgeber nach Skills suchen können (#30).
+3. Eventhub: Jobmessen und Events, Alerts für passende Jobs (#33, #34)
 4. Wiki zu Bürokratie und Bewerbung, von Studierenden geschrieben
-5. Stundenplan eintragen und Jobs finden, die hineinpassen ⭐
-6. Karte: Wo sind Jobs in meiner Nähe?
+5. Stundenplan eintragen und Jobs finden, die hineinpassen ⭐ (#7, #9)
+6. Karte: Wo sind Jobs in meiner Nähe? (#20, #21)
+
+⭐ = im Protokoll auf dem Whiteboard rot markiert.
 
 Die Oberfläche folgt der Designrichtung A „Wochenplan“ (`docs/design.md`).
 
