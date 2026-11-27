@@ -1,0 +1,45 @@
+{% load static %}<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}elfjobs{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="wordmark" href="{% url 'job_list' %}">elf<span>jobs</span></a>
+
+    <nav class="main-nav" aria-label="Hauptnavigation">
+      <a href="{% url 'job_list' %}"{% if request.resolver_match.url_name == "job_list" %} aria-current="page"{% endif %}>Jobs</a>
+      {# Gemerkt (#13) und Messen bekommen ihre Seiten mit eigenen Issues. #}
+      <a>Gemerkt</a>
+      <a>Messen</a>
+    </nav>
+
+    <form class="search" action="{% url 'job_list' %}" method="get" role="search">
+      <input type="search" name="q" value="{{ request.GET.q }}" placeholder="Titel, Firma oder Skill" aria-label="Suche">
+    </form>
+
+    {% if user.is_authenticated %}
+      {# Studiengang und Semester kommen mit dem Studi-Profil (#6). #}
+      <a class="profile-button" href="#">
+        <span class="avatar" aria-hidden="true">{{ user.get_full_name|default:user.username|first|upper }}</span>
+        <span class="profile-text">
+          <span class="profile-name">{{ user.get_full_name|default:user.username }}</span>
+        </span>
+      </a>
+    {% else %}
+      {# Eigener Login kommt mit #6, bis dahin der Admin-Login. #}
+      <a class="login-link" href="{% url 'admin:login' %}?next={{ request.path|urlencode }}">Anmelden</a>
+    {% endif %}
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
