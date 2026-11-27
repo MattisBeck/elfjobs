@@ -38,7 +38,11 @@
       {% endfor %}
     </div>
 
-    {% if travel_hint %}<p class="map-hint travel-hint" role="status">{{ travel_hint }}</p>{% endif %}
+    {% if travel_hint %}
+      <p id="travel-hint" class="map-hint travel-hint" role="status">{{ travel_hint }}</p>
+      {# Erscheint per JavaScript, sobald fehlende Anreisezeiten nachgeladen sind. #}
+      <p id="travel-reload" class="map-hint" hidden><a href="">Neu sortieren</a></p>
+    {% endif %}
 
     <p class="job-list-meta">
       <strong>{{ nearby|length }} Stelle{{ nearby|length|pluralize:"n" }} mit Ort</strong>
@@ -66,7 +70,7 @@
     </ul>
 
     {% if by_travel %}
-      <p class="map-hint">Anreisedauer nur für die {{ max_travel_requests }} nächsten Stellen nach Luftlinie, Daten vom VBB.</p>
+      <p class="map-hint">Fehlende Anreisedauer wird für die {{ max_travel_requests }} nächsten Stellen nach Luftlinie nachgeladen, Daten vom VBB.</p>
     {% endif %}
 
     {% if remote %}
@@ -95,6 +99,31 @@
 
 {{ markers|json_script:"map-markers" }}
 {{ start|json_script:"map-start" }}
+{{ travel_url|json_script:"travel-url" }}
+<script>
+  // Fehlende Anreisezeiten nachladen (#74): Die Seite kommt sofort mit dem, was gespeichert
+  // ist. Der Endpunkt fragt die API für die übrigen (mit Zeitbudget) und speichert sie.
+  // Kam etwas Neues, erscheint „Neu sortieren“ (lädt die Seite neu, jetzt aus dem Cache).
+  (function () {
+    var url = JSON.parse(document.getElementById("travel-url").textContent);
+    var hint = document.getElementById("travel-hint");
+    if (!url || !hint) return;
+    var original = hint.textContent;
+    hint.textContent = "Anreisedauer wird geladen …";
+    fetch(url)
+      .then(function (response) { return response.ok ? response.json() : {}; })
+      .then(function (minutes) {
+        var count = Object.keys(minutes).length;
+        if (count === 0) {
+          hint.textContent = original;
+          return;
+        }
+        hint.textContent = "Anreisedauer für " + count + " weitere Stelle" + (count === 1 ? "" : "n") + " geladen.";
+        document.getElementById("travel-reload").hidden = false;
+      })
+      .catch(function () { hint.textContent = original; });
+  })();
+</script>
 <script>
   (function () {
     var markers = JSON.parse(document.getElementById("map-markers").textContent);

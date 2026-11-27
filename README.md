@@ -63,9 +63,17 @@ Der Befehl braucht Internet: Er lädt die Modulliste aus PULS (Uni Potsdam, von 
 
 ## Anreisedauer (ÖPNV)
 
-`jobs/travel.py` fragt die Anreise mit Bus und Bahn bei der [VBB-API von transport.rest](https://v6.vbb.transport.rest) ab (`/journeys`). Die API ist öffentlich und braucht keinen Key, kennt aber nur Berlin und Brandenburg. Pro Aufruf werden höchstens 20 Stellen abgefragt (`MAX_TRAVEL_REQUESTS`), die nächsten nach Luftlinie. Ergebnisse bleiben einen Tag in Djangos Cache (im Speicher, nach einem Neustart leer).
+`jobs/travel.py` fragt die Anreise mit Bus und Bahn bei der [VBB-API von transport.rest](https://v6.vbb.transport.rest) ab (`/journeys`). Die API ist öffentlich und braucht keinen Key, kennt aber nur Berlin und Brandenburg. Ergebnisse liegen 7 Tage in der Datenbank (Model `TravelTime`), überleben also Neustarts. Startpunkte werden auf 3 Nachkommastellen (etwa 100 m) gerundet; Klicks bis 300 m neben einem festen Startpunkt (HPI/Griebnitzsee, Potsdam Hbf, Berlin Hbf, Alexanderplatz, Berlin-Mitte) rasten auf ihn ein.
 
-Auf der Karte (`/jobs/karte/`) schaltet „Anreisedauer“ die Sortierung um (`?sortierung=anreise`); nur dann wird die API gefragt. Antwortet sie nicht innerhalb von 5 Sekunden oder mit einem Fehler, fragt die Seite für die übrigen Stellen nicht weiter, sortiert sie nach Luftlinie und zeigt einen Hinweis. Adresse und Timeout stehen in `.env` (`TRAVEL_API_URL`, `TRAVEL_API_TIMEOUT`). Die Tests rufen die API nie wirklich auf.
+Auf der Karte (`/jobs/karte/`) schaltet „Anreisedauer“ die Sortierung um (`?sortierung=anreise`). Die Seite selbst fragt die API nie, sie zeigt sofort, was gespeichert ist, und den Rest nach Luftlinie. Fehlen Zeiten für die 20 nächsten Stellen (`MAX_TRAVEL_REQUESTS`), holt die Seite sie per JavaScript über `/jobs/karte/anreise.json` nach: höchstens 5 Anfragen gleichzeitig, nach 3 Sekunden ist Schluss (Teilergebnisse werden gespeichert). Danach erscheint der Link „Neu sortieren“. Adresse und Timeout stehen in `.env` (`TRAVEL_API_URL`, `TRAVEL_API_TIMEOUT`). Die Tests rufen die API nie wirklich auf.
+
+**Vor der Demo** den Cache einmal vorwärmen (braucht Internet, dauert je Startpunkt einige Minuten, Abbruch mit Strg+C, bereits Gespeichertes bleibt):
+
+```
+docker compose exec backend uv run python manage.py warm_travel_cache
+```
+
+Nur einen Startpunkt: `--startpunkt hpi` (auch `potsdam-hbf`, `berlin-hbf`, `alexanderplatz`, `mitte`). Ein zweiter Lauf überspringt alles, was jünger als 7 Tage ist. Nach `seed` liegen die Stellen an denselben Orten, der Cache bleibt gültig.
 
 ## Claude Code
 

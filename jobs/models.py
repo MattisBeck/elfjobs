@@ -178,3 +178,32 @@ class Shift(models.Model):
     @property
     def hours(self):
         return (self.end.hour * 60 + self.end.minute - self.start.hour * 60 - self.start.minute) / 60
+
+
+class TravelTime(models.Model):
+    """Gespeicherte Anreisedauer mit ÖPNV zwischen zwei Punkten (#74), siehe jobs/travel.py.
+
+    Koordinaten auf 3 Nachkommastellen gerundet (etwa 100 m), damit nahe Klicks auf
+    der Karte denselben Eintrag treffen. Liegt in der Datenbank, überlebt also
+    Neustarts und gilt für alle Prozesse.
+    """
+
+    start_lat = models.DecimalField("Start Breitengrad", max_digits=6, decimal_places=3)
+    start_lon = models.DecimalField("Start Längengrad", max_digits=6, decimal_places=3)
+    dest_lat = models.DecimalField("Ziel Breitengrad", max_digits=6, decimal_places=3)
+    dest_lon = models.DecimalField("Ziel Längengrad", max_digits=6, decimal_places=3)
+    # None heißt: Die API hat geantwortet, aber keine Verbindung gefunden.
+    minutes = models.PositiveSmallIntegerField("Minuten", null=True, blank=True)
+    fetched_at = models.DateTimeField("Abgefragt am")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["start_lat", "start_lon", "dest_lat", "dest_lon"], name="unique_travel_route"
+            ),
+        ]
+        verbose_name = "Anreisedauer"
+        verbose_name_plural = "Anreisedauern"
+
+    def __str__(self):
+        return f"{self.start_lat},{self.start_lon} → {self.dest_lat},{self.dest_lon}: {self.minutes} min"

@@ -1,38 +1,72 @@
 """Anreisedauer mit ÖPNV über die VBB-API von transport.rest (ohne Key).
 
-Die API kennt Berlin und Brandenburg. Antwortet sie nicht, geben die
-Funktionen None bzw. weniger Einträge zurück; der Aufrufer bleibt dann
-bei der Luftlinie.
+Die API kennt Berlin und Brandenburg. Ergebnisse liegen im Model TravelTime
+(Datenbank, 7 Tage gültig). Die Kartenseite liest nur daraus; fehlende Zeiten
+holt der JSON-Endpunkt mit fetch_travel_times nach (#74). Antwortet die API
+nicht, fehlen die Einträge, und der Aufrufer bleibt bei der Luftlinie.
 """
 
 import json
 import logging
-from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, wait
+from datetime import datetime, timedelta
+from decimal import Decimal
+from http.client import HTTPException
 from urllib.error import URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from django.conf import settings
-from django.core.cache import cache
+from django.utils import timezone
+
+from .geo import BERLIN_MITTE, haversine_km
+from .models import TravelTime
 
 logger = logging.getLogger(__name__)
 
-# Höchstens so viele Stellen pro Aufruf von travel_times abfragen,
-# damit die Anfragegrenze der API hält.
+# Höchstens so viele Stellen pro Aufruf des JSON-Endpunkts abfragen (die nächsten nach
+# Luftlinie), damit die Anfragegrenze der API hält.
 MAX_TRAVEL_REQUESTS = 20
 
-CACHE_SECONDS = 24 * 60 * 60  # gefundene Verbindungen: 1 Tag
-NO_CONNECTION_CACHE_SECONDS = 60 * 60  # "keine Verbindung": 1 Stunde
+# Gesamtbudget für einen Aufruf von fetch_travel_times in Sekunden. Was bis dahin
+# nicht da ist, kommt beim nächsten Mal.
+TRAVEL_BUDGET_SECONDS = 3
 
-# Unterscheidet "nicht im Cache" von einem gecachten None ("keine Verbindung").
-NOT_CACHED = object()
+# So viele Anfragen laufen gleichzeitig.
+TRAVEL_WORKERS = 5
+
+# Gespeicherte Zeiten gelten so lange, Fahrpläne ändern sich selten.
+TRAVEL_CACHE_DAYS = 7
+
+# Feste Startpunkte für warm_travel_cache. Klicks bis SNAP_KM daneben rasten hier ein,
+# damit der vorgewärmte Cache auch für ungenaue Klicks greift.
+START_POINTS = {
+    "hpi": ("HPI / Griebnitzsee", (52.394, 13.132)),
+    "potsdam-hbf": ("Potsdam Hbf", (52.392, 13.067)),
+    "berlin-hbf": ("Berlin Hbf", (52.525, 13.369)),
+    "alexanderplatz": ("Alexanderplatz", (52.522, 13.413)),
+    "mitte": ("Berlin-Mitte (Standard der Karte)", BERLIN_MITTE),
+}
+SNAP_KM = 0.3
 
 
-def _cache_key(start, destination):
-    """Schlüssel aus Koordinaten, gerundet auf 3 Nachkommastellen (etwa 100 m)."""
-    return "travel:{:.3f},{:.3f}:{:.3f},{:.3f}".format(
-        start[0], start[1], destination[0], destination[1]
-    )
+def _rounded(value):
+    """Koordinate auf 3 Nachkommastellen (etwa 100 m) als Decimal."""
+    return round(Decimal(str(value)), 3)
+
+
+def travel_start(start):
+    """Startpunkt für Anfragen und Cache: ein fester Startpunkt in der Nähe, sonst gerundet."""
+    for _label, point in START_POINTS.values():
+        if haversine_km(start[0], start[1], point[0], point[1]) <= SNAP_KM:
+            start = point
+            break
+    return float(_rounded(start[0])), float(_rounded(start[1]))
+
+
+def posting_destination(posting):
+    """Ort der Stelle, gerundet wie im Cache."""
+    return float(_rounded(posting.latitude)), float(_rounded(posting.longitude))
 
 
 def _fetch_journeys(start, destination):
@@ -66,68 +100,113 @@ def _journey_minutes(journey):
     return round(duration.total_seconds() / 60)
 
 
-def _lookup(start, destination, ask_api=True):
-    """Anreise in Minuten plus Angabe, ob die API geantwortet hat: (Minuten, ok).
+def fetch_minutes(start, destination):
+    """Fragt die API, ohne Cache: (Minuten, ok). Wirft nie eine Exception.
 
-    ok ist False bei Timeout oder API-Fehler, nicht bei "keine Verbindung".
-    Mit ask_api=False wird nur im Cache nachgesehen.
+    ok ist False bei Timeout oder API-Fehler, nicht bei "keine Verbindung"
+    (dann (None, True)). Fasst die Datenbank nicht an, läuft daher auch in Threads.
     """
-    key = _cache_key(start, destination)
-    cached = cache.get(key, NOT_CACHED)
-    if cached is not NOT_CACHED:
-        return cached, True
-    if not ask_api:
-        return None, False
-
     try:
         journeys = _fetch_journeys(start, destination)
         if not journeys:
-            cache.set(key, None, NO_CONNECTION_CACHE_SECONDS)
             return None, True
-        minutes = _journey_minutes(journeys[0])
-    except (URLError, OSError, ValueError, KeyError, IndexError, TypeError) as error:
-        # Timeout, HTTP-Fehler, kaputtes JSON oder unerwartetes Format.
-        # Nicht cachen, beim nächsten Mal noch einmal versuchen.
+        return _journey_minutes(journeys[0]), True
+    except (
+        URLError, OSError, HTTPException, ValueError, KeyError, IndexError, TypeError, AttributeError
+    ) as error:
+        # Timeout, HTTP-Fehler, abgebrochene Antwort, kaputtes JSON oder unerwartetes Format.
+        # Nicht speichern, beim nächsten Mal noch einmal versuchen.
         logger.warning("Anreise-API nicht erreichbar: %s", error)
         return None, False
 
-    cache.set(key, minutes, CACHE_SECONDS)
-    return minutes, True
+
+def save_minutes(start, destination, minutes):
+    """Speichert eine Antwort der API (auch None = keine Verbindung) in TravelTime."""
+    TravelTime.objects.update_or_create(
+        start_lat=_rounded(start[0]),
+        start_lon=_rounded(start[1]),
+        dest_lat=_rounded(destination[0]),
+        dest_lon=_rounded(destination[1]),
+        defaults={"minutes": minutes, "fetched_at": timezone.now()},
+    )
+
+
+def _fresh_entries(start):
+    """Gültige Einträge ab start: {(ziel_lat, ziel_lon): Minuten oder None}. Eine Abfrage."""
+    start = travel_start(start)
+    entries = TravelTime.objects.filter(
+        start_lat=_rounded(start[0]),
+        start_lon=_rounded(start[1]),
+        fetched_at__gte=timezone.now() - timedelta(days=TRAVEL_CACHE_DAYS),
+    )
+    return {(float(e.dest_lat), float(e.dest_lon)): e.minutes for e in entries}
+
+
+def cached_travel_times(start, postings):
+    """Bekannte Anreisezeiten aus der Datenbank, ohne API: {posting.id: Minuten oder None}.
+
+    None heißt "keine Verbindung". Stellen, die noch nicht (oder nicht mehr gültig)
+    gespeichert sind, fehlen im dict.
+    """
+    entries = _fresh_entries(start)
+    times = {}
+    for posting in postings:
+        if posting.has_location and posting_destination(posting) in entries:
+            times[posting.id] = entries[posting_destination(posting)]
+    return times
 
 
 def travel_minutes(start, destination):
     """Anreise in ganzen Minuten von start nach destination, je (lat, lon).
 
-    Gibt None zurück, wenn es keine Verbindung gibt oder die API nicht
-    antwortet. Wirft nie eine Exception.
+    Erst aus der Datenbank, sonst fragt die API (und speichert). Gibt None zurück,
+    wenn es keine Verbindung gibt oder die API nicht antwortet. Wirft nie.
     """
-    minutes, _ok = _lookup(start, destination)
+    start = travel_start(start)
+    destination = (float(_rounded(destination[0])), float(_rounded(destination[1])))
+    entries = _fresh_entries(start)
+    if destination in entries:
+        return entries[destination]
+    minutes, ok = fetch_minutes(start, destination)
+    if ok:
+        save_minutes(start, destination, minutes)
     return minutes
 
 
-def travel_times(start, postings, limit=MAX_TRAVEL_REQUESTS):
-    """Anreise in Minuten für die ersten `limit` Stellen mit Ort.
+def fetch_travel_times(start, postings, budget=None):
+    """Anreise für die übergebenen Stellen, fehlende parallel von der API.
 
-    Der Aufrufer übergibt die Stellen nach Luftlinie sortiert. Ergebnis:
-    {posting.id: Minuten}. Stellen ohne Ergebnis fehlen im dict.
-
-    Nach dem ersten Fehler oder Timeout wird die API nicht mehr gefragt,
-    damit die Seite bei hängender API nicht `limit` Timeouts lang wartet.
-    Ergebnisse aus dem Cache werden weiter genutzt.
+    Höchstens TRAVEL_WORKERS Anfragen gleichzeitig. Nach `budget` Sekunden
+    (Standard TRAVEL_BUDGET_SECONDS) wird nicht mehr gewartet: Was bis dahin
+    da ist, wird gespeichert und zurückgegeben (Teilergebnis), der Rest fehlt.
+    Ergebnis wie cached_travel_times: {posting.id: Minuten oder None}.
     """
-    times = {}
-    asked = 0
-    api_ok = True
+    if budget is None:
+        budget = TRAVEL_BUDGET_SECONDS
+    start = travel_start(start)
+    times = cached_travel_times(start, postings)
+
+    # Fehlende Ziele, jedes nur einmal (mehrere Stellen können am selben Ort sein).
+    missing = {}
     for posting in postings:
-        if asked >= limit:
-            break
-        if not posting.has_location:
-            continue
-        asked += 1
-        destination = (float(posting.latitude), float(posting.longitude))
-        minutes, ok = _lookup(start, destination, ask_api=api_ok)
+        if posting.has_location and posting.id not in times:
+            missing.setdefault(posting_destination(posting), []).append(posting.id)
+    if not missing:
+        return times
+
+    executor = ThreadPoolExecutor(max_workers=TRAVEL_WORKERS)
+    futures = {executor.submit(fetch_minutes, start, destination): destination for destination in missing}
+    done, _not_done = wait(futures, timeout=budget)
+    # Nicht auf hängende Anfragen warten; noch nicht gestartete werden abgesagt.
+    executor.shutdown(wait=False, cancel_futures=True)
+
+    # Speichern erst hier im Haupt-Thread, die Threads fassen die Datenbank nicht an.
+    for future in done:
+        minutes, ok = future.result()
         if not ok:
-            api_ok = False
-        if minutes is not None:
-            times[posting.id] = minutes
+            continue
+        destination = futures[future]
+        save_minutes(start, destination, minutes)
+        for posting_id in missing[destination]:
+            times[posting_id] = minutes
     return times
