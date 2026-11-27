@@ -430,6 +430,9 @@ def job_map(request):
             "lon": float(posting.longitude),
             "title": posting.title,
             "company": posting.company.name,
+            # Logo (#73): URL oder, ohne Logo, die Initialen für den Platzhalter.
+            "logo_url": posting.company.logo_url,
+            "initials": posting.company.initials,
             "wage": f"{posting.effective_wage} €".replace(".", ","),
             "travel": f"ca. {minutes} min mit ÖPNV" if minutes is not None else "",
             "url": f"{url}?{filter_query}" if filter_query else url,

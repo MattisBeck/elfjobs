@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 .taste-skill/
 .impeccable/*.local.json
+media/

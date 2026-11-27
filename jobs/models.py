@@ -2,11 +2,31 @@ import math
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.conf import settings
+from django.core.validators import FileExtensionValidator
 from django.db import models
+from django.templatetags.static import static
 
 
 # Minijob-Grenze 2026 in Euro pro Monat
 MINIJOB_LIMIT = 603
+
+# Firmenlogos (#73): erlaubte Endungen für den Upload im Admin. Kein ImageField, damit wir kein Pillow brauchen.
+LOGO_EXTENSIONS = ["svg", "png", "jpg", "jpeg", "webp"]
+
+# Rechtsformen zählen nicht für die Initialen: „Holsten Förster AG & Co. OHG“ → „HF“.
+LEGAL_FORMS = {"gmbh", "mbh", "ag", "kg", "kgaa", "ohg", "gbr", "ug", "se", "co", "e.v", "ev", "eg", "stiftung"}
+
+
+def company_initials(name):
+    """Höchstens zwei Großbuchstaben für den Logo-Platzhalter.
+
+    Wörter ohne Buchstaben am Anfang (z. B. „&“) und Rechtsformen fallen weg.
+    Ein Wort ergibt einen Buchstaben („Bauer“ → „B“), mehrere die ersten zwei („Müller Schmidt“ → „MS“).
+    """
+    words = [word for word in name.replace("-", " ").split() if word[0].isalpha()]
+    without_legal_forms = [word for word in words if word.lower().rstrip(".") not in LEGAL_FORMS]
+    words = without_legal_forms or words
+    return "".join(word[0].upper() for word in words[:2]) or "?"
 
 
 class Company(models.Model):
@@ -17,6 +37,16 @@ class Company(models.Model):
     fairs = models.ManyToManyField(
         "Fair", related_name="companies", blank=True, verbose_name="Messen"
     )
+    # Logo (#73): ein Upload im Admin hat Vorrang vor einer Datei unter static/ (für Seed-Firmen).
+    logo = models.FileField(
+        "Logo", upload_to="logos/", blank=True,
+        validators=[FileExtensionValidator(LOGO_EXTENSIONS)],
+        help_text="SVG, PNG, JPG oder WebP.",
+    )
+    logo_static = models.CharField(
+        "Logo aus static/", max_length=200, blank=True,
+        help_text="Pfad unter static/, z. B. logos/weihmann.svg. Ein hochgeladenes Logo hat Vorrang.",
+    )
 
     class Meta:
         verbose_name = "Firma"
@@ -24,6 +54,19 @@ class Company(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def logo_url(self):
+        """URL des Logos: Upload vor statischer Datei, ohne Logo None (dann zeigt das Template Initialen)."""
+        if self.logo:
+            return self.logo.url
+        if self.logo_static:
+            return static(self.logo_static)
+        return None
+
+    @property
+    def initials(self):
+        return company_initials(self.name)
 
 
 class Fair(models.Model):

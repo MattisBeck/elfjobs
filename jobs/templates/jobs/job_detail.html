@@ -17,7 +17,7 @@
           <li class="tag">{{ posting.hours_per_week }} h pro Woche</li>
         </ul>
         <h1 class="job-title">{{ posting.title }}</h1>
-        <p class="job-company">{{ posting.company.name }} · {{ posting.company.industry }}</p>
+        <p class="job-company">{% include "jobs/_company_logo.html" with company=posting.company size="large" %}<span>{{ posting.company.name }} · {{ posting.company.industry }}</span></p>
         {% if verdict %}
           <p class="fit-badge fit-badge-{{ verdict.level }}">{{ verdict.label }}</p>
           {% if verdict.detail %}<p class="fit-badge-detail">{{ verdict.detail }}</p>{% endif %}

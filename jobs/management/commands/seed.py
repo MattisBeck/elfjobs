@@ -8,6 +8,7 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.utils.text import slugify
 from faker import Faker
 
 from accounts.models import ProfileSkill, StudentProfile
@@ -77,6 +78,19 @@ DESIGN_EXAMPLE_COMMUTES = {
     "Bauer": 12,
     "Holsten Förster AG & Co. OHG": 35,
 }
+
+# Firmenlogos (#73): selbst erstellte SVGs unter static/logos/<slug>.svg (Quellen: static/logos/QUELLEN.md).
+# Die übrigen Firmen bleiben bewusst ohne Logo, dort zeigt die Seite die Initialen.
+COMPANIES_WITH_LOGO = [
+    "Weihmann GbR", "Bauer", "Holsten Förster AG & Co. OHG", "Dowerg", "Hauffer AG & Co. KG", "Christoph",
+    "Becker AG", "Hartmann Meister KG", "Seip", "Klemt GmbH", "Thanel GmbH & Co. KG", "Gumprich",
+]
+
+
+def seed_logo_path(name):
+    """Pfad unter static/ für das Logo einer Seed-Firma, z. B. logos/weihmann-gbr.svg."""
+    return f"logos/{slugify(name)}.svg"
+
 
 # Schichten der Stellen mit festen Zeiten: höchstens 4 h pro Schicht, meist nachmittags.
 MAX_SHIFT_MINUTES = 4 * 60
@@ -444,6 +458,8 @@ class Command(BaseCommand):
             company.commute_minutes = DESIGN_EXAMPLE_COMMUTES.get(
                 company.name, commute_random.randint(12, 40)
             )
+            if company.name in COMPANIES_WITH_LOGO:
+                company.logo_static = seed_logo_path(company.name)
             company.save()
 
         shift_random = random.Random(SEED)

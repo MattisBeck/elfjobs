@@ -5,7 +5,11 @@ from .models import Company, Fair, JobPosting, SavedPosting, Shift, Tag
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
-    pass
+    list_display = ("name", "industry", "has_logo")
+
+    @admin.display(boolean=True, description="Logo")
+    def has_logo(self, company):
+        return bool(company.logo_url)
 
 
 @admin.register(Fair)

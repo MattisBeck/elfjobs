@@ -96,6 +96,10 @@ LOGOUT_REDIRECT_URL = "job_list"
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
+# Hochgeladene Dateien, z. B. Firmenlogos (#73). Im Dev-Setup liefert Django sie aus (config/urls.py).
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Anreisedauer mit ÖPNV: VBB-API von transport.rest, ohne Key.
