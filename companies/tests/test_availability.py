@@ -134,6 +134,20 @@ def test_page_shows_counts_but_no_names(company_client):
         assert name not in content
 
 
+def test_skill_picker_summary_shows_chosen_skills(company_client):
+    """Die Auswahl ist zugeklappt (#109), oben steht, welche Skills gewählt sind."""
+    git = Tag.objects.create(name="Git")
+    sql = Tag.objects.create(name="SQL")
+
+    without = company_client.get("/firma/verfuegbarkeit/").content.decode()
+    chosen = company_client.get("/firma/verfuegbarkeit/", {"skills": [git.pk, sql.pk]}).content.decode()
+
+    assert '<details class="skill-picker">' in without
+    assert "alle Studierenden" in without
+    assert "Git, SQL" in chosen
+    assert "alle Studierenden" not in chosen
+
+
 def test_company_home_links_to_heatmap(company_client):
     assert 'href="/firma/verfuegbarkeit/"' in company_client.get("/firma/").content.decode()
 
