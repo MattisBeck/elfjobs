@@ -12,7 +12,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from jobs.models import JobPosting
 
-from .forms import CompanySignupForm, PostingForm, ShiftFormSet
+from .availability import MIN_COUNT, availability
+from .forms import AvailabilityForm, CompanySignupForm, PostingForm, ShiftFormSet
 from .models import CompanyMember
 
 
@@ -87,4 +88,16 @@ def posting_edit(request, pk=None):
 
     return render(request, "companies/posting_form.html", {
         "company": request.company, "form": form, "shifts": shifts, "posting": posting,
+    })
+
+
+@company_required
+def availability_view(request):
+    """Heatmap (#67): Wann haben Studierende mit den gewählten Skills Zeit? Nur Anzahlen, keine Namen."""
+    form = AvailabilityForm(request.GET)
+    tags = form.cleaned_data["skills"] if form.is_valid() else []
+    rows, total = availability(tags, buffer_minutes=request.company.commute_minutes)
+    return render(request, "companies/availability.html", {
+        "company": request.company, "form": form, "tags": tags,
+        "rows": rows, "total": total, "min_count": MIN_COUNT,
     })

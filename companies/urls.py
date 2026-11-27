@@ -8,4 +8,5 @@ urlpatterns = [
     path("anmelden/", views.company_login, name="company_login"),
     path("stellen/neu/", views.posting_edit, name="company_posting_new"),
     path("stellen/<int:pk>/", views.posting_edit, name="company_posting_edit"),
+    path("verfuegbarkeit/", views.availability_view, name="company_availability"),
 ]

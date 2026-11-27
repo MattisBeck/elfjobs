@@ -8,7 +8,10 @@
   {% for message in messages %}
     <p class="notice">{{ message }}</p>
   {% endfor %}
-  <p><a class="button button-primary" href="{% url 'company_posting_new' %}">Neue Stelle</a></p>
+  <p>
+    <a class="button button-primary" href="{% url 'company_posting_new' %}">Neue Stelle</a>
+    <a class="button" href="{% url 'company_availability' %}">Wann haben Studierende Zeit?</a>
+  </p>
 
   <h2>Eure Stellen</h2>
   <ul class="company-postings">

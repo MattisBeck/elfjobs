@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Verfügbarkeit · {{ company.name }} · elfjobs{% endblock %}
+
+{% block content %}
+<section class="availability-page">
+  <a class="back-link" href="{% url 'company_home' %}">← {{ company.name }}</a>
+  <h1>Wann haben passende Studierende Zeit?</h1>
+  <p class="muted">Frei heißt: keine Vorlesung laut Stundenplan, mit {{ company.commute_minutes }} min Fahrzeit als Puffer davor und danach. Ihr seht nur Anzahlen, keine Namen. Unter {{ min_count }} Studierenden zeigen wir keine genaue Zahl.</p>
+
+  <form method="get" class="form availability-form">
+    <fieldset>
+      <legend>Skills (alle müssen passen, ohne Auswahl zählen alle)</legend>
+      {{ form.skills }}
+    </fieldset>
+    <button type="submit" class="button button-primary">Anzeigen</button>
+  </form>
+
+  <p>
+    {% if total < min_count %}Weniger als {{ min_count }}{% else %}{{ total }}{% endif %}
+    Studierende mit Stundenplan{% if tags %} und {% for tag in tags %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}.
+  </p>
+
+  <div class="heatmap-scroll">
+    <table class="heatmap">
+      <caption class="visually-hidden">Anzahl freier Studierender pro Stunde, Montag bis Freitag</caption>
+      <thead>
+        <tr>
+          <th scope="col">Uhrzeit</th>
+          {% for cell in rows.0.cells %}<th scope="col">{{ cell.weekday }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <th scope="row">{{ row.start|time:"H:i" }}–{{ row.end|time:"H:i" }}</th>
+            {% for cell in row.cells %}
+              <td class="heat-{{ cell.level }}" title="{{ cell.weekday }} {{ row.start|time:'H:i' }}–{{ row.end|time:'H:i' }}: {{ cell.label }}">{{ cell.short }}</td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">Je dunkler das Feld, desto mehr der passenden Studierenden sind frei. Die Zahl im Feld ist die Anzahl.</p>
+</section>
+{% endblock %}
