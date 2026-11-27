@@ -11,7 +11,7 @@ from accounts.models import StudentProfile
 from jobs.models import Weekday
 
 from .forms import IcsUploadForm, LectureSlotForm
-from .free_time import free_blocks, free_hours
+from .free_time import DAY_END, DAY_START, free_blocks, free_hours
 from .ics import IcsError, parse_ics
 from .models import LectureSlot
 
@@ -57,10 +57,12 @@ def render_timetable(request, profile, form, upload_form):
         "free_hours": free_hours(blocks),
         "form": form,
         "upload_form": upload_form,
-        # Daten für das Wochenraster zum Ziehen (#87, static/js/timetable.js).
+        "outside": [lecture for lecture in sorted(lectures, key=lambda l: (l.weekday, l.start)) if not in_grid(lecture)],
+        # Daten für das Wochenraster zum Ziehen (#87, static/js/timetable.js). Das Raster zeigt
+        # 8–20 Uhr; was nicht ganz hineinpasst, steht darunter mit Ändern und Löschen (#123).
         "calendar": {
             **calendar_state(lectures),
-            "lectures": [lecture_json(lecture) for lecture in lectures],
+            "lectures": [lecture_json(lecture) for lecture in lectures if in_grid(lecture)],
             "urls": {
                 "create": reverse("lecture_api_create"),
                 # Platzhalter 0 ersetzt das JavaScript durch die ID des Termins.
@@ -73,6 +75,12 @@ def render_timetable(request, profile, form, upload_form):
 
 # JSON-Endpunkte für das Wochenraster (#87). Gleiche Regeln wie das Formular:
 # LectureSlotForm prüft die Zeiten, und geändert werden nur eigene Termine.
+
+
+def in_grid(lecture):
+    """Liegt der Termin ganz im Raster von 8 bis 20 Uhr? Sonst würde er dort verschwinden
+    oder beim Verschieben still auf 8 Uhr gesetzt (#123)."""
+    return DAY_START <= lecture.start and lecture.end <= DAY_END
 
 
 def lecture_json(lecture):
