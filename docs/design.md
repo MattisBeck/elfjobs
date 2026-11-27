@@ -2,11 +2,9 @@
 
 Das ist die Designrichtung, nach der wir die Oberfläche von elfjobs bauen. Sie wurde am 27.11.2026 aus drei Richtungen ausgewählt.
 
-- Design-Canvas mit allen Entwürfen: https://claude.ai/artifact/9Z7g6PU9QA4gdbFkgha7HM (Zugriff bei Felix anfragen). Richtung A sind die Artboards „A · Wochenplan – Web“ und „A · Wochenplan – Handy“. Beide sind klickbar.
+- Design-Canvas mit allen Entwürfen: https://claude.ai/artifact/9Z7g6PU9QA4gdbFkgha7HM (Zugriff bei Felix anfragen). Richtung A sind die Artboards „A · Wochenplan – Web“ und „A · Wochenplan – Handy“. Beide sind klickbar: In der Web-Ansicht wechseln die Tabs „Details“ und „In meiner Woche“, bei flexiblen Stellen lassen sich eigene Schichten in freie Blöcke legen.
 - Issue zu diesem Dokument: #2
-
-![Richtung A, Web, Tab „Details“](img/a-web-details.png)
-![Richtung A, Web, Tab „In meiner Woche“](img/a-web-woche.png)
+- Screenshots kommen in einem späteren PR nach `docs/img/`. Bis dahin ist der Canvas die Referenz.
 
 ## Die Idee
 
@@ -106,8 +104,6 @@ Darunter die **Tab-Leiste** im Stil eines Segmented Control: „Details“ | „
 ### Handy
 
 Gleicher Aufbau, eine Spalte: Kopf mit Zurück-Link, Stellentitel, darunter dieselbe Tab-Leiste. „Details“ zeigt oben die Lohnrechnung als 2×2-Raster, dann „Auf einen Blick“, Skills und Messe. „In meiner Woche“ zeigt den Kalender mit 30 px pro Stunde und Achse alle 4 Stunden. Unten fest: „Merken“ und „Mit Profil bewerben“.
-
-![Richtung A, Handy](img/a-handy.png)
 
 ### Merken und Bewerben (#13, #14)
 
