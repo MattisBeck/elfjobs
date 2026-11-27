@@ -96,8 +96,8 @@ LOGOUT_REDIRECT_URL = "job_list"
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-# Hochgeladene Dateien, z. B. Firmenlogos (#73). Absichtlich ohne MEDIA_URL und ohne /media/-Route:
-# Dateien kommen nur über Views, die prüfen, was ausgeliefert werden darf.
+# Hochgeladene Dateien: Lebensläufe (#38) und Firmenlogos (#73). Der Ordner ist nicht öffentlich:
+# Es gibt absichtlich keine MEDIA_URL und keine Route unter /media/. Ausgeliefert wird nur über Views mit Rechteprüfung.
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

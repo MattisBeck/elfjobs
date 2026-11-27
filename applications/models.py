@@ -1,4 +1,11 @@
+import uuid
+
+from django.core.files.base import ContentFile
 from django.db import models
+
+
+def sent_cv_upload_to(instance, filename):
+    return f"bewerbungen/{uuid.uuid4().hex}.pdf"
 
 
 class Application(models.Model):
@@ -15,6 +22,8 @@ class Application(models.Model):
     )
     applied_at = models.DateTimeField("Beworben am", auto_now_add=True)
     status = models.CharField("Status", max_length=20, choices=Status.choices, default=Status.SENT)
+    # Kopie des Lebenslaufs beim Bewerben (#38): Ersetzt die Studentin ihn später, bleibt dieser erhalten.
+    cv = models.FileField("Lebenslauf", upload_to=sent_cv_upload_to, blank=True)
 
     class Meta:
         verbose_name = "Bewerbung"
@@ -27,3 +36,10 @@ class Application(models.Model):
 
     def __str__(self):
         return f"{self.profile} → {self.posting.title}"
+
+    def attach_cv(self):
+        """Hängt eine Kopie des Lebenslaufs aus dem Profil an, falls es einen gibt."""
+        profile_cv = self.profile.cv_file
+        if profile_cv:
+            with profile_cv.open("rb"):
+                self.cv.save("lebenslauf.pdf", ContentFile(profile_cv.read()))

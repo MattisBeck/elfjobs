@@ -15,6 +15,8 @@ urlpatterns = [
     path("willkommen/stundenplan/", views.onboarding_timetable, name="onboarding_timetable"),
     path("willkommen/jobart/", views.onboarding_kinds, name="onboarding_kinds"),
     path("profil/lebenslauf/", views.cv_select, name="cv_select"),
+    path("profil/lebenslauf/hochladen/", views.cv_upload, name="cv_upload"),
+    path("profil/lebenslauf/loeschen/", views.cv_delete, name="cv_delete"),
     path("profil/lebenslauf/uebernehmen/", views.cv_accept, name="cv_accept"),
     path("profil/lebenslauf.pdf", views.cv_pdf, name="cv_pdf"),
 ]
