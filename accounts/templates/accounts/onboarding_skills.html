@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Willkommen · elfjobs{% endblock %}
+
+{% block content %}
+<section class="form-page onboarding">
+  <p class="muted">Schritt 1 von 3</p>
+  <h1>Was kannst du schon?</h1>
+  {% for message in messages %}
+    <p class="notice">{{ message }}</p>
+  {% endfor %}
+  {% if course_skills %}
+    <p class="cv-heading">Aus deinen Modulen hast du schon:</p>
+    <ul class="tags">
+      {% for tag in course_skills %}
+        <li class="tag tag-learned">✓ {{ tag }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.as_div }}
+    <div class="onboarding-actions">
+      <button type="submit" class="button button-primary">Weiter</button>
+      <button type="submit" name="ueberspringen" value="1" class="button">Überspringen</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
