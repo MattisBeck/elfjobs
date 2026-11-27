@@ -222,7 +222,7 @@ def test_detail_from_saved_lists_only_saved_postings_and_marks_selected(client):
     assert response.context["postings"] == [saved_b, saved_a]
     content = response.content.decode()
     assert "Nicht gemerkt" not in content.split('<article')[0]
-    assert content.count("is-selected") == 1
+    assert content.count("job-row is-selected") == 1
     assert f'href="{reverse("job_detail", args=[saved_a.pk])}?liste=gemerkt"' in content
 
 
