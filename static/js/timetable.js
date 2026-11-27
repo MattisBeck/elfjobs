@@ -26,7 +26,11 @@
   var state = {
     lectures: data.lectures.map(fromJson),
     free: data.free.map(fromJson),
+    layout: data.layout, // Spalten pro Termin-ID, vom Server (#135)
   };
+  var shifts = (data.shifts || []).map(function (item) {
+    return Object.assign(fromJson(item), { company: item.company, url: item.url, conflict: item.conflict });
+  });
   var urls = data.urls;
   var csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
   var week = editor.querySelector(".tt-week");
@@ -123,6 +127,9 @@
       state.lectures.filter(byDay(weekday)).forEach(function (lecture) {
         track.appendChild(blockElement(lecture));
       });
+      shifts.filter(byDay(weekday)).forEach(function (shift) {
+        track.appendChild(shiftElement(shift));
+      });
       day.appendChild(track);
       week.appendChild(day);
     }
@@ -171,6 +178,43 @@
     block.appendChild(time);
     block.appendChild(handle);
     place(block, lecture.start, lecture.end);
+    // Überschneidungen nebeneinander und rot umrandet (#135). Die Spalten rechnet der Server
+    // und schickt sie nach jeder Änderung mit; ein neuer Termin steht bis dahin in voller Breite.
+    var layout = state.layout[lecture.id];
+    if (layout) {
+      block.style.setProperty("--left", layout.left + "%");
+      block.style.setProperty("--width", layout.width + "%");
+      if (layout.overlaps.length) {
+        var hint = "Überschneidet sich mit " + layout.overlaps.join(", ");
+        block.classList.add("tt-overlap");
+        block.title = hint;
+        block.setAttribute("aria-label", block.getAttribute("aria-label") + " " + hint + ".");
+      }
+    }
+    return block;
+  }
+
+  // Eigene Schicht (#140): Link zur Stelle, nicht ziehbar. Konflikte rot mit Text.
+  function shiftElement(shift) {
+    var block = document.createElement("a");
+    block.className = "week-block tt-job " + (shift.conflict ? "week-conflict tt-job-conflict" : "week-shift");
+    block.href = shift.url;
+    var text = shift.title + " (" + shift.company + "), " + DAY_NAMES[shift.weekday] + " " +
+      label(shift.start, shift.end) + (shift.conflict ? ", " + shift.conflict : "");
+    block.setAttribute("aria-label", text);
+    block.title = text;
+    var title = document.createElement("strong");
+    title.textContent = shift.title;
+    var time = document.createElement("span");
+    time.textContent = label(shift.start, shift.end);
+    block.appendChild(title);
+    block.appendChild(time);
+    if (shift.conflict) {
+      var conflict = document.createElement("span");
+      conflict.textContent = shift.conflict;
+      block.appendChild(conflict);
+    }
+    place(block, shift.start, shift.end);
     return block;
   }
 
@@ -215,9 +259,10 @@
     return "Speichern hat nicht geklappt. Bitte lade die Seite neu.";
   }
 
-  // Nach jeder Antwort: Termin übernehmen, freie Blöcke und Stunden neu zeichnen.
+  // Nach jeder Antwort: Termin übernehmen, freie Blöcke, Stunden und Spalten neu zeichnen.
   function applyResponse(json) {
     state.free = json.free.map(fromJson);
+    state.layout = json.layout;
     freeHours.textContent = json.free_hours.toLocaleString("de-DE", { maximumFractionDigits: 1 }) + " h";
   }
 
@@ -382,6 +427,7 @@
 
   week.addEventListener("pointerdown", function (event) {
     if (event.button !== 0) return;
+    if (event.target.closest(".tt-job")) return; // Schicht: Link zur Stelle, kein neuer Termin
     var track = event.target.closest(".tt-track");
     if (!track) return;
     var block = event.target.closest(".tt-block");

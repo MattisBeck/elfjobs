@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Prefetch, Q
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -13,7 +13,9 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from accounts.models import StudentProfile
+from applications import quota
 from companies.models import CompanyMember
+from reviews.ratings import attach_ratings, rating_key, review_context
 from studies.qualification import LEARNED, classify, skill_lookup, summary, verdict
 from timetable.fit import FLEXIBEL, KOLLIDIERT, PASST, TEILWEISE, posting_fit
 from timetable.models import PlannedShift
@@ -31,7 +33,7 @@ from .filters import (
     slider_settings,
 )
 from .geo import BERLIN_MITTE, haversine_km, parse_start
-from .models import Company, Fair, JobPosting, SavedPosting
+from .models import LOGO_CONTENT_TYPES, Company, Fair, JobPosting, SavedPosting
 from .travel import MAX_TRAVEL_REQUESTS, apply_home_commutes, cached_travel_times, fetch_travel_times
 
 # Filter-Chips der Stellenliste: GET-Parameter "filter", mehrere kombinierbar.
@@ -47,9 +49,15 @@ FILTER_CHIPS = {
 PLAN_CHIP_LABEL = "Passt in meinen Plan"
 
 
+# Reihenfolgen der Stellenliste (?reihenfolge=...): „Passt am besten“ gibt es nur mit Lehrplan.
+SORT_ORDERS = {
+    "passt": "Passt am besten",
+    "lohn": "Effektiver Lohn",
+    "bewertung": "Bewertung",
+}
+
 # Kontext „Gemerkt“ (#127): Das Stellendetail zeigt links die gemerkten Stellen statt der Stellenliste.
 SAVED_QUERY = "liste=gemerkt"
-
 
 # Sortierung „Passt am besten“ (#42): erst Stundenplan, dann Lehrplan, dann Lohn.
 FIT_RANK = {PASST: 0, FLEXIBEL: 0, TEILWEISE: 1, KOLLIDIERT: 2}
@@ -131,9 +139,13 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
         ).distinct()
     search_params = [("q", q)] if q else []
 
-    # Reihenfolge: Mit Lehrplan (skills) ist „Passt am besten“ Standard, ?reihenfolge=lohn wählt den Lohn.
-    by_wage = skills is None or request.GET.get("reihenfolge") == "lohn"
-    order_params = [("reihenfolge", "lohn")] if skills is not None and by_wage else []
+    # Reihenfolge: Mit Lehrplan (skills) ist „Passt am besten“ Standard, sonst der Lohn.
+    # ?reihenfolge=lohn oder ?reihenfolge=bewertung (#32) wählt eine andere.
+    default_order = "passt" if skills is not None else "lohn"
+    order = request.GET.get("reihenfolge")
+    if order not in SORT_ORDERS or (order == "passt" and skills is None):
+        order = default_order
+    order_params = [("reihenfolge", order)] if order != default_order else []
 
     # Passung: Stundenplan einmal laden, dann pro Stelle rechnen (ohne weitere Abfragen).
     profile = None
@@ -193,7 +205,7 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
             ),
         })
 
-    # Sortiert nach „Passt am besten“ (#42) oder effektivem Stundenlohn (#12). Beides wird in Python
+    # Sortiert nach „Passt am besten“ (#42), effektivem Stundenlohn (#12) oder Bewertung (#32). Alles wird in Python
     # berechnet, nicht in der DB, deshalb laufen auch die Suchfilter erst hier.
     applied = filters if commute_filter else {k: v for k, v in filters.items() if k != "max_anreise"}
     postings = apply_filters(postings, applied)
@@ -202,20 +214,25 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
             posting.requirements = classify(skills, posting.tags.all())
             posting.skill_hint = summary(posting.requirements)
             posting.verdict = verdict(posting.requirements)
-    if by_wage:
+    attach_ratings(postings)
+    if order == "lohn":
         postings = sorted(postings, key=lambda posting: (-posting.effective_wage, posting.title))
+    elif order == "bewertung":
+        postings = sorted(postings, key=rating_key)
     else:
         postings = sorted(postings, key=best_fit_key)
 
-    # Umschalter der Reihenfolge, nur mit Lehrplan. Alle anderen Parameter bleiben erhalten.
-    sort_links = []
-    if skills is not None:
-        base = [(name, value) for name, value in filter_params if name != "reihenfolge"]
-        sort_links = [
-            {"label": "Passt am besten", "active": not by_wage, "url": with_query(request.path, base)},
-            {"label": "Effektiver Lohn", "active": by_wage,
-             "url": with_query(request.path, base + [("reihenfolge", "lohn")])},
-        ]
+    # Umschalter der Reihenfolge, „Passt am besten“ nur mit Lehrplan. Alle anderen Parameter bleiben erhalten.
+    base = [(name, value) for name, value in filter_params if name != "reihenfolge"]
+    sort_links = [
+        {
+            "label": label,
+            "active": key == order,
+            "url": with_query(request.path, base + ([] if key == default_order else [("reihenfolge", key)])),
+        }
+        for key, label in SORT_ORDERS.items()
+        if key != "passt" or skills is not None
+    ]
 
     # Formular „Filter“: Schieberegler plus versteckt alles andere, damit nichts verloren geht.
     # Die Suche in der Kopfzeile behält alles außer q (das ist ihr eigenes Feld).
@@ -267,6 +284,11 @@ def job_detail(request, pk):
     # Knopf „Mit Profil bewerben“ (#14): schon beworben? Firmenkonten bekommen keinen Knopf.
     application = posting.applications.filter(profile=profile).first() if profile else None
     is_company = request.user.is_authenticated and CompanyMember.objects.filter(user=request.user).exists()
+    # Freemium (#62): Wie viele Bewerbungen sind diese Woche noch frei?
+    applications_left = quota.applications_left(profile) if profile and not is_company else None
+
+    # Bewertungen der Firma (#32): Durchschnitt, Texte und, mit Bewerbung, das Formular.
+    review = review_context(profile, posting.company)
 
     # "Das bringst du mit": jede Anforderung eingeordnet (gelernt, kommt noch, nicht im Studium).
     # Ohne Login oder Profil nur die Namen.
@@ -311,6 +333,9 @@ def job_detail(request, pk):
         "is_saved": is_student(request.user) and posting.saved_by.filter(user=request.user).exists(),
         "application": application,
         "is_company": is_company,
+        "review": review,
+        "applications_left": applications_left,
+        "weekly_application_limit": quota.weekly_limit(profile),
     })
 
 
@@ -408,6 +433,7 @@ def saved_postings(user):
         lectures = list(profile.lectures.all())
         for posting in postings:
             posting.fit = posting_fit(posting, lectures)
+    attach_ratings(postings)
     return postings
 
 
@@ -509,6 +535,9 @@ def job_map(request):
             "lon": float(posting.longitude),
             "title": posting.title,
             "company": posting.company.name,
+            # Logo (#73): URL oder, ohne Logo, die Initialen für den Platzhalter.
+            "logo_url": posting.company.logo_url,
+            "initials": posting.company.initials,
             "wage": f"{posting.effective_wage} €".replace(".", ","),
             "travel": f"ca. {minutes} min mit ÖPNV" if minutes is not None else "",
             "url": f"{url}?{filter_query}" if filter_query else url,
@@ -614,3 +643,17 @@ def planned_shift_delete(request, pk, shift_pk):
     shift.delete()
     messages.success(request, f"Schicht entfernt: {shift_label(shift.weekday, shift.start, shift.end)}.")
     return redirect(reverse("job_detail", args=[pk]) + week_query(request))
+
+
+def company_logo(request, pk):
+    """Hochgeladenes Logo einer Firma (#73). Liefert nur company.logo aus, nie andere Dateien aus MEDIA_ROOT."""
+    company = get_object_or_404(Company, pk=pk)
+    if not company.logo:
+        raise Http404("Diese Firma hat kein hochgeladenes Logo.")
+    extension = company.logo.name.rsplit(".", 1)[-1].lower()
+    content_type = LOGO_CONTENT_TYPES.get(extension)
+    if content_type is None:
+        raise Http404("Unbekanntes Bildformat.")
+    response = FileResponse(company.logo.open("rb"), content_type=content_type)
+    response["X-Content-Type-Options"] = "nosniff"
+    return response

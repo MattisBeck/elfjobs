@@ -59,7 +59,7 @@
             {% else %}
               <span class="job-row-wage">{{ posting.distance_km|floatformat:1 }} km</span>
             {% endif %}
-            <span class="job-row-meta">{{ posting.company.name }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>
+            <span class="job-row-meta">{% include "jobs/_company_logo.html" with company=posting.company decorative=True %}{{ posting.company.name }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>
             <span class="job-row-gross">{% if posting.travel_minutes is not None %}{{ posting.distance_km|floatformat:1 }} km · {% endif %}{{ posting.effective_wage }} € effektiv</span>
             {% if posting.verdict %}<span class="fit-badge fit-badge-{{ posting.verdict.level }}">{{ posting.verdict.label }}</span>{% endif %}
             {% if posting.skill_hint %}<span class="job-row-skills">{{ posting.skill_hint }}</span>{% endif %}
@@ -83,7 +83,7 @@
             <a class="job-row" href="{% url 'job_detail' posting.pk %}{% if filter_query %}?{{ filter_query }}{% endif %}">
               <span class="job-row-title">{{ posting.title }}</span>
               <span class="job-row-wage">{{ posting.effective_wage }} €</span>
-              <span class="job-row-meta">{{ posting.company.name }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>
+              <span class="job-row-meta">{% include "jobs/_company_logo.html" with company=posting.company decorative=True %}{{ posting.company.name }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>
               <span class="job-row-gross">brutto {{ posting.hourly_wage }} €</span>
               {% if posting.verdict %}<span class="fit-badge fit-badge-{{ posting.verdict.level }}">{{ posting.verdict.label }}</span>{% endif %}
               {% if posting.skill_hint %}<span class="job-row-skills">{{ posting.skill_hint }}</span>{% endif %}
@@ -145,11 +145,27 @@
     // Popup mit textContent statt HTML-String, damit Titel und Firma nichts einschleusen können.
     markers.forEach(function (marker) {
       var popup = document.createElement("div");
+      // Firmenlogo (#73): Bild mit src aus unseren eigenen URLs, sonst Initialen per textContent.
+      var logo;
+      if (marker.logo_url) {
+        logo = document.createElement("img");
+        logo.src = marker.logo_url;
+        logo.alt = "";
+      } else {
+        logo = document.createElement("span");
+        logo.className = "company-logo-initials";
+        logo.setAttribute("aria-hidden", "true");
+        logo.textContent = marker.initials;
+      }
+      logo.classList.add("company-logo", "company-logo-small");
       var title = document.createElement("strong");
       title.textContent = marker.title;
+      var head = document.createElement("div");
+      head.className = "map-popup-head";
+      head.append(logo, title);
       var meta = document.createElement("div");
       meta.textContent = marker.company + " · " + marker.wage + " effektiv";
-      popup.append(title, meta);
+      popup.append(head, meta);
       if (marker.travel) {
         var travel = document.createElement("div");
         travel.textContent = marker.travel;

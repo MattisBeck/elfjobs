@@ -200,3 +200,36 @@ def test_no_outside_list_when_everything_fits(client, mia, lecture):
     client.force_login(mia)
 
     assert 'class="tt-outside"' not in client.get("/stundenplan/").content.decode()
+
+
+def test_overlapping_lectures_get_columns_and_a_hint(client, mia, lecture):
+    """#135: Zwei Termine zur selben Zeit stehen nebeneinander und sind rot umrandet."""
+    client.force_login(mia)
+
+    response = client.post("/stundenplan/termine/", data(title="Tutorium", start="11:00", end="12:30"))
+
+    created = LectureSlot.objects.get(title="Tutorium")
+    layout = response.json()["layout"]
+    assert layout[str(lecture.pk)] == {"left": "0.0000", "width": "50.0000", "overlaps": ["Tutorium"]}
+    assert layout[str(created.pk)] == {"left": "50.0000", "width": "50.0000", "overlaps": ["Mathematik I"]}
+
+
+def test_lecture_alone_keeps_full_width(client, mia, lecture):
+    client.force_login(mia)
+
+    response = client.post(f"/stundenplan/termine/{lecture.pk}/loeschen/")
+    assert response.json()["layout"] == {}
+
+    response = client.post("/stundenplan/termine/", data())
+    created = LectureSlot.objects.get()
+    assert response.json()["layout"] == {str(created.pk): {"left": "0.0000", "width": "100.0000", "overlaps": []}}
+
+
+def test_timetable_page_sends_layout_to_the_grid(client, mia, lecture):
+    LectureSlot.objects.create(profile=mia.profile, weekday=0, start=time(10, 0), end=time(11, 0), title="Tutorium")
+    client.force_login(mia)
+
+    calendar = client.get("/stundenplan/").context["calendar"]
+
+    assert calendar["layout"][str(lecture.pk)]["width"] == "50.0000"
+    assert calendar["layout"][str(lecture.pk)]["overlaps"] == ["Tutorium"]
