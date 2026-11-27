@@ -1,0 +1,2 @@
+{# Kurzform einer Firmenbewertung (#32): „★ 4,5 (2)“. Erwartet average und count. #}
+<span class="rating"><span aria-hidden="true">★</span> {{ average|floatformat:1 }} <span class="rating-count">({{ count }})</span><span class="visually-hidden"> von 5 Sternen, {{ count }} Bewertung{{ count|pluralize:"en" }}</span></span>

@@ -13,6 +13,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.models import StudentProfile
 from companies.models import CompanyMember
+from reviews.ratings import attach_ratings, rating_key, review_context
 from studies.qualification import LEARNED, classify, skill_lookup, summary, verdict
 from timetable.fit import FLEXIBEL, KOLLIDIERT, PASST, TEILWEISE, posting_fit
 from timetable.models import PlannedShift
@@ -45,6 +46,13 @@ FILTER_CHIPS = {
 # nicht von „Chip aus“ zu unterscheiden wäre).
 PLAN_CHIP_LABEL = "Passt in meinen Plan"
 
+
+# Reihenfolgen der Stellenliste (?reihenfolge=...): „Passt am besten“ gibt es nur mit Lehrplan.
+SORT_ORDERS = {
+    "passt": "Passt am besten",
+    "lohn": "Effektiver Lohn",
+    "bewertung": "Bewertung",
+}
 
 # Sortierung „Passt am besten“ (#42): erst Stundenplan, dann Lehrplan, dann Lohn.
 FIT_RANK = {PASST: 0, FLEXIBEL: 0, TEILWEISE: 1, KOLLIDIERT: 2}
@@ -126,9 +134,13 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
         ).distinct()
     search_params = [("q", q)] if q else []
 
-    # Reihenfolge: Mit Lehrplan (skills) ist „Passt am besten“ Standard, ?reihenfolge=lohn wählt den Lohn.
-    by_wage = skills is None or request.GET.get("reihenfolge") == "lohn"
-    order_params = [("reihenfolge", "lohn")] if skills is not None and by_wage else []
+    # Reihenfolge: Mit Lehrplan (skills) ist „Passt am besten“ Standard, sonst der Lohn.
+    # ?reihenfolge=lohn oder ?reihenfolge=bewertung (#32) wählt eine andere.
+    default_order = "passt" if skills is not None else "lohn"
+    order = request.GET.get("reihenfolge")
+    if order not in SORT_ORDERS or (order == "passt" and skills is None):
+        order = default_order
+    order_params = [("reihenfolge", order)] if order != default_order else []
 
     # Passung: Stundenplan einmal laden, dann pro Stelle rechnen (ohne weitere Abfragen).
     profile = None
@@ -188,7 +200,7 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
             ),
         })
 
-    # Sortiert nach „Passt am besten“ (#42) oder effektivem Stundenlohn (#12). Beides wird in Python
+    # Sortiert nach „Passt am besten“ (#42), effektivem Stundenlohn (#12) oder Bewertung (#32). Alles wird in Python
     # berechnet, nicht in der DB, deshalb laufen auch die Suchfilter erst hier.
     applied = filters if commute_filter else {k: v for k, v in filters.items() if k != "max_anreise"}
     postings = apply_filters(postings, applied)
@@ -197,20 +209,25 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
             posting.requirements = classify(skills, posting.tags.all())
             posting.skill_hint = summary(posting.requirements)
             posting.verdict = verdict(posting.requirements)
-    if by_wage:
+    attach_ratings(postings)
+    if order == "lohn":
         postings = sorted(postings, key=lambda posting: (-posting.effective_wage, posting.title))
+    elif order == "bewertung":
+        postings = sorted(postings, key=rating_key)
     else:
         postings = sorted(postings, key=best_fit_key)
 
-    # Umschalter der Reihenfolge, nur mit Lehrplan. Alle anderen Parameter bleiben erhalten.
-    sort_links = []
-    if skills is not None:
-        base = [(name, value) for name, value in filter_params if name != "reihenfolge"]
-        sort_links = [
-            {"label": "Passt am besten", "active": not by_wage, "url": with_query(request.path, base)},
-            {"label": "Effektiver Lohn", "active": by_wage,
-             "url": with_query(request.path, base + [("reihenfolge", "lohn")])},
-        ]
+    # Umschalter der Reihenfolge, „Passt am besten“ nur mit Lehrplan. Alle anderen Parameter bleiben erhalten.
+    base = [(name, value) for name, value in filter_params if name != "reihenfolge"]
+    sort_links = [
+        {
+            "label": label,
+            "active": key == order,
+            "url": with_query(request.path, base + ([] if key == default_order else [("reihenfolge", key)])),
+        }
+        for key, label in SORT_ORDERS.items()
+        if key != "passt" or skills is not None
+    ]
 
     # Formular „Filter“: Schieberegler plus versteckt alles andere, damit nichts verloren geht.
     # Die Suche in der Kopfzeile behält alles außer q (das ist ihr eigenes Feld).
@@ -258,6 +275,9 @@ def job_detail(request, pk):
     application = posting.applications.filter(profile=profile).first() if profile else None
     is_company = request.user.is_authenticated and CompanyMember.objects.filter(user=request.user).exists()
 
+    # Bewertungen der Firma (#32): Durchschnitt, Texte und, mit Bewerbung, das Formular.
+    review = review_context(profile, posting.company)
+
     # "Das bringst du mit": jede Anforderung eingeordnet (gelernt, kommt noch, nicht im Studium).
     # Ohne Login oder Profil nur die Namen.
     requirements = classify(skills or {}, posting.tags.all())
@@ -299,6 +319,7 @@ def job_detail(request, pk):
         "is_saved": is_student(request.user) and posting.saved_by.filter(user=request.user).exists(),
         "application": application,
         "is_company": is_company,
+        "review": review,
     })
 
 
@@ -341,6 +362,7 @@ def saved_list(request):
         lectures = list(profile.lectures.all())
         for posting in postings:
             posting.fit = posting_fit(posting, lectures)
+    attach_ratings(postings)
     return render(request, "jobs/saved_list.html", {"postings": postings})
 
 

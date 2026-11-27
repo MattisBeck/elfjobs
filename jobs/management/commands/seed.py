@@ -14,6 +14,7 @@ from accounts.models import ProfileSkill, StudentProfile
 from applications.models import Application
 from companies.models import CompanyMember
 from jobs.models import Company, Fair, JobPosting, SavedPosting, Shift, Tag
+from reviews.models import Review
 from studies.curriculum import CURRICULUM
 from studies.models import Course, StudyProgram
 from timetable.models import LectureSlot, PlannedShift
@@ -381,6 +382,37 @@ def create_demo_students(password):
     LectureSlot.objects.bulk_create(lecture_slots)
 
 
+# Bewertungen für Arbeitgeber (#32): so viele Demo-Studierende bewerben sich auf eine Stelle
+# und bewerten die Firma. Sterne eher gut, Gewichte für 1 bis 5 Sterne.
+NUM_REVIEWS = 80
+STAR_WEIGHTS = [5, 10, 20, 35, 30]
+REVIEW_TEXTS = {
+    1: ["Schichten wurden kurzfristig abgesagt.", "Niemand hat auf meine Fragen geantwortet."],
+    2: ["Die Einarbeitung war sehr knapp.", "Schichtplan kam oft erst am Vortag."],
+    3: ["Okay für nebenbei, aber nichts Besonderes.", "Nettes Team, die Arbeit ist eher eintönig."],
+    4: ["Nettes Team und faire Bezahlung.", "Schichten ließen sich gut um die Uni planen."],
+    5: ["Sehr flexibel in der Prüfungsphase.", "Super Einarbeitung, ich habe viel gelernt.", "Rücksicht auf den Stundenplan, gerne wieder."],
+}
+
+
+def create_demo_reviews():
+    """Einige Bewertungen für die Demo-Firmen (#32), nur mit Bewerbung wie in der App.
+
+    Eigener Zufallsgenerator, damit Stellen und Studierende gleich bleiben. Mia bewertet nichts,
+    damit man das Formular in der Demo selbst ausprobieren kann. Eine Bewerbung pro Person.
+    """
+    rng = random.Random(SEED + 32)
+    profiles = list(
+        StudentProfile.objects.filter(user__username__startswith="studi-").order_by("user__username")
+    )
+    postings = list(JobPosting.objects.select_related("company").order_by("id"))
+    for profile in rng.sample(profiles, NUM_REVIEWS):
+        posting = rng.choice(postings)
+        stars = rng.choices(range(1, 6), weights=STAR_WEIGHTS)[0]
+        Application.objects.create(profile=profile, posting=posting)
+        Review.objects.create(profile=profile, company=posting.company, stars=stars, text=rng.choice(REVIEW_TEXTS[stars]))
+
+
 class Command(BaseCommand):
     help = "Füllt die Datenbank mit reproduzierbaren Beispieldaten (Messen, Firmen, Tags, Stellen, Lehrpläne)."
 
@@ -478,11 +510,12 @@ class Command(BaseCommand):
 
         create_demo_student(demo_password)
         create_demo_students(demo_password)
+        create_demo_reviews()
         create_demo_company_account(demo_password)
 
         self.stdout.write(self.style.SUCCESS(
             f"{NUM_POSTINGS} Stellen von {NUM_COMPANIES} Firmen angelegt "
             f"({len(fairs)} Messen, {Tag.objects.count()} Tags, "
             f"{StudyProgram.objects.count()} Studiengänge mit {Course.objects.count()} Modulen), "
-            f"{NUM_STUDENTS} Demo-Studierende, Demo-Login: {DEMO_EMAIL}, Firma: {DEMO_COMPANY_EMAIL}."
+            f"{NUM_STUDENTS} Demo-Studierende, {NUM_REVIEWS} Bewertungen, Demo-Login: {DEMO_EMAIL}, Firma: {DEMO_COMPANY_EMAIL}."
         ))

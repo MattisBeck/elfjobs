@@ -2002,3 +2002,93 @@ a.button {
   overflow-wrap: anywhere;
   hyphens: auto;
 }
+
+/* Bewertungen für Arbeitgeber (#32) */
+.rating {
+  white-space: nowrap;
+}
+
+.rating [aria-hidden="true"],
+.review-stars {
+  color: var(--part-dot);
+}
+
+.rating-count {
+  color: var(--faint);
+}
+
+.reviews {
+  margin-top: 24px;
+}
+
+.reviews-summary {
+  margin-bottom: 12px;
+}
+
+.review-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.review {
+  display: grid;
+  gap: 4px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.review-star-off {
+  color: var(--line-strong);
+}
+
+.review-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+}
+
+.review-form h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.review-stars-input {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.review-stars-input legend {
+  margin-bottom: 4px;
+}
+
+.review-stars-input label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-form textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  font: inherit;
+}
+
+.review-form .button {
+  justify-self: start;
+}
+
+@media (max-width: 720px) {
+  .review-stars-input label {
+    min-height: 44px;
+  }
+}

@@ -61,7 +61,8 @@ def test_list_is_sorted_by_effective_wage(client):
 
     assert list(response.context["postings"]) == [remote, far]
     content = response.content.decode()
-    assert "sortiert nach effektivem Stundenlohn" in content
+    # Ohne Login ist „Effektiver Lohn“ die gewählte Reihenfolge (daneben „Bewertung“, #32).
+    assert 'class="is-active">Effektiver Lohn</a>' in content
     assert "12,00 €" in content and "brutto 18,00 €" in content
 
 
