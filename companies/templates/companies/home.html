@@ -3,27 +3,70 @@
 {% block title %}{{ company.name }} · elfjobs{% endblock %}
 
 {% block content %}
-<section class="form-page company-home">
-  <h1>{{ company.name }}</h1>
+{# Firmenbereich im Stil der Profilseite (#158): Kopf, Kennzahlen, Inhalte in Karten. #}
+<div class="profile-page company-home">
+  <header class="profile-hero">
+    {% include "jobs/_company_logo.html" with company=company size="hero" decorative=True %}
+    <div class="profile-hero-text">
+      <h1>{{ company.name }}</h1>
+      <p class="profile-facts">{{ company.industry }}{% if rating %} · {% include "reviews/_stars.html" with average=rating.average count=rating.count %}{% endif %}</p>
+      <p class="muted">Angemeldet als {{ user.get_full_name|default:user.email }}</p>
+    </div>
+    <nav class="profile-links" aria-label="Aktionen">
+      <a class="button button-primary" href="{% url 'company_posting_new' %}">Neue Stelle</a>
+      <a class="button" href="{% url 'company_availability' %}">Wann haben Studierende Zeit?</a>
+      <a class="button" href="{% url 'fair_list' %}">Messen</a>
+    </nav>
+  </header>
+
+  <ul class="profile-stats">
+    <li><a href="#stellen"><strong>{{ postings|length }}</strong> Stellen</a></li>
+    <li><a href="#stellen"><strong>{{ application_count }}</strong> Bewerbungen</a></li>
+    <li><a href="#messen"><strong>{{ upcoming_fairs|length }}</strong> Messen</a></li>
+    <li><span><strong>{% if rating %}{{ rating.average|floatformat:1 }}{% else %}–{% endif %}</strong> {% if rating %}Sterne · {{ rating.count }} Bewertung{{ rating.count|pluralize:"en" }}{% else %}noch keine Bewertung{% endif %}</span></li>
+  </ul>
+
   {% for message in messages %}
     <p class="notice">{{ message }}</p>
   {% endfor %}
-  <p>
-    <a class="button button-primary" href="{% url 'company_posting_new' %}">Neue Stelle</a>
-    <a class="button" href="{% url 'company_availability' %}">Wann haben Studierende Zeit?</a>
-  </p>
 
-  <h2>Eure Stellen</h2>
-  <ul class="company-postings">
-    {% for posting in postings %}
-      <li>
-        <a href="{% url 'company_posting_edit' posting.pk %}">{{ posting.title }}</a>
-        <span class="muted">{{ posting.get_kind_display }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche · brutto {{ posting.hourly_wage }} €</span>
-        <a class="muted" href="{% url 'job_detail' posting.pk %}">So sehen Studierende sie</a>
-      </li>
-    {% empty %}
-      <li class="muted">Noch keine Stellen. Leg die erste an!</li>
-    {% endfor %}
-  </ul>
-</section>
+  <section id="stellen" class="profile-card">
+    <h2>Eure Stellen</h2>
+    {% if postings %}
+      <ul class="profile-list company-postings">
+        {% for posting in postings %}
+          <li>
+            <div class="profile-list-text">
+              <a href="{% url 'company_posting_edit' posting.pk %}">{{ posting.title }}</a>
+              <span class="muted">{{ posting.get_kind_display }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche · brutto {{ posting.hourly_wage }} €</span>
+              <a class="muted" href="{% url 'job_detail' posting.pk %}">So sehen Studierende sie</a>
+            </div>
+            <span class="status-pill{% if not posting.application_count %} status-pill-muted{% endif %}">{{ posting.application_count }} Bewerbung{{ posting.application_count|pluralize:"en" }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">Noch keine Stellen. <a href="{% url 'company_posting_new' %}">Leg die erste an →</a></p>
+    {% endif %}
+  </section>
+
+  <section id="messen" class="profile-card">
+    <h2>Eure Messen</h2>
+    {% if upcoming_fairs %}
+      <ul class="profile-list">
+        {% for fair in upcoming_fairs %}
+          <li>
+            <span class="fair-date" aria-hidden="true"><strong>{{ fair.date|date:"j" }}</strong>{{ fair.date|date:"M" }}</span>
+            <div class="profile-list-text">
+              <a href="{% url 'fair_list' %}#messe-{{ fair.pk }}">{{ fair.name }}</a>
+              <span class="muted">{{ fair.date|date:"j. F Y" }}, {{ fair.location }}</span>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">Ihr seid auf keiner kommenden Messe. <a href="{% url 'fair_list' %}">Messen ansehen →</a></p>
+    {% endif %}
+  </section>
+</div>
 {% endblock %}

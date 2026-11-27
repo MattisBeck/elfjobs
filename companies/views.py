@@ -8,7 +8,9 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.views import LoginView
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.db.models import Avg, Count
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from jobs.models import JobPosting
 
@@ -59,8 +61,21 @@ def company_signup(request):
 @company_required
 def company_home(request):
     """Firmenbereich: alle Stellen der eigenen Firma."""
-    postings = request.company.postings.prefetch_related("shifts").order_by("-created_at", "-id")
-    return render(request, "companies/home.html", {"company": request.company, "postings": postings})
+    company = request.company
+    postings = list(
+        company.postings.prefetch_related("shifts")
+        .annotate(application_count=Count("applications"))
+        .order_by("-created_at", "-id")
+    )
+    # Kopf und Kennzahlen wie auf der Profilseite der Studierenden (#158).
+    rating = company.reviews.aggregate(average=Avg("stars"), count=Count("id"))
+    return render(request, "companies/home.html", {
+        "company": company,
+        "postings": postings,
+        "application_count": sum(posting.application_count for posting in postings),
+        "rating": rating if rating["count"] else None,
+        "upcoming_fairs": company.fairs.filter(date__gte=timezone.localdate()).order_by("date"),
+    })
 
 
 @company_required
