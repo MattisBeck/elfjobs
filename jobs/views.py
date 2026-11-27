@@ -12,6 +12,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from accounts.models import StudentProfile
+from applications import quota
 from companies.models import CompanyMember
 from studies.qualification import LEARNED, classify, skill_lookup, summary, verdict
 from timetable.fit import FLEXIBEL, KOLLIDIERT, PASST, TEILWEISE, posting_fit
@@ -257,6 +258,8 @@ def job_detail(request, pk):
     # Knopf „Mit Profil bewerben“ (#14): schon beworben? Firmenkonten bekommen keinen Knopf.
     application = posting.applications.filter(profile=profile).first() if profile else None
     is_company = request.user.is_authenticated and CompanyMember.objects.filter(user=request.user).exists()
+    # Freemium (#62): Wie viele Bewerbungen sind diese Woche noch frei?
+    applications_left = quota.applications_left(profile) if profile and not is_company else None
 
     # "Das bringst du mit": jede Anforderung eingeordnet (gelernt, kommt noch, nicht im Studium).
     # Ohne Login oder Profil nur die Namen.
@@ -299,6 +302,8 @@ def job_detail(request, pk):
         "is_saved": is_student(request.user) and posting.saved_by.filter(user=request.user).exists(),
         "application": application,
         "is_company": is_company,
+        "applications_left": applications_left,
+        "weekly_application_limit": quota.weekly_limit(profile),
     })
 
 
