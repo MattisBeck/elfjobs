@@ -26,6 +26,7 @@
   var state = {
     lectures: data.lectures.map(fromJson),
     free: data.free.map(fromJson),
+    layout: data.layout, // Spalten pro Termin-ID, vom Server (#135)
   };
   var urls = data.urls;
   var csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
@@ -171,6 +172,19 @@
     block.appendChild(time);
     block.appendChild(handle);
     place(block, lecture.start, lecture.end);
+    // Überschneidungen nebeneinander und rot umrandet (#135). Die Spalten rechnet der Server
+    // und schickt sie nach jeder Änderung mit; ein neuer Termin steht bis dahin in voller Breite.
+    var layout = state.layout[lecture.id];
+    if (layout) {
+      block.style.setProperty("--left", layout.left + "%");
+      block.style.setProperty("--width", layout.width + "%");
+      if (layout.overlaps.length) {
+        var hint = "Überschneidet sich mit " + layout.overlaps.join(", ");
+        block.classList.add("tt-overlap");
+        block.title = hint;
+        block.setAttribute("aria-label", block.getAttribute("aria-label") + " " + hint + ".");
+      }
+    }
     return block;
   }
 
@@ -215,9 +229,10 @@
     return "Speichern hat nicht geklappt. Bitte lade die Seite neu.";
   }
 
-  // Nach jeder Antwort: Termin übernehmen, freie Blöcke und Stunden neu zeichnen.
+  // Nach jeder Antwort: Termin übernehmen, freie Blöcke, Stunden und Spalten neu zeichnen.
   function applyResponse(json) {
     state.free = json.free.map(fromJson);
+    state.layout = json.layout;
     freeHours.textContent = json.free_hours.toLocaleString("de-DE", { maximumFractionDigits: 1 }) + " h";
   }
 

@@ -7,6 +7,7 @@ als Text mit Punkt formatiert, weil das deutsche Zahlenformat in CSS nicht funkt
 
 from jobs.models import Weekday
 
+from .columns import side_by_side
 from .fit import shift_collides
 from .free_time import DAY_END, DAY_START, to_minutes
 from .planning import block_key, open_blocks
@@ -39,6 +40,9 @@ def week_view(posting, lectures, shifts=None, planned=None):
     kollidieren (gleiche Regel und gleicher Puffer wie die Passung), "conflict".
     Mit planned (eigene Schichten einer flexiblen Stelle, #11) kommen die freien Blöcke
     als "free" (mit "key" für den Link) und die eigenen Schichten als "own" (mit "id") dazu.
+
+    Alle Blöcke außer "free" haben "left" und "width" (#135): Was sich überschneidet, steht
+    nebeneinander. Vorlesungen haben "conflict", wenn eine Schicht mit ihnen kollidiert.
     """
     if shifts is None:
         shifts = list(posting.shifts.all())
@@ -46,26 +50,36 @@ def week_view(posting, lectures, shifts=None, planned=None):
     days = []
     free = open_blocks(lectures, planned) if planned is not None else []
     for weekday in Weekday.values:
+        day_lectures = sorted(
+            (lecture for lecture in lectures if lecture.weekday == weekday), key=lambda lecture: lecture.start
+        )
+        day_shifts = sorted((shift for shift in shifts if shift.weekday == weekday), key=lambda shift: shift.start)
+        conflicts = [shift for shift in day_shifts if shift_collides(shift, lectures, buffer_minutes)]
+        # (Block, Beginn, Ende): alles außer den freien Blöcken, die nie überlappen
+        timed = []
+        for lecture in day_lectures:
+            block = _block("lecture", lecture.title, lecture.start, lecture.end)
+            # Vorlesung, mit der eine Schicht kollidiert: bekommt einen roten Rand (#135)
+            block["conflict"] = any(shift_collides(shift, [lecture], buffer_minutes) for shift in conflicts)
+            timed.append((block, lecture.start, lecture.end))
+        for shift in day_shifts:
+            if shift in conflicts:
+                timed.append((_block("conflict", "Konflikt", shift.start, shift.end), shift.start, shift.end))
+            else:
+                timed.append((_block("shift", "Schicht", shift.start, shift.end), shift.start, shift.end))
+        for shift in sorted(planned or [], key=lambda shift: shift.start):
+            if shift.weekday == weekday:
+                block = {**_block("own", "Deine Schicht", shift.start, shift.end), "id": shift.pk}
+                timed.append((block, shift.start, shift.end))
+        # Überlappende Blöcke nebeneinander statt übereinander (#135)
+        positions = side_by_side([(to_minutes(start), to_minutes(end)) for _, start, end in timed])
+
         blocks = [
             {**_block("free", "+ frei", block.start, block.end), "key": block_key(block)}
             for block in free
             if block.weekday == weekday
         ]
-        blocks += [
-            _block("lecture", lecture.title, lecture.start, lecture.end)
-            for lecture in sorted(lectures, key=lambda lecture: lecture.start)
-            if lecture.weekday == weekday
-        ]
-        for shift in sorted(shifts, key=lambda shift: shift.start):
-            if shift.weekday != weekday:
-                continue
-            if shift_collides(shift, lectures, buffer_minutes):
-                blocks.append(_block("conflict", "Konflikt", shift.start, shift.end))
-            else:
-                blocks.append(_block("shift", "Schicht", shift.start, shift.end))
-        for shift in sorted(planned or [], key=lambda shift: shift.start):
-            if shift.weekday == weekday:
-                blocks.append({**_block("own", "Deine Schicht", shift.start, shift.end), "id": shift.pk})
+        blocks += [{**block, **position} for (block, _, _), position in zip(timed, positions)]
         days.append({"label": DAY_LABELS[weekday], "blocks": blocks})
     hours = [
         {"label": str(hour), "top": f"{_percent(hour * 60):.4f}"}

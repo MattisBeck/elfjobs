@@ -35,7 +35,7 @@
           <li class="tag">{{ posting.hours_per_week }} h pro Woche</li>
         </ul>
         <h1 class="job-title">{{ posting.title }}</h1>
-        <p class="job-company">{{ posting.company.name }} · {{ posting.company.industry }}{% if review.count %} · <a href="#bewertungen">{% include "reviews/_stars.html" with average=review.average count=review.count %}</a>{% endif %}</p>
+        <p class="job-company">{% include "jobs/_company_logo.html" with company=posting.company size="large" decorative=True %}<span>{{ posting.company.name }} · {{ posting.company.industry }}{% if review.count %} · <a href="#bewertungen">{% include "reviews/_stars.html" with average=review.average count=review.count %}</a>{% endif %}</span></p>
         {% if verdict %}
           <p class="fit-badge fit-badge-{{ verdict.level }}">{{ verdict.label }}</p>
           {% if verdict.detail %}<p class="fit-badge-detail">{{ verdict.detail }}</p>{% endif %}
@@ -102,7 +102,7 @@
                       <strong>{{ block.label }}</strong> <span>{{ block.time }}</span>
                     </a>
                   {% elif block.kind == "own" %}
-                    <form class="week-block week-own" method="post" action="{% url 'planned_shift_delete' posting.pk block.id %}" style="top: {{ block.top }}%; height: {{ block.height }}%">
+                    <form class="week-block week-own" method="post" action="{% url 'planned_shift_delete' posting.pk block.id %}" style="top: {{ block.top }}%; height: {{ block.height }}%; --left: {{ block.left }}%; --width: {{ block.width }}%">
                       {% csrf_token %}
                       {% if from_saved %}<input type="hidden" name="liste" value="gemerkt">{% endif %}
                       <button type="submit" aria-label="Deine Schicht {{ day.label }} {{ block.time }} entfernen">
@@ -110,8 +110,9 @@
                       </button>
                     </form>
                   {% else %}
-                    <div class="week-block week-{{ block.kind }}" style="top: {{ block.top }}%; height: {{ block.height }}%">
+                    <div class="week-block week-{{ block.kind }}{% if block.conflict %} week-lecture-conflict{% endif %}" style="top: {{ block.top }}%; height: {{ block.height }}%; --left: {{ block.left }}%; --width: {{ block.width }}%">
                       <strong>{{ block.label }}</strong> <span>{{ block.time }}</span>
+                      {% if block.conflict %}<span class="visually-hidden">Kollidiert mit einer Schicht</span>{% endif %}
                     </div>
                   {% endif %}
                 {% endfor %}
