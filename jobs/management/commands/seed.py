@@ -1,0 +1,105 @@
+import random
+from datetime import date
+from decimal import Decimal
+
+from django.core.management.base import BaseCommand
+from django.db import transaction
+from faker import Faker
+
+from jobs.models import Company, Fair, JobPosting, Tag
+
+SEED = 42
+NUM_COMPANIES = 20
+NUM_POSTINGS = 200
+
+FAIRS = [
+    ("Jobmesse Potsdam 2027", date(2027, 3, 11), "Potsdam"),
+    ("Karrieretag Berlin", date(2027, 4, 22), "Berlin"),
+    ("Campus Recruiting Day", date(2027, 5, 18), "Potsdam"),
+    ("Werkstudierenden-Forum Hamburg", date(2027, 6, 9), "Hamburg"),
+    ("Talente-Treff Leipzig", date(2027, 10, 14), "Leipzig"),
+]
+
+INDUSTRIES = ["Bank", "Tech", "Beratung", "Gastro", "Handel", "Logistik", "Medien", "Gesundheit"]
+
+TAGS = [
+    "Python", "Excel", "SQL", "JavaScript", "Englisch", "Social Media",
+    "Informatik", "BWL", "Wirtschaftsinformatik", "Jura", "Design",
+    "Psychologie", "Maschinenbau", "Kommunikation", "Teamfähigkeit",
+]
+
+# Wertebereiche je Stellenart: Stunden pro Woche, Stundenlohn in Euro, Titel
+KINDS = {
+    JobPosting.Kind.WORKING_STUDENT: {
+        "hours": (10, 20),
+        "wage": (15, 22),
+        "titles": [
+            "Werkstudent*in Data Analytics", "Werkstudent*in Marketing",
+            "Werkstudent*in Softwareentwicklung", "Werkstudent*in Controlling",
+            "Werkstudent*in HR", "Werkstudent*in IT-Support",
+            "Werkstudent*in Vertrieb", "Werkstudent*in Projektmanagement",
+        ],
+    },
+    JobPosting.Kind.SHORT_JOB: {
+        "hours": (3, 12),
+        "wage": (13, 17),
+        "titles": [
+            "Aushilfe Inventur", "Servicekraft Messecatering", "Promoter*in",
+            "Aushilfe Lager", "Event-Helfer*in", "Kassenaushilfe",
+            "Umfrage-Interviewer*in", "Flyer-Verteilung",
+        ],
+    },
+}
+
+
+def random_wage(low, high):
+    """Zufälliger Stundenlohn, auf 0,50 € genau."""
+    return Decimal(random.randint(low * 2, high * 2)) / 2
+
+
+class Command(BaseCommand):
+    help = "Füllt die Datenbank mit reproduzierbaren Beispieldaten (Messen, Firmen, Tags, Stellen)."
+
+    @transaction.atomic
+    def handle(self, *args, **options):
+        # Immer gleiche Zufallszahlen, damit alle im Team dieselben Daten sehen.
+        random.seed(SEED)
+        Faker.seed(SEED)
+        fake = Faker("de_DE")
+
+        # Alte Daten löschen (User bleiben unberührt).
+        JobPosting.objects.all().delete()
+        Company.objects.all().delete()
+        Fair.objects.all().delete()
+        Tag.objects.all().delete()
+
+        fairs = [Fair.objects.create(name=n, date=d, location=loc) for n, d, loc in FAIRS]
+        tags = [Tag.objects.create(name=name) for name in TAGS]
+
+        # Die ersten Firmen decken jede Branche ab, der Rest wird zufällig gewählt.
+        industries = INDUSTRIES + random.choices(INDUSTRIES, k=NUM_COMPANIES - len(INDUSTRIES))
+        companies = []
+        for industry in industries:
+            company = Company.objects.create(name=fake.company(), industry=industry)
+            company.fairs.set(random.sample(fairs, random.randint(0, 2)))
+            companies.append(company)
+
+        for _ in range(NUM_POSTINGS):
+            kind = random.choice(list(KINDS))
+            rules = KINDS[kind]
+            posting = JobPosting.objects.create(
+                company=random.choice(companies),
+                title=random.choice(rules["titles"]),
+                description=fake.paragraph(nb_sentences=3),
+                kind=kind,
+                workplace=random.choice(JobPosting.Workplace.values),
+                schedule=random.choice(JobPosting.Schedule.values),
+                hourly_wage=random_wage(*rules["wage"]),
+                hours_per_week=random.randint(*rules["hours"]),
+            )
+            posting.tags.set(random.sample(tags, random.randint(0, 3)))
+
+        self.stdout.write(self.style.SUCCESS(
+            f"{NUM_POSTINGS} Stellen von {NUM_COMPANIES} Firmen angelegt "
+            f"({len(fairs)} Messen, {len(tags)} Tags)."
+        ))
