@@ -223,12 +223,12 @@
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
       }).addTo(map);
 
-      // Tooltips mit textContent statt HTML-String, damit Titel und Firma nichts einschleusen können.
-      var label = document.createElement("span");
-      label.textContent = data.title + " · " + data.company;
+      // Der Marker der Stelle bleibt ohne Beschriftung: Titel und Firma stehen direkt darüber,
+      // und eine lange Beschriftung würde am Kartenrand abgeschnitten. Name für Screenreader per textContent.
       L.circleMarker([data.lat, data.lon], {
         radius: 8, color: "#fff", weight: 2, fillColor: "#2F5BD8", fillOpacity: 0.95, interactive: false,
-      }).addTo(map).bindTooltip(label, { permanent: true, direction: "top", offset: [0, -8] });
+      }).addTo(map);
+      document.getElementById("detail-map").setAttribute("aria-label", "Karte: Lage von " + data.title + " · " + data.company);
 
       if (data.home) {
         L.circleMarker([data.home.lat, data.home.lon], {
