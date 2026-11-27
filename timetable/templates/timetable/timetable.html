@@ -68,6 +68,17 @@
       </form>
     </section>
   </div>
+
+  {# Stundenplan als ICS-Datei (#43) #}
+  <section class="timetable-add">
+    <h2>Aus dem Kalender übernehmen</h2>
+    <p class="muted">Exportiere deinen Stundenplan als .ics (z. B. aus dem Uni-Kalender). Wöchentliche Termine von Montag bis Freitag übernehmen wir, du siehst sie vorher.</p>
+    <form method="post" action="{% url 'ics_upload' %}" enctype="multipart/form-data" class="form form-inline">
+      {% csrf_token %}
+      {{ upload_form.as_div }}
+      <button type="submit" class="button">Datei lesen</button>
+    </form>
+  </section>
 </section>
 <script src="{% static 'js/timetable.js' %}" defer></script>
 {% endblock %}

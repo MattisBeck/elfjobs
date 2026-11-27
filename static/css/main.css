@@ -1790,6 +1790,25 @@ a.button {
   }
 }
 
+/* Stundenplan aus ICS: Vorschau (#43) */
+.ics-preview {
+  margin: var(--space-4) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ics-preview li {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+
+.ics-preview .lecture-time {
+  display: inline-block;
+  min-width: 9em;
+  color: var(--muted);
+}
+
 /* Stundenplan wie im Kalender (#87): dasselbe Raster wie „In meiner Woche“, zum Ziehen */
 .tt-editor {
   position: relative;

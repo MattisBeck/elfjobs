@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Kalender übernehmen · elfjobs{% endblock %}
+
+{% block content %}
+<section class="form-page">
+  <h1>Aus dem Kalender übernehmen</h1>
+  <p>{{ slots|length }} Termin{{ slots|length|pluralize:"e" }} gefunden, {{ skipped }} übersprungen.</p>
+  <p class="muted">Übersprungen werden Einzeltermine (z. B. Klausuren), ganztägige Termine und Termine am Wochenende.</p>
+  <ul class="ics-preview">
+    {% for slot in slots %}
+      <li><span class="lecture-time">{{ slot.day }} {{ slot.start|time:"G:i" }}–{{ slot.end|time:"G:i" }}</span> {{ slot.title }}</li>
+    {% endfor %}
+  </ul>
+  <form method="post" class="form">
+    {% csrf_token %}
+    <label><input type="checkbox" name="ersetzen" value="1"> Bisherige Termine ersetzen</label>
+    <div class="onboarding-actions">
+      <button type="submit" class="button button-primary">Übernehmen</button>
+      <a class="button" href="{% url 'timetable' %}">Abbrechen</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
