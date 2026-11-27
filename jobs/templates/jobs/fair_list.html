@@ -30,11 +30,17 @@
         <div class="fair-company">
           <h3>{{ company.name }} <span class="muted">· {{ company.industry }}</span></h3>
           {% if company.postings.all %}
+            {# Höchstens 3 Stellen, damit die Liste auf dem Handy kurz bleibt (#102). #}
             <ul>
-              {% for posting in company.postings.all %}
+              {% for posting in company.postings.all|slice:":3" %}
                 <li><a href="{% url 'job_detail' posting.pk %}">{{ posting.title }}</a></li>
               {% endfor %}
             </ul>
+            {% with total=company.postings.all|length %}
+              {% if total > 3 %}
+                <p><a href="{% url 'job_list' %}?q={{ company.name|urlencode:'' }}">+{{ total|add:"-3" }} weitere</a></p>
+              {% endif %}
+            {% endwith %}
           {% else %}
             <p class="muted">Gerade keine offenen Stellen.</p>
           {% endif %}
