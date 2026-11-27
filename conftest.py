@@ -9,6 +9,6 @@ def demo_password(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def media_root(settings, tmp_path):
-    """Hochgeladene Dateien (#38) landen in Tests in einem Temp-Ordner, nie im Repo."""
+    """Hochgeladene Dateien (Lebensläufe #38, Firmenlogos #73) landen in Tests in einem Temp-Ordner, nie im Repo."""
     settings.MEDIA_ROOT = tmp_path / "media"
     return settings.MEDIA_ROOT

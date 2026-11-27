@@ -1,0 +1,5 @@
+{% comment %}
+Firmenlogo (#73) oder, ohne Logo, die Initialen in der Akzentfarbe.
+Parameter: company, size ("small" in Listen, "large" im Stellendetail),
+decorative (True, wenn der Firmenname direkt daneben steht: dann alt="" bzw. aria-hidden).
+{% endcomment %}{% if company.logo_url %}<img class="company-logo company-logo-{{ size|default:'small' }}" src="{{ company.logo_url }}" alt="{% if not decorative %}{{ company.name }}{% endif %}">{% else %}<span class="company-logo company-logo-{{ size|default:'small' }} company-logo-initials"{% if decorative %} aria-hidden="true"{% else %} role="img" aria-label="{{ company.name }}"{% endif %}>{{ company.initials }}</span>{% endif %}

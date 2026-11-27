@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Prefetch, Q
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -32,7 +32,7 @@ from .filters import (
     slider_settings,
 )
 from .geo import BERLIN_MITTE, haversine_km, parse_start
-from .models import Company, Fair, JobPosting, SavedPosting
+from .models import LOGO_CONTENT_TYPES, Company, Fair, JobPosting, SavedPosting
 from .travel import MAX_TRAVEL_REQUESTS, apply_home_commutes, cached_travel_times, fetch_travel_times
 
 # Filter-Chips der Stellenliste: GET-Parameter "filter", mehrere kombinierbar.
@@ -503,6 +503,9 @@ def job_map(request):
             "lon": float(posting.longitude),
             "title": posting.title,
             "company": posting.company.name,
+            # Logo (#73): URL oder, ohne Logo, die Initialen für den Platzhalter.
+            "logo_url": posting.company.logo_url,
+            "initials": posting.company.initials,
             "wage": f"{posting.effective_wage} €".replace(".", ","),
             "travel": f"ca. {minutes} min mit ÖPNV" if minutes is not None else "",
             "url": f"{url}?{filter_query}" if filter_query else url,
@@ -608,3 +611,17 @@ def planned_shift_delete(request, pk, shift_pk):
     shift.delete()
     messages.success(request, f"Schicht entfernt: {shift_label(shift.weekday, shift.start, shift.end)}.")
     return redirect(reverse("job_detail", args=[pk]) + week_query(request))
+
+
+def company_logo(request, pk):
+    """Hochgeladenes Logo einer Firma (#73). Liefert nur company.logo aus, nie andere Dateien aus MEDIA_ROOT."""
+    company = get_object_or_404(Company, pk=pk)
+    if not company.logo:
+        raise Http404("Diese Firma hat kein hochgeladenes Logo.")
+    extension = company.logo.name.rsplit(".", 1)[-1].lower()
+    content_type = LOGO_CONTENT_TYPES.get(extension)
+    if content_type is None:
+        raise Http404("Unbekanntes Bildformat.")
+    response = FileResponse(company.logo.open("rb"), content_type=content_type)
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
