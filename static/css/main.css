@@ -205,7 +205,11 @@ a {
     width: 100%;
   }
 
-  .main-nav a {
+  /* Klickflächen auf dem Handy mindestens 44 px hoch (docs/design.md) */
+  .main-nav a,
+  .wordmark,
+  .profile-button,
+  .login-link {
     display: flex;
     align-items: center;
     min-height: 44px;
