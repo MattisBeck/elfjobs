@@ -32,6 +32,14 @@
   </p>
   {% if not selected_pk %}
     <p class="map-link"><a href="{% url 'job_map' %}{% if filter_query %}?{{ filter_query }}{% endif %}">Auf der Karte ansehen</a></p>
+    {% if user.is_authenticated %}
+      {# Job-Alert (#34): die aktuellen Filter speichern. #}
+      <form class="alert-save" method="post" action="{% url 'alert_create' %}">
+        {% csrf_token %}
+        <input type="hidden" name="query" value="{{ filter_query }}">
+        <button type="submit" class="button">Als Alert speichern</button>
+      </form>
+    {% endif %}
   {% endif %}
 
   <ul class="job-rows">
