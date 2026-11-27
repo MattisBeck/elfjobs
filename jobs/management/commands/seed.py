@@ -150,7 +150,13 @@ def create_demo_student(password):
     itse = StudyProgram.objects.get(university="HPI", abbreviation="ITSE")
     profile, _ = StudentProfile.objects.update_or_create(
         user=user,
-        defaults={"study_program": itse, "semester": 1, "home_town": "Potsdam"},
+        # Lebenslauf gewählt, aber noch nichts übernommen: In der Demo kann man „Übernehmen“ ausprobieren (#50).
+        defaults={
+            "study_program": itse,
+            "semester": 1,
+            "home_town": "Potsdam",
+            "cv_sample": StudentProfile.CvSample.MIA,
+        },
     )
     profile.skills.set(
         Tag.objects.filter(name__in=["Python", "Englisch", "Informatik"]),

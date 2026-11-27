@@ -51,6 +51,16 @@ Demo-Login für die Seite: `mia@student.hpi.uni-potsdam.de` mit dem Passwort `DE
 
 Jede Person hat ihre eigene lokale Datenbank. `seed` erzeugt bei allen dieselben Demo-Daten, den Admin-Benutzer legt jede Person selbst an.
 
+## Lehrplan importieren (optional)
+
+`seed` legt nur einen festen, vereinfachten Lehrplan an. Den echten Modulkatalog von IT-Systems Engineering (HPI) liest dieser Befehl ein:
+
+```
+docker compose exec backend uv run python manage.py import_lehrplan itse
+```
+
+Der Befehl braucht Internet: Er lädt die Modulliste aus PULS (Uni Potsdam, von hpi.de verlinkt), wartet höchstens 10 Sekunden und legt die Module mit Semester an oder aktualisiert sie. Ein zweiter Lauf legt nichts doppelt an. Die Skills je Modul kommen aus einer festen Stichwort-Liste in `studies/management/commands/import_lehrplan.py`; Module ohne passendes Stichwort listet der Befehl am Ende auf. Ohne Internet geht es mit einer gespeicherten Kopie: `--datei studies/tests/fixtures/modulkatalog_itse.html`.
+
 ## Claude Code
 
 Das Repo bringt Werkzeuge für Claude Code mit, die nach `git pull` automatisch da sind:

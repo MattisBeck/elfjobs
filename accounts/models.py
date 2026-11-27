@@ -3,6 +3,16 @@ from django.db import models
 
 
 class StudentProfile(models.Model):
+    class CvSample(models.TextChoices):
+        """Beispiel-Lebensläufe aus accounts/sample_cvs/ (#50). Der echte Upload kommt mit #38."""
+
+        MIA = "mia-itse", "Mia Sommer · IT-Systems Engineering"
+        JULIA = "julia-politik", "Julia Brandt · Politikwissenschaft"
+        JUSTUS = "justus-bwl", "Justus Albrecht · BWL"
+        PAULA = "paula-psychologie", "Paula Wendt · Psychologie"
+        JONAS = "jonas-wirtschaftsinformatik", "Jonas Petersen · Wirtschaftsinformatik"
+        SCAN = "scan-ohne-text", "Eingescannt, ohne Text"
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile", verbose_name="Konto"
     )
@@ -24,6 +34,7 @@ class StudentProfile(models.Model):
     courses = models.ManyToManyField(
         "studies.Course", related_name="students", blank=True, verbose_name="Belegte Module"
     )
+    cv_sample = models.CharField("Beispiel-Lebenslauf", max_length=50, choices=CvSample.choices, blank=True)
 
     class Meta:
         verbose_name = "Studi-Profil"
@@ -42,11 +53,11 @@ class StudentProfile(models.Model):
 
 
 class ProfileSkill(models.Model):
-    """Ein Skill, den die Studentin selbst angegeben hat, mit Herkunft."""
+    """Ein Skill, den die Studentin selbst angegeben oder aus dem Lebenslauf übernommen hat."""
 
     class Source(models.TextChoices):
         PROFILE = "profil", "aus deinem Profil"
-        CV = "lebenslauf", "aus deinem Lebenslauf"  # wird mit #50 befüllt
+        CV = "lebenslauf", "aus deinem Lebenslauf"  # bestätigte Vorschläge, siehe accounts/cv.py
 
     profile = models.ForeignKey(
         StudentProfile, on_delete=models.CASCADE, related_name="profile_skills", verbose_name="Studi-Profil"
