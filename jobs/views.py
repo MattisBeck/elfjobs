@@ -64,6 +64,10 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
     Mit skills (aus student_skills) bekommt jede Stelle einen Hinweis wie
     „2 von 3 Anforderungen aus dem Studium“ (posting.skill_hint).
 
+    Mit Stundenplan (eingeloggt mit Profil) bekommt jede Stelle ihre Passung (posting.fit,
+    siehe timetable/fit.py). Der Chip „Passt in meinen Plan“ ist dann an und zeigt nur
+    passende und flexible Stellen; ?plan=aus schaltet ihn ab und bleibt in allen Links erhalten.
+
     Gibt (postings, chips, filter_params, filter_form) zurück. filter_params sind alle
     aktiven Filter als (Name, Wert)-Paare für Links, filter_form die Daten für das
     Filter-Formular und die versteckten Felder der Suche in der Kopfzeile.
