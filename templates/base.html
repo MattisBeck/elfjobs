@@ -25,6 +25,10 @@
       {% elif not user.is_authenticated %}
         <span aria-disabled="true">Gemerkt</span>
       {% endif %}
+      {# Stundenplan (#140): wie „Gemerkt“ nur für eingeloggte Studierende #}
+      {% if saved_count is not None %}
+        <a href="{% url 'timetable' %}"{% if request.path|slice:":13" == "/stundenplan/" %} aria-current="page"{% endif %}>Stundenplan</a>
+      {% endif %}
       <a href="{% url 'fair_list' %}"{% if request.resolver_match.url_name == "fair_list" %} aria-current="page"{% endif %}>Messen</a>
     </nav>
 

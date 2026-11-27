@@ -9,9 +9,11 @@ from django.views.decorators.http import require_POST
 
 from accounts.models import StudentProfile
 from jobs.models import Weekday
+from jobs.travel import apply_home_commutes
 
 from .forms import IcsUploadForm, LectureSlotForm
 from .free_time import DAY_END, DAY_START, free_blocks, free_hours
+from .conflicts import shift_conflicts
 from .ics import IcsError, parse_ics
 from .models import LectureSlot
 
@@ -41,20 +43,28 @@ def timetable(request):
 def render_timetable(request, profile, form, upload_form):
     lectures = list(profile.lectures.all())
     blocks = free_blocks(lectures)
+    shifts = planned_shifts(profile)
+    conflicts = shift_conflicts(shifts, lectures)
+    for shift in shifts:
+        shift.conflict_text = "; ".join(conflicts.get(shift.pk, []))
     # Pro Tag Termine und freie Blöcke gemeinsam nach Uhrzeit, wie in einem Kalender.
     days = []
     for weekday, label in Weekday.choices:
         entries = [{"lecture": l, "start": l.start} for l in lectures if l.weekday == weekday]
         entries += [{"free": b, "start": b.start} for b in blocks if b.weekday == weekday]
+        entries += [{"shift": s, "start": s.start} for s in shifts if s.weekday == weekday]
         entries.sort(key=lambda entry: entry["start"])
         days.append({
             "label": label,
             "entries": entries,
             "has_lectures": any("lecture" in entry for entry in entries),
+            "has_items": any("free" not in entry for entry in entries),
         })
     return render(request, "timetable/timetable.html", {
         "days": days,
         "free_hours": free_hours(blocks),
+        "shifts": shifts,
+        "conflict_shifts": [shift for shift in shifts if shift.conflict_text],
         "form": form,
         "upload_form": upload_form,
         "outside": [lecture for lecture in sorted(lectures, key=lambda l: (l.weekday, l.start)) if not in_grid(lecture)],
@@ -63,6 +73,8 @@ def render_timetable(request, profile, form, upload_form):
         "calendar": {
             **calendar_state(lectures),
             "lectures": [lecture_json(lecture) for lecture in lectures if in_grid(lecture)],
+            # Eigene Schichten (#140): nur anzeigen, nicht ziehbar. Ändern und Löschen geht bei der Stelle.
+            "shifts": [shift_json(shift) for shift in shifts],
             "urls": {
                 "create": reverse("lecture_api_create"),
                 # Platzhalter 0 ersetzt das JavaScript durch die ID des Termins.
@@ -71,6 +83,29 @@ def render_timetable(request, profile, form, upload_form):
             },
         },
     })
+
+
+def planned_shifts(profile):
+    """Eigene Schichten (#11) mit Stelle und Firma. Die Fahrzeit vom Wohnort wie bei der Passung (#53)."""
+    shifts = list(profile.planned_shifts.select_related("posting__company"))
+    postings = {shift.posting_id: shift.posting for shift in shifts}
+    apply_home_commutes(profile, list(postings.values()))
+    for shift in shifts:
+        shift.posting = postings[shift.posting_id]
+    return shifts
+
+
+def shift_json(shift):
+    return {
+        "id": shift.pk,
+        "title": shift.posting.title,
+        "company": shift.posting.company.name,
+        "weekday": shift.weekday,
+        "start": shift.start.strftime("%H:%M"),
+        "end": shift.end.strftime("%H:%M"),
+        "url": reverse("job_detail", args=[shift.posting_id]) + "?ansicht=woche",
+        "conflict": shift.conflict_text,
+    }
 
 
 # JSON-Endpunkte für das Wochenraster (#87). Gleiche Regeln wie das Formular:
