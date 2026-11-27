@@ -42,13 +42,22 @@ KINDS = {
     },
     JobPosting.Kind.SHORT_JOB: {
         "hours": (3, 12),
-        "wage": (13, 17),
+        "wage": (13, 17),  # wird auf MIN_WAGE angehoben, siehe unten
         "titles": [
             "Aushilfe Inventur", "Servicekraft Messecatering", "Promoter*in",
             "Aushilfe Lager", "Event-Helfer*in", "Kassenaushilfe",
             "Umfrage-Interviewer*in", "Flyer-Verteilung",
         ],
     },
+}
+
+# Kein Seed-Lohn liegt darunter (Mindestlohn 2026: 13,90 €).
+MIN_WAGE = Decimal("14.00")
+
+# Diese Jobs gehen nur vor Ort, alle anderen können auch hybrid oder remote sein.
+ONSITE_ONLY_TITLES = {
+    "Aushilfe Inventur", "Servicekraft Messecatering", "Aushilfe Lager",
+    "Event-Helfer*in", "Kassenaushilfe", "Flyer-Verteilung",
 }
 
 
@@ -87,14 +96,24 @@ class Command(BaseCommand):
         for _ in range(NUM_POSTINGS):
             kind = random.choice(list(KINDS))
             rules = KINDS[kind]
+            # Reihenfolge der Zufallsaufrufe nicht ändern: docs/design.md und die
+            # Issues verweisen auf konkrete Seed-Stellen (z. B. Promoter*in, Weihmann GbR).
+            company = random.choice(companies)
+            title = random.choice(rules["titles"])
+            description = fake.paragraph(nb_sentences=3)
+            workplace = random.choice(JobPosting.Workplace.values)
+            if title in ONSITE_ONLY_TITLES:
+                workplace = JobPosting.Workplace.ONSITE
+            schedule = random.choice(JobPosting.Schedule.values)
+            hourly_wage = max(random_wage(*rules["wage"]), MIN_WAGE)
             posting = JobPosting.objects.create(
-                company=random.choice(companies),
-                title=random.choice(rules["titles"]),
-                description=fake.paragraph(nb_sentences=3),
+                company=company,
+                title=title,
+                description=description,
                 kind=kind,
-                workplace=random.choice(JobPosting.Workplace.values),
-                schedule=random.choice(JobPosting.Schedule.values),
-                hourly_wage=random_wage(*rules["wage"]),
+                workplace=workplace,
+                schedule=schedule,
+                hourly_wage=hourly_wage,
                 hours_per_week=random.randint(*rules["hours"]),
             )
             posting.tags.set(random.sample(tags, random.randint(0, 3)))
