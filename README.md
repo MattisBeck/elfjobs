@@ -106,3 +106,4 @@ Das Repo bringt Werkzeuge für Claude Code mit, die nach `git pull` automatisch 
 - Jede Änderung kommt mit pytest-Tests. Tests ausführen: `docker compose exec backend uv run pytest`.
 - Bei einem Konflikt in `uv.lock` eine Seite übernehmen und anschließend `uv lock` ausführen.
 - Datenbank zurücksetzen: `docker compose down -v`. Das löscht alle Daten; danach `migrate` und `seed` erneut ausführen.
+- Hochgeladene Lebensläufe liegen im Ordner `media/` im Projekt (über den Bind-Mount, kein eigenes Volume). Er steht in `.gitignore` und wird nicht öffentlich ausgeliefert, nur über die Views mit Rechteprüfung. Beim Zurücksetzen der Datenbank den Ordner ebenfalls löschen.

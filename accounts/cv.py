@@ -35,8 +35,10 @@ SYNONYMS = {
 }
 
 
-def sample_cv_path(profile):
-    """Pfad zum gewählten Beispiel-Lebenslauf oder None. Später (#38) kommt der echte Upload dazu."""
+def cv_path(profile):
+    """Pfad zum Lebenslauf oder None: der hochgeladene (#38), sonst der gewählte Beispiel-Lebenslauf."""
+    if profile.cv_file:
+        return profile.cv_file.path
     if not profile.cv_sample:
         return None
     return SAMPLE_CV_FOLDER / f"{profile.cv_sample}.pdf"
@@ -76,7 +78,7 @@ def cv_suggestions(profile):
     (Tag, Quelle), z. B. (Python, "aus deinem Profil"). Die Vorschläge werden bei jedem
     Aufruf aus dem PDF berechnet, gespeichert wird erst, was die Studentin übernimmt.
     """
-    path = sample_cv_path(profile)
+    path = cv_path(profile)
     if path is None:
         return [], []
     sources = skill_sources(profile)

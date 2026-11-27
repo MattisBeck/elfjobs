@@ -6,10 +6,12 @@ from decimal import Decimal
 
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
+from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from faker import Faker
 
+from accounts.cv import SAMPLE_CV_FOLDER
 from accounts.models import ProfileSkill, StudentProfile
 from applications.models import Application
 from companies.models import CompanyMember
@@ -249,8 +251,13 @@ def create_demo_student(password):
     for posting in JobPosting.objects.order_by("id")[:DEMO_SAVED_POSTINGS]:
         SavedPosting.objects.create(user=user, posting=posting)
     # Mia hat sich auf zwei Werkstudentenstellen beworben (#14), damit „Meine Bewerbungen“ etwas zeigt.
+    # Mit ihrem Beispiel-Lebenslauf (#38), damit der Admin bei der Bewerbung einen Lebenslauf zeigt.
+    # Im Profil bleibt der Beispiel-Lebenslauf gewählt, damit „Auslesen“ (#50) in der Demo funktioniert.
+    sample_cv = (SAMPLE_CV_FOLDER / f"{StudentProfile.CvSample.MIA}.pdf").read_bytes()
     for posting in JobPosting.objects.filter(kind=JobPosting.Kind.WORKING_STUDENT).order_by("id")[:2]:
-        Application.objects.get_or_create(profile=profile, posting=posting)
+        application, _ = Application.objects.get_or_create(profile=profile, posting=posting)
+        if not application.cv:
+            application.cv.save("lebenslauf.pdf", ContentFile(sample_cv))
 
     # Mias Stundenplan aus docs/design.md, bei jedem Seed neu.
     profile.lectures.all().delete()

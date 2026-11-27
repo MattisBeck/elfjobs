@@ -17,16 +17,29 @@
     <button type="submit" class="button button-primary">Speichern</button>
   </form>
 
-  {# Lebenslauf (#50): vorerst nur Beispiel-Lebensläufe, der echte Upload kommt mit #38. #}
+  {# Lebenslauf: eigenes PDF hochladen (#38), sonst ein Beispiel-Lebenslauf (#50). Das eigene PDF geht vor. #}
   <section id="lebenslauf" class="cv-section">
     <h2>Lebenslauf</h2>
-    <form method="post" action="{% url 'cv_select' %}" class="form">
+    <form method="post" action="{% url 'cv_upload' %}" enctype="multipart/form-data" class="form">
       {% csrf_token %}
-      {{ cv_form.as_div }}
-      <button type="submit" class="button">Auslesen</button>
+      {{ cv_upload_form.as_div }}
+      <p class="muted">Nur PDF, höchstens 5 MB. Wenn du dich bewirbst, schicken wir ihn mit.</p>
+      <button type="submit" class="button">{% if user.profile.cv_file %}Ersetzen{% else %}Hochladen{% endif %}</button>
     </form>
+    {% if user.profile.cv_file %}
+      <form method="post" action="{% url 'cv_delete' %}">
+        {% csrf_token %}
+        <button type="submit" class="button">Lebenslauf löschen</button>
+      </form>
+    {% else %}
+      <form method="post" action="{% url 'cv_select' %}" class="form">
+        {% csrf_token %}
+        {{ cv_form.as_div }}
+        <button type="submit" class="button">Auslesen</button>
+      </form>
+    {% endif %}
 
-    {% if user.profile.cv_sample %}
+    {% if has_cv %}
       <p class="muted"><a href="{% url 'cv_pdf' %}" target="_blank">Lebenslauf ansehen (PDF)</a></p>
 
       {% if cv_new_skills %}
@@ -57,7 +70,7 @@
   <section id="bewerbungen" class="my-applications">
     <h2>Meine Bewerbungen</h2>
     {% for application in my_applications %}
-      <p><a href="{% url 'job_detail' application.posting.pk %}">{{ application.posting.title }}</a> <span class="muted">· {{ application.posting.company.name }} · {{ application.applied_at|date:"d.m.Y" }} · {{ application.get_status_display }}</span></p>
+      <p><a href="{% url 'job_detail' application.posting.pk %}">{{ application.posting.title }}</a> <span class="muted">· {{ application.posting.company.name }} · {{ application.applied_at|date:"d.m.Y" }} · {{ application.get_status_display }}{% if application.cv %} · <a href="{% url 'sent_cv' application.pk %}" target="_blank">mit Lebenslauf</a>{% endif %}</span></p>
     {% empty %}
       <p class="muted">Noch keine. Im Stellendetail bewirbst du dich mit einem Klick: <a href="{% url 'job_list' %}">Jobs ansehen →</a></p>
     {% endfor %}

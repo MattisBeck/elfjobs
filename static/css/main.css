@@ -676,7 +676,8 @@ a {
     position: sticky;
     top: 0;
     align-self: start;
-    max-height: 100vh;
+    /* Feste Höhe statt max-height: Bei kurzen Listen (Gemerkt, #127) reicht der graue Hintergrund bis unten. */
+    height: 100vh;
     overflow-y: auto;
   }
 }
@@ -1169,6 +1170,21 @@ a.button {
 .job-map {
   height: 420px;
   border-bottom: 1px solid var(--line);
+}
+
+/* Kleines Kartenfenster im Stellendetail (#75). */
+.detail-map {
+  width: 100%;
+  height: 180px;
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.detail-map-link {
+  margin: 6px 0 0;
+  font-size: 13px;
 }
 
 @media (min-width: 901px) {
