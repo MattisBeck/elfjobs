@@ -1,9 +1,11 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Anmelden · elfjobs{% endblock %}
 
 {% block content %}
 <section class="form-page">
+  <img class="form-logo" src="{% static 'img/elfjobs-logo.svg' %}" alt="elfjobs">
   <h1>Anmelden</h1>
   <form method="post" class="form">
     {% csrf_token %}
