@@ -1,5 +1,10 @@
 <section class="job-list" aria-labelledby="job-list-heading">
-  <h1 id="job-list-heading" class="job-list-heading">Jobs für deine Woche</h1>
+  {# Auf der Detailseite ist der Stellentitel die h1, die Liste daneben nur h2. #}
+  {% if selected_pk %}
+    <h2 id="job-list-heading" class="job-list-heading">Jobs für deine Woche</h2>
+  {% else %}
+    <h1 id="job-list-heading" class="job-list-heading">Jobs für deine Woche</h1>
+  {% endif %}
 
   <div class="chips" role="group" aria-label="Filter">
     {% for chip in chips %}

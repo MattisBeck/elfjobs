@@ -53,7 +53,38 @@ def test_filter_by_kind(client, postings):
 def test_two_kinds_show_both(client, postings):
     response = client.get("/jobs/?filter=werkstudent&filter=kurzjob")
 
-    assert len(titles(response)) == 4
+    assert titles(response) == titles(client.get("/jobs/"))
+
+
+def test_filter_working_students_only(client, postings):
+    response = client.get("/jobs/?filter=werkstudent")
+
+    assert titles(response) == ["Werkstudent Remote", "Werkstudent Vor Ort"]
+
+
+def test_working_student_and_remote(client, postings):
+    response = client.get("/jobs/?filter=werkstudent&filter=remote")
+
+    assert titles(response) == ["Werkstudent Remote"]
+
+
+def test_known_and_unknown_filters_mixed(client, postings):
+    response = client.get("/jobs/?filter=remote&filter=quatsch")
+
+    assert titles(response) == ["Werkstudent Remote", "Kurzjob Remote"]
+
+
+def test_empty_result(client, db):
+    content = client.get("/jobs/").content.decode()
+
+    assert "0 Stellen" in content
+    assert "Keine Stellen für diese Filter." in content
+
+
+def test_singular_for_one_posting(client, db):
+    make_posting("Einzige Stelle", JobPosting.Kind.SHORT_JOB, JobPosting.Workplace.ONSITE, "15.00")
+
+    assert "1 Stelle<" in client.get("/jobs/").content.decode()
 
 
 def test_remote_combines_with_kind(client, postings):

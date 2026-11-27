@@ -15,7 +15,13 @@ def test_job_list_renders_header(client):
 
     assert response.status_code == 200
     assert "base.html" in [t.name for t in response.templates]
-    assert "Anmelden" in response.content.decode()
+    content = response.content.decode()
+    assert "Anmelden" in content
+    assert '<html lang="de">' in content
+    assert "/static/css/main.css" in content
+    assert 'aria-current="page">Jobs</a>' in content
+    assert '<span aria-disabled="true">Gemerkt</span>' in content
+    assert '<span aria-disabled="true">Messen</span>' in content
 
 
 @pytest.mark.django_db

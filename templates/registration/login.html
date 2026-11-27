@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Anmelden · elfjobs{% endblock %}
+
+{% block content %}
+<section class="form-page">
+  <h1>Anmelden</h1>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.as_div }}
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit" class="button button-primary">Anmelden</button>
+  </form>
+  <p class="muted">Noch kein Konto? <a href="{% url 'signup' %}">Registrieren</a></p>
+</section>
+{% endblock %}

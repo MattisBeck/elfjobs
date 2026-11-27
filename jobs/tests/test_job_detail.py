@@ -90,3 +90,22 @@ def test_chips_on_detail_page_keep_the_posting_open(client, posting):
     by_label = {chip["label"]: chip for chip in response.context["chips"]}
     assert by_label["Kurzjob"]["url"] == f"/jobs/{posting.pk}/?filter=kurzjob&q=promoter"
     assert response.context["week_url"] == f"/jobs/{posting.pk}/?q=promoter&ansicht=woche"
+
+
+def test_unknown_view_falls_back_to_details(client, posting):
+    response = client.get(f"/jobs/{posting.pk}/?ansicht=quatsch")
+
+    assert response.context["view"] == "details"
+
+
+def test_fixed_schedule_is_shown(client, posting):
+    posting.schedule = JobPosting.Schedule.FIXED
+    posting.save()
+
+    assert "Feste Zeiten" in client.get(f"/jobs/{posting.pk}/").content.decode()
+
+
+def test_only_one_h1_on_detail_page(client, posting):
+    content = client.get(f"/jobs/{posting.pk}/").content.decode()
+
+    assert content.count("<h1") == 1

@@ -16,8 +16,8 @@
     <nav class="main-nav" aria-label="Hauptnavigation">
       <a href="{% url 'job_list' %}"{% if request.resolver_match.url_name == "job_list" or request.resolver_match.url_name == "job_detail" %} aria-current="page"{% endif %}>Jobs</a>
       {# Gemerkt (#13) und Messen bekommen ihre Seiten mit eigenen Issues. #}
-      <a>Gemerkt</a>
-      <a>Messen</a>
+      <span aria-disabled="true">Gemerkt</span>
+      <span aria-disabled="true">Messen</span>
     </nav>
 
     <form class="search" action="{% url 'job_list' %}" method="get" role="search">
@@ -25,16 +25,15 @@
     </form>
 
     {% if user.is_authenticated %}
-      {# Studiengang und Semester kommen mit dem Studi-Profil (#6). #}
-      <a class="profile-button" href="#">
+      <a class="profile-button" href="{% url 'profile' %}">
         <span class="avatar" aria-hidden="true">{{ user.get_full_name|default:user.username|first|upper }}</span>
         <span class="profile-text">
           <span class="profile-name">{{ user.get_full_name|default:user.username }}</span>
+          {% if user.profile.summary %}<span class="profile-meta">{{ user.profile.summary }}</span>{% endif %}
         </span>
       </a>
     {% else %}
-      {# Eigener Login kommt mit #6, bis dahin der Admin-Login. #}
-      <a class="login-link" href="{% url 'admin:login' %}?next={{ request.path|urlencode }}">Anmelden</a>
+      <a class="login-link" href="{% url 'login' %}?next={{ request.path|urlencode }}">Anmelden</a>
     {% endif %}
   </header>
 
