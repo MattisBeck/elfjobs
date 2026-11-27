@@ -2,4 +2,11 @@
 
 {% block title %}Jobs · elfjobs{% endblock %}
 
-{% block content %}{% endblock %}
+{% block content %}
+<div class="split">
+  {% include "jobs/_job_list_column.html" %}
+  <div class="split-detail split-placeholder">
+    <p>Wähle links eine Stelle aus.</p>
+  </div>
+</div>
+{% endblock %}

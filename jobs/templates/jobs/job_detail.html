@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}{{ posting.title }} · elfjobs{% endblock %}
+
+{% block content %}
+{# Inhalt des Stellendetails kommt mit #5. #}
+<article class="job-detail">
+  <a class="back-link" href="{% url 'job_list' %}">← Alle Jobs</a>
+  <h1>{{ posting.title }}</h1>
+  <p>{{ posting.company.name }}</p>
+</article>
+{% endblock %}

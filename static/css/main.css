@@ -195,3 +195,148 @@ a {
     min-height: 44px;
   }
 }
+
+/* Zweispaltiges Layout: Liste links, Detail rechts */
+.split {
+  display: grid;
+  grid-template-columns: minmax(380px, 440px) 1fr;
+  min-height: calc(100vh - 61px);
+}
+
+.split-detail {
+  min-width: 0;
+}
+
+.split-placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+
+  .split-placeholder {
+    display: none;
+  }
+}
+
+/* Stellenliste */
+.job-list {
+  padding: 24px 20px;
+  border-right: 1px solid var(--line);
+  background: var(--bg-subtle);
+}
+
+.job-list-heading {
+  margin: 0 0 16px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.chip:hover {
+  border-color: var(--faint);
+}
+
+.chip.is-active {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.job-list-meta {
+  display: flex;
+  justify-content: space-between;
+  margin: 20px 0 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.job-list-meta strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.job-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.job-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-row);
+  text-decoration: none;
+}
+
+.job-row:hover {
+  background: var(--bg);
+  border-color: var(--line);
+}
+
+.job-row.is-selected {
+  background: var(--bg);
+  border-color: var(--accent);
+}
+
+.job-row-title {
+  font-weight: 600;
+}
+
+.job-row-wage {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.job-row-meta {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.job-list-empty {
+  padding: 24px 0;
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .job-list {
+    padding: 20px 16px;
+    border-right: 0;
+  }
+
+  .chip {
+    min-height: 44px;
+  }
+}
