@@ -8,9 +8,18 @@ Das ist die Designrichtung, nach der wir die Oberfläche von elfjobs bauen. Sie 
 ![Richtung A, Web, Tab „Details“](img/a-web-details.png)
 ![Richtung A, Web, Tab „In meiner Woche“](img/a-web-woche.png)
 
-## Die Idee in einem Satz
+## Die Idee
 
-Studierende sehen bei jedem Job sofort, ob er in ihren Stundenplan passt und was pro Stunde wirklich übrig bleibt, wenn man die Fahrzeit mitrechnet.
+**elfjobs: Stundenplan × Lehrplan = Job** (Ideen-Dashboard der Gruppe, HackWG 27.11.2026)
+
+- **Problem:** Der Einstieg in einen Job ist für Studierende schwer.
+- **Für wen:** Studierende mit wenig Zeit, die Interesse an einem Job in ihrer späteren Branche haben.
+- **Was wir anbieten:** Eine Plattform zum Finden und Vergleichen von Minijobs und Werkstudentenstellen, keine Vollzeitjobs.
+- **Für Studierende:** Der Abgleich mit dem **Stundenplan** zeigt schnell, ob sie Zeit für einen Job haben. Der **Lehrplan**, also was im Studium unterrichtet wird, zeigt, ob sie schon qualifiziert sind oder es bald sein werden.
+- **Für Firmen:** Sie erreichen Studierende direkt aus ihrer Branche. Die Studierenden sammeln dort lieber Erfahrung als woanders mehr zu verdienen.
+- **Umsetzung:** Stundenplan hochladen, Lehrplan einlesen, beides in die Sortierung der Jobs einrechnen, dazu ein kleiner Kalender pro Stelle.
+
+In einem Satz: Studierende sehen bei jedem Job sofort, ob er in ihren Stundenplan passt, ob ihr Studium sie dafür qualifiziert und was pro Stunde wirklich übrig bleibt, wenn man die Fahrzeit mitrechnet.
 
 ## Prinzipien
 
@@ -60,14 +69,14 @@ Als CSS-Variablen in einer statischen Datei anlegen (#3). Die Namen sind ein Vor
 
 Wortmarke „elf**jobs**“ (der zweite Teil in `--accent`), Navigation „Jobs · Gemerkt · 2 · Messen“ (aktiver Punkt mit grauem Hintergrund), Suchfeld „Titel, Firma oder Skill“, rechts der Profil-Knopf mit Initiale im blauen Kreis, Name und „ITSE · 1. Semester“. Auf dem Handy: Zurück-Link, Wortmarke, Initiale.
 
-### Stellenliste (#4, Passung #9, effektiver Lohn #12)
+### Stellenliste (#4, Passung #9, effektiver Lohn #12, Qualifikation #41, Sortierung #42)
 
 Linke Spalte auf Desktop (380–460 px breit, Grund `--bg-subtle`), auf dem Handy eine eigene Seite.
 
 - Überschrift „Jobs für deine Woche“, darunter „Wintersemester 2026/27 · 36 h frei zwischen 8 und 20 Uhr“.
 - Filter-Chips: „Passt in meinen Plan“ (aktiv: dunkel gefüllt), „Werkstudent“, „Kurzjob“, „Remote“.
-- Zeile „7 Stellen“ und „sortiert nach effektivem Stundenlohn“.
-- Pro Stelle eine Zeile: Titel (fett) und rechts der effektive Lohn (fett), darunter „Firma · Arbeitsort · 7 h/Woche“ und rechts „brutto 16,00 €“, darunter ein farbiger Punkt mit dem Passungstext. Die ausgewählte Zeile hat einen weißen Hintergrund und einen blauen Rahmen.
+- Zeile „7 Stellen“ und die Sortierung. Standard für eingeloggte Studierende ist „Passt am besten“ (#42), sonst „effektiver Stundenlohn“.
+- Pro Stelle eine Zeile: Titel (fett) und rechts der effektive Lohn (fett), darunter „Firma · Arbeitsort · 7 h/Woche“ und rechts „brutto 16,00 €“, darunter ein farbiger Punkt mit dem Passungstext und, durch „·“ getrennt, die Qualifikation („2 von 3 Anforderungen aus dem Studium“). Die ausgewählte Zeile hat einen weißen Hintergrund und einen blauen Rahmen.
 
 ### Stellendetail (#5)
 
@@ -77,7 +86,7 @@ Darunter die **Tab-Leiste** im Stil eines Segmented Control: „Details“ | „
 
 **Tab „Details“** (Standard):
 
-- Links „Über die Stelle“ (Beschreibung aus der Anzeige), „Das bringst du mit“ (Skills als Chips; Treffer aus dem Profil blau mit ✓, darunter „Häkchen: steht so in deinem Profil.“) und ein Kasten „Firma persönlich kennenlernen: Jobmesse Potsdam, 11.03.2027“ (ein Kasten für alle kommenden Messen der Firma, vergangene fallen weg).
+- Links „Über die Stelle“ (Beschreibung aus der Anzeige), „Das bringst du mit“ (Skills als Chips, eingeordnet nach dem Lehrplan, siehe Regel „Qualifikation“: gelernt blau mit ✓ und der Quelle, z. B. „✓ Python · Programmiertechnik I“ oder „✓ Englisch · aus deinem Profil“; kommt noch grau mit „ab 3. Semester“; nicht im Studium grau ohne Zusatz) und ein Kasten „Firma persönlich kennenlernen: Jobmesse Potsdam, 11.03.2027“ (ein Kasten für alle kommenden Messen der Firma, vergangene fallen weg).
 - Rechts „Auf einen Blick“: Art, Arbeitsort, Stunden pro Woche, Arbeitszeiten („Di 15:00–18:30, Mi 16:30–20:00“ oder „Flexibel, du planst selbst“), Stundenplan (Passungstext als Link zum Wochen-Tab).
 - Darunter die **Lohnrechnung** in vier Feldern: Bruttolohn pro Stunde · Fahrzeit pro Woche („2 × hin und zurück, je 18 min“) · **Effektiver Stundenlohn** (hellblau hinterlegt) · „Im Monat ≈ 485 €“ mit „unter/über der Minijob-Grenze (603 €)“.
 
@@ -144,6 +153,28 @@ Beispiele aus den Seed-Daten (Fahrzeiten sind Annahmen):
 | Aushilfe Lager, Holsten Förster (vor Ort, flexibel) | 14,00 € | 11 | 3 × 35 min | 3,5 h | 10,62 € |
 | Werkstudent*in Softwareentwicklung, Weihmann (remote) | 19,50 € | 11 | 0 | 0 h | 19,50 € |
 
+### Qualifikation aus dem Lehrplan (#30, #41)
+
+Jeder Studiengang hat einen Lehrplan: Module pro Semester, und jedes Modul vermittelt Skills (dieselben `Tag`s wie an den Stellen). Für jede Anforderung einer Stelle gilt:
+
+| Einordnung | Bedingung | Anzeige |
+|---|---|---|
+| gelernt | Skill steht in einem belegten Modul (vorausgewählt: alle Module bis zum aktuellen Semester) oder selbst im Profil | blau, „✓ Python · Programmiertechnik I (1. Sem.)“ bzw. „✓ Englisch · aus deinem Profil“ |
+| kommt noch | Skill steht in einem Modul eines späteren Semesters | grau, „SQL · ab 3. Semester“ |
+| nicht im Studium | Skill kommt im Lehrplan nicht vor | grau, nur der Name |
+
+In der Liste steht „x von y Anforderungen aus dem Studium“ (gelernt / alle). Stellen ohne Anforderungen zeigen dort nichts. Der Lehrplan kommt zuerst von Hand in den Seed (ITSE am HPI, Semester 1 bis 3) und später per Import aus dem Modulkatalog (#40).
+
+### Sortierung „Passt am besten“ (#42)
+
+Kein gewichteter Punktwert, sondern eine feste Reihenfolge, die man erklären kann:
+
+1. Passung zum Stundenplan: passt oder flexibel vor teilweise vor kollidiert
+2. Anteil der Anforderungen, die man laut Lehrplan schon kann
+3. effektiver Stundenlohn
+
+Pro Zeile steht, warum die Stelle dort steht, z. B. „Passt in deine Woche · 2 von 2 Anforderungen aus dem Studium · 13,66 € effektiv“.
+
 ### Monat und Minijob
 
 Monat ≈ Bruttolohn × Stunden × 4,33, auf ganze Euro gerundet. Bis 603 € (Minijob-Grenze 2026) steht dort „unter der Minijob-Grenze (603 €)“, sonst „über der Minijob-Grenze (603 €)“. Wir zeigen keine Netto-Rechnung. Der Mindestlohn 2026 liegt bei 13,90 €, keine Seed-Stelle darf darunter liegen (#15).
@@ -153,7 +184,8 @@ Monat ≈ Bruttolohn × Stunden × 4,33, auf ganze Euro gerundet. Bis 603 € (M
 | Model | Felder | Issue |
 |---|---|---|
 | `StudentProfile` | User (1:1), Studiengang, Semester, Wohnort, Skills (`Tag`) | #6 |
-| `LectureSlot` | Profil, Wochentag, Beginn, Ende, Titel | #7 |
+| Studiengang und Module (Lehrplan) | Studiengang mit Hochschule; Modul mit Semester, Titel, vermittelten Skills (`Tag`); belegte Module am Profil | #30 |
+| `LectureSlot` | Profil, Wochentag, Beginn, Ende, Titel (von Hand oder aus `.ics`) | #7, #43 |
 | `Shift` | Stelle, Wochentag, Beginn, Ende | #8 |
 | `PlannedShift` | Profil, Stelle, Wochentag, Beginn, Ende | #11 |
 | `Company.commute_minutes` | einfache Fahrzeit (Annahme im Seed) | #12 |
@@ -178,7 +210,7 @@ Der Seed legt die Demo-Studentin **Mia** an: IT-Systems Engineering, 1. Semester
 
 ## Bewusst nicht im Prototyp
 
-Echte Routenberechnung, Netto-Lohn, Import des Stundenplans aus dem Uni-Kalender, Konten für Firmen, Drag-and-drop im Kalender, Dark Mode.
+Netto-Lohn, Konten für Firmen, Lehrpläne anderer Hochschulen, Noten und bestandene Prüfungen, Drag-and-drop im Kalender, Dark Mode.
 
 ## Issues in sinnvoller Reihenfolge
 
@@ -197,3 +229,10 @@ Echte Routenberechnung, Netto-Lohn, Import des Stundenplans aus dem Uni-Kalender
 | #11 | Flexible Stellen: eigene Schichten | #10 |
 | #13 | Stellen merken | #5, #6 |
 | #14 | Mit Profil bewerben | #5, #6 |
+| #30 | Lehrplan: Module und Skills | #6 |
+| #40 | Lehrplan aus dem Modulkatalog einlesen | #30 |
+| #41 | Qualifikation pro Stelle | #30, #5 |
+| #43 | Stundenplan als ICS-Datei hochladen | #7 |
+| #42 | Sortierung „Passt am besten“ | #9, #41, #12 |
+
+Weitere Issues aus der Gruppensitzung (Ort und Karte #20–#22, Uni-Mail bestätigen #31, Bewertungen #32, Eventhub #33, Alerts #34, Onboarding #35 u. a.) stehen in GitHub; sie ändern an diesem Design nichts Grundsätzliches.
