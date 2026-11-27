@@ -179,8 +179,10 @@ a {
     display: none;
   }
 
+  /* Die Suche ist hier nur ausgeblendet, steht aber noch davor: deshalb auch .search + .login-link. */
   .profile-button,
-  .login-link {
+  .login-link,
+  .search + .login-link {
     margin-left: auto;
   }
 
