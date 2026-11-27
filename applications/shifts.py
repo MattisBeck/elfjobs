@@ -40,20 +40,22 @@ def free_intervals(weekday, lectures, existing, buffer_minutes):
     return intervals
 
 
-def suggest_shifts(posting, lectures, existing):
+def suggest_shifts(posting, lectures, existing, other_shifts=()):
     """Schichten, die die fehlenden Wochenstunden in freie Zeiten legen.
 
     lectures und existing: Dinge mit weekday, start und end. existing sind schon geplante
-    Schichten der Stelle, sie zählen mit und bleiben unberührt.
+    Schichten der Stelle, sie zählen mit und bleiben unberührt. other_shifts sind eigene
+    Schichten bei anderen Stellen: Die Zeit ist belegt, zählt aber nicht zu den Stunden dieser Stelle.
     Gibt (neue Schichten als Slot, fehlende Minuten) zurück. Fehlende Minuten sind 0, wenn alles passt.
     """
     lectures, existing = list(lectures), list(existing)
+    busy_shifts = existing + list(other_shifts)
     buffer_minutes = posting.one_way_commute_minutes
     assigned = {day: 0 for day in Weekday.values}
     for shift in existing:
         assigned[shift.weekday] += to_minutes(shift.end) - to_minutes(shift.start)
     needed = posting.hours_per_week * 60 - sum(assigned.values())
-    intervals = {day: free_intervals(day, lectures, existing, buffer_minutes) for day in Weekday.values}
+    intervals = {day: free_intervals(day, lectures, busy_shifts, buffer_minutes) for day in Weekday.values}
 
     slots = []
     while needed > 0:

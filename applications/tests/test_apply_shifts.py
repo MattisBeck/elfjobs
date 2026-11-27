@@ -127,6 +127,17 @@ def test_suggestion_counts_existing_shifts():
     assert all(not (s.weekday == 0 and s.start < time(12, 0)) for s in slots)
 
 
+@pytest.mark.django_db
+def test_suggestion_avoids_own_shifts_at_other_jobs():
+    """Schichten bei anderen Stellen sind belegt, zählen aber nicht zu den Stunden dieser Stelle."""
+    posting = make_posting(hours=4)
+    other = [Lecture(weekday, time(8, 0), time(20, 0)) for weekday in range(4)]  # Mo–Do bei anderen Jobs
+
+    slots, missing = suggest_shifts(posting, [], [], other_shifts=other)
+
+    assert missing == 0
+    assert [s.weekday for s in slots] == [4]  # nur Freitag ist frei
+
 # --- Seite und Senden ---
 
 
@@ -185,6 +196,17 @@ def test_suggest_button_creates_shifts_in_free_blocks(student_client, student):
     content = student_client.get(apply_url(posting)).content.decode()
     assert "6 von 6 h verplant" in content
 
+
+def test_suggest_button_skips_shifts_at_other_jobs(student_client, student):
+    posting = make_posting(hours=4)
+    other_posting = make_posting(hours=40)
+    for weekday in range(4):
+        PlannedShift.objects.create(profile=student, posting=other_posting, weekday=weekday, start=time(8, 0), end=time(20, 0))
+
+    student_client.post(f"{apply_url(posting)}vorschlag/")
+
+    days = {s.weekday for s in PlannedShift.objects.filter(profile=student, posting=posting)}
+    assert days == {4}
 
 def test_suggest_warns_when_room_is_short(student_client, student):
     posting = make_posting(hours=12)

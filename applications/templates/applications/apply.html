@@ -39,19 +39,21 @@
       <button type="submit" class="button">Vorschlag: Schichten in meine freien Blöcke legen</button>
     </form>
 
-    <form class="plan-form" method="post" action="{% url 'apply_shift_add' posting.pk %}">
+    <form class="apply-add" method="post" action="{% url 'apply_shift_add' posting.pk %}">
       {% csrf_token %}
       <h3>Schicht von Hand hinzufügen</h3>
-      <label>{{ form.weekday.label }} {{ form.weekday }}</label>
-      <label>{{ form.start.label }} {{ form.start }}</label>
-      <label>{{ form.end.label }} {{ form.end }}</label>
-      <button type="submit" class="button">Hinzufügen</button>
+      <div class="apply-add-fields">
+        <label>{{ form.weekday.label }} {{ form.weekday }}</label>
+        <label>{{ form.start.label }} {{ form.start }}</label>
+        <label>{{ form.end.label }} {{ form.end }}</label>
+        <button type="submit" class="button">Hinzufügen</button>
+      </div>
     </form>
   {% else %}
     <p>Diese Stelle hat feste Schichten. Mit deiner Bewerbung kommen sie in deinen Stundenplan.</p>
     <ul class="apply-shifts">
       {% for row in shift_rows %}
-        <li>{{ row.label }}{% if row.collides %} <span class="muted">· kollidiert mit deiner Vorlesung</span>{% endif %}</li>
+        <li>{{ row.label }}{% if row.collides %} <span class="apply-conflict">· kollidiert mit deiner Vorlesung</span>{% endif %}</li>
       {% empty %}
         <li class="muted">Für diese Stelle sind keine Schichten eingetragen.</li>
       {% endfor %}

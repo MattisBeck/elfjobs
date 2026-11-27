@@ -1080,6 +1080,46 @@ a.button {
   list-style: none;
 }
 
+.apply-conflict {
+  color: var(--conflict);
+}
+
+/* Schicht von Hand: Tag, Beginn, Ende und Knopf in einer Zeile, auf dem Handy umbrechend. */
+.apply-add h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.apply-add-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.apply-add-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.apply-add-fields select,
+.apply-add-fields input {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+
+.apply-add-fields select {
+  min-width: 80px;
+}
+
 .apply-shifts li {
   display: flex;
   align-items: center;

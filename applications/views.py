@@ -96,8 +96,12 @@ def apply_suggest(request, pk):
     posting = flexible_posting_for_student(request, pk)
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     apply_home_commutes(profile, [posting])
+    # Schichten bei anderen Jobs sind belegte Zeit, der Vorschlag legt nichts darüber.
     slots, missing_minutes = suggest_shifts(
-        posting, profile.lectures.all(), profile.planned_shifts.filter(posting=posting)
+        posting,
+        profile.lectures.all(),
+        profile.planned_shifts.filter(posting=posting),
+        other_shifts=profile.planned_shifts.exclude(posting=posting),
     )
     for slot in slots:
         PlannedShift.objects.create(profile=profile, posting=posting, weekday=slot.weekday, start=slot.start, end=slot.end)
