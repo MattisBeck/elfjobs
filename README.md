@@ -61,6 +61,12 @@ docker compose exec backend uv run python manage.py import_lehrplan itse
 
 Der Befehl braucht Internet: Er lädt die Modulliste aus PULS (Uni Potsdam, von hpi.de verlinkt), wartet höchstens 10 Sekunden und legt die Module mit Semester an oder aktualisiert sie. Ein zweiter Lauf legt nichts doppelt an. Die Skills je Modul kommen aus einer festen Stichwort-Liste in `studies/management/commands/import_lehrplan.py`; Module ohne passendes Stichwort listet der Befehl am Ende auf. Ohne Internet geht es mit einer gespeicherten Kopie: `--datei studies/tests/fixtures/modulkatalog_itse.html`.
 
+## Anreisedauer (ÖPNV)
+
+`jobs/travel.py` fragt die Anreise mit Bus und Bahn bei der [VBB-API von transport.rest](https://v6.vbb.transport.rest) ab (`/journeys`). Die API ist öffentlich und braucht keinen Key, kennt aber nur Berlin und Brandenburg. Pro Aufruf werden höchstens 20 Stellen abgefragt (`MAX_TRAVEL_REQUESTS`), die nächsten nach Luftlinie. Ergebnisse bleiben einen Tag in Djangos Cache (im Speicher, nach einem Neustart leer).
+
+Antwortet die API nicht innerhalb von 5 Sekunden oder mit einem Fehler, gilt für diese Stellen die Luftlinie. Adresse und Timeout stehen in `.env` (`TRAVEL_API_URL`, `TRAVEL_API_TIMEOUT`). Die Tests rufen die API nie wirklich auf.
+
 ## Claude Code
 
 Das Repo bringt Werkzeuge für Claude Code mit, die nach `git pull` automatisch da sind:
