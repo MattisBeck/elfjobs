@@ -71,15 +71,17 @@ a {
   background: var(--bg);
 }
 
+/* Logo statt Text-Wortmarke (#27), skaliert über die Höhe */
 .wordmark {
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  text-decoration: none;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
-.wordmark span {
-  color: var(--accent);
+.wordmark img {
+  display: block;
+  height: 34px;
+  width: auto;
 }
 
 .main-nav {
@@ -203,6 +205,10 @@ a {
   .main-nav {
     order: 3;
     width: 100%;
+  }
+
+  .wordmark img {
+    height: 28px;
   }
 
   /* Klickflächen auf dem Handy mindestens 44 px hoch (docs/design.md) */
@@ -795,6 +801,14 @@ a {
   max-width: 440px;
   margin: 0 auto;
   padding: 40px 16px 64px;
+}
+
+.form-logo {
+  display: block;
+  width: 240px;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto 32px;
 }
 
 .form-page h1 {

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="84 30 510 510">
+  <title>elfjobs</title>
+  <g id="mascot" transform="translate(70,0)">
+  <ellipse cx="250" cy="522" rx="120" ry="12" fill="#000" opacity=".07"/>
+  <!-- boots -->
+  <ellipse cx="218" cy="506" rx="30" ry="17" fill="#8A5A2B"/>
+  <ellipse cx="282" cy="506" rx="30" ry="17" fill="#8A5A2B"/>
+  <!-- left arm (down) -->
+  <path d="M183,350 Q165,400 172,440" fill="none" stroke="#3E9A14" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="173" cy="450" r="15" fill="#FFD9B8"/>
+  <!-- torso -->
+  <path d="M182,352 Q182,318 222,316 L278,316 Q318,318 318,352 L328,478 Q328,498 308,498 L192,498 Q172,498 172,478 Z" fill="#58C322"/>
+  <path d="M226,316 L250,350 L274,316 Z" fill="#2B7409"/>
+  <rect x="175" y="430" width="150" height="16" rx="6" fill="#8A5A2B"/>
+  <!-- right arm (raised, presenting) -->
+  <path d="M312,350 Q360,336 392,300" fill="none" stroke="#58C322" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="400" cy="290" r="16" fill="#FFD9B8"/>
+  <!-- ears -->
+  <path d="M174,238 Q150,222 128,198 Q132,248 172,268 Z" fill="#FFD9B8" stroke="#FFD9B8" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M326,238 Q350,222 372,198 Q368,248 328,268 Z" fill="#FFD9B8" stroke="#FFD9B8" stroke-width="12" stroke-linejoin="round"/>
+  <!-- head -->
+  <ellipse cx="250" cy="244" rx="80" ry="88" fill="#FFD9B8"/>
+  <!-- hat -->
+  <path d="M164,192 C172,112 222,54 290,38 Q338,28 378,60 Q336,56 322,88 C340,122 342,158 338,192 Z" fill="#58C322"/>
+  <path d="M290,38 Q338,28 378,60 Q336,56 322,88 C340,122 342,158 338,192 L300,192 C310,150 312,95 290,38 Z" fill="#3E9A14" opacity=".5"/>
+  <circle cx="382" cy="62" r="18" fill="#FFC83D"/>
+  <rect x="154" y="172" width="192" height="32" rx="16" fill="#2B7409"/>
+  <!-- brows -->
+  <path d="M205,220 Q220,213 236,219" fill="none" stroke="#5E3A17" stroke-width="7" stroke-linecap="round"/>
+  <path d="M264,219 Q280,213 295,220" fill="none" stroke="#5E3A17" stroke-width="7" stroke-linecap="round"/>
+  <!-- eyes -->
+  <ellipse cx="221" cy="246" rx="18" ry="20" fill="#fff"/>
+  <ellipse cx="279" cy="246" rx="18" ry="20" fill="#fff"/>
+  <circle cx="225" cy="248" r="11" fill="#2A2320"/>
+  <circle cx="283" cy="248" r="11" fill="#2A2320"/>
+  <circle cx="229" cy="243" r="3.5" fill="#fff"/>
+  <circle cx="287" cy="243" r="3.5" fill="#fff"/>
+  <!-- nose, cheeks, smile -->
+  <ellipse cx="252" cy="272" rx="8" ry="6" fill="#F5B990"/>
+  <ellipse cx="196" cy="282" rx="13" ry="7" fill="#FF8F9A" opacity=".35"/>
+  <ellipse cx="304" cy="282" rx="13" ry="7" fill="#FF8F9A" opacity=".35"/>
+  <path d="M232,292 Q252,308 272,292" fill="none" stroke="#6E1E22" stroke-width="7" stroke-linecap="round"/>
+</g>
+</svg>

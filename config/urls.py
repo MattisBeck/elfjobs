@@ -2,6 +2,9 @@ from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
 
+admin.site.site_header = "elfjobs"
+admin.site.site_title = "elfjobs"
+
 urlpatterns = [
     path("", RedirectView.as_view(pattern_name="job_list"), name="home"),
     path("jobs/", include("jobs.urls")),
