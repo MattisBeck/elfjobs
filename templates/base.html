@@ -12,7 +12,7 @@
   {% block head %}{% endblock %}
 </head>
 <body>
-  <header class="site-header">
+  <header class="site-header{% if user.company_member %} site-header-company{% endif %}">
     <a class="wordmark" href="{% url 'job_list' %}"><img src="{% static 'img/elfjobs-logo.svg' %}" alt="elfjobs"></a>
 
     <nav class="main-nav" aria-label="Hauptnavigation">
@@ -48,11 +48,22 @@
     {% if user.is_authenticated %}
       {# Firmenkonten (#66) landen im Firmenbereich, Studierende im Profil. #}
       <a class="profile-button" href="{% if user.company_member %}{% url 'company_home' %}{% else %}{% url 'profile' %}{% endif %}" title="{{ user.get_full_name|default:user.username }}{% if user.profile.summary %} · {{ user.profile.summary }}{% endif %}">
-        <span class="avatar" aria-hidden="true">{{ user.get_full_name|default:user.username|first|upper }}</span>
-        <span class="profile-text">
-          <span class="profile-name">{{ user.get_full_name|default:user.username }}</span>
-          {% if user.profile.summary %}<span class="profile-meta">{{ user.profile.summary }}</span>{% endif %}
-        </span>
+        {% if user.company_member %}
+          {# Rolle in der Kopfzeile (#150): Firma mit Logo und Firmenname, Studierende mit „Studi“. #}
+          {% include "jobs/_company_logo.html" with company=user.company_member.company decorative=True %}
+          <span class="role-badge role-badge-company">Firma</span>
+          <span class="profile-text">
+            <span class="profile-name">{{ user.company_member.company.name }}</span>
+            <span class="profile-meta">{{ user.get_full_name|default:user.username }}</span>
+          </span>
+        {% else %}
+          <span class="avatar" aria-hidden="true">{{ user.get_full_name|default:user.username|first|upper }}</span>
+          <span class="role-badge role-badge-student">Studi</span>
+          <span class="profile-text">
+            <span class="profile-name">{{ user.get_full_name|default:user.username }}</span>
+            {% if user.profile.summary %}<span class="profile-meta">{{ user.profile.summary }}</span>{% endif %}
+          </span>
+        {% endif %}
       </a>
       {# Abmelden auf jeder Seite, für Studierende und Firmen (#118). Django verlangt dafür POST. #}
       <form method="post" action="{% url 'logout' %}" class="logout-header">

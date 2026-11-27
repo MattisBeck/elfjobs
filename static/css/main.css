@@ -172,6 +172,26 @@ a {
   color: var(--muted);
 }
 
+/* Rolle in der Kopfzeile (#150): kleine Pille, Firmenkonten zusätzlich mit feinem Streifen oben. */
+.role-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.role-badge-company {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.site-header-company {
+  box-shadow: inset 0 3px 0 var(--accent);
+}
+
 .login-link {
   margin-left: auto;
   padding: 8px 12px;
