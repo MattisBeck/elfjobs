@@ -115,3 +115,19 @@ def test_seed_lets_mia_attend_a_fair():
 
     mia = get_user_model().objects.get(username="mia@student.hpi.uni-potsdam.de")
     assert list(mia.fairs.values_list("name", flat=True)) == ["Jobmesse Potsdam 2027"]
+
+
+@pytest.mark.django_db
+def test_fair_shows_three_postings_per_company_and_links_the_rest(client):
+    fair = make_fair("Jobmesse", 5)
+    company = Company.objects.create(name="Weihmann GbR", industry="Tech")
+    company.fairs.add(fair)
+    for number in range(1, 6):
+        make_posting(company, f"Stelle {number}")
+
+    content = client.get(reverse("fair_list")).content.decode()
+
+    assert "Stelle 3" in content
+    assert "Stelle 4" not in content
+    assert "+2 weitere" in content
+    assert f'{reverse("job_list")}?q=Weihmann%20GbR' in content
