@@ -25,7 +25,7 @@
           <output for="filter-max-anreise"></output>
         </div>
         <input type="range" id="filter-max-anreise" name="max_anreise" min="{{ slider.min }}" max="{{ slider.max }}" step="{{ slider.step }}" value="{{ slider.value }}" data-neutral="{{ slider.neutral }}" data-text="max. {} min">
-        <small>Einfache Strecke, remote zählt als 0.</small>
+        <small>Einfache Strecke, remote zählt als 0.{% if filter_form.show_km %} Bei Sortierung nach Anreisedauer die ÖPNV-Zeit, sonst die Fahrzeit der Firma.{% endif %}</small>
       </div>
     {% endwith %}
 

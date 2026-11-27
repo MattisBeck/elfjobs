@@ -221,14 +221,14 @@ def test_plan_chip_and_search_filters_keep_each_other(client, mia, four_postings
     # Suchfilter aus #71 und „Passt in meinen Plan“ gehen bei keinem Klick verloren.
     client.force_login(mia)
 
-    on = client.get("/jobs/?max_stunden=40")
-    assert on.context["chips"][0]["url"] == "/jobs/?plan=aus&max_stunden=40"
+    on = client.get("/jobs/?max_stunden=30")
+    assert on.context["chips"][0]["url"] == "/jobs/?plan=aus&max_stunden=30"
 
-    off = client.get("/jobs/?plan=aus&max_stunden=40")
+    off = client.get("/jobs/?plan=aus&max_stunden=30")
     by_label = {chip["label"]: chip for chip in off.context["chips"]}
-    assert by_label["Passt in meinen Plan"]["url"] == "/jobs/?max_stunden=40"
-    assert by_label["Kurzjob"]["url"] == "/jobs/?filter=kurzjob&plan=aus&max_stunden=40"
-    assert by_label["bis 40 h/Woche"]["url"] == "/jobs/?plan=aus"
+    assert by_label["Passt in meinen Plan"]["url"] == "/jobs/?max_stunden=30"
+    assert by_label["Kurzjob"]["url"] == "/jobs/?filter=kurzjob&plan=aus&max_stunden=30"
+    assert by_label["bis 30 h/Woche"]["url"] == "/jobs/?plan=aus"
     assert ("plan", "aus") in off.context["filter_form"]["hidden"]
     assert ("plan", "aus") in off.context["filter_form"]["search_hidden"]
 

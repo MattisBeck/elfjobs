@@ -195,6 +195,20 @@ def test_zero_and_tiny_maximums_count_as_zero(client, postings, value):
     assert list(remove_chips(response)) == ["max. 0 min Anreise"]
 
 
+@pytest.mark.parametrize("value", ["-0", "0"])
+def test_zero_commute_slider_starts_at_zero_not_neutral(client, postings, value):
+    form = client.get(f"/jobs/?max_anreise={value}").content.decode().split('class="filter-form"')[1].split("</form>")[0]
+
+    # Der Regler steht auf 0 (nicht auf „egal“ = 60), das JS zeigt dann „max. 0 min“.
+    assert 'name="max_anreise" min="0" max="60" step="5" value="0" data-neutral="60" data-text="max. {} min"' in form
+
+
+def test_max_values_at_neutral_after_rounding_do_not_filter(client, postings):
+    response = client.get("/jobs/?max_anreise=59.999&max_stunden=39.999")
+
+    assert remove_chips(response) == {}
+
+
 def test_parse_filters_rounds_to_two_decimals():
     get = QueryDict("min_lohn=15.499&max_anreise=-0&min_stunden=1e-50")
 
