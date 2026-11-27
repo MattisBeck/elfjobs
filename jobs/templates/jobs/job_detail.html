@@ -36,8 +36,43 @@
     </nav>
 
     {% if view == "woche" %}
-      {# Inhalt kommt mit #10. #}
-      <p class="muted">Die Wochenansicht ist noch in Arbeit.</p>
+      {# Tab „In meiner Woche“ (#10), Daten aus timetable/week.py #}
+      <section class="panel week-panel">
+        <header class="week-head">
+          {% if posting.fit %}
+            <span class="fit-pill fit-{{ posting.fit.status }}"><span class="fit-dot" aria-hidden="true"></span>{{ posting.fit.text }}</span>
+          {% elif not user.is_authenticated %}
+            <span class="muted"><a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">Melde dich an</a>, dann siehst du die Schichten neben deinen Vorlesungen.</span>
+          {% elif not has_profile %}
+            <span class="muted">Trag deinen <a href="{% url 'timetable' %}">Stundenplan</a> ein, dann siehst du, ob die Schichten passen.</span>
+          {% endif %}
+          <ul class="week-legend" aria-label="Legende">
+            <li><span class="legend-swatch legend-lecture" aria-hidden="true"></span>Vorlesung</li>
+            <li><span class="legend-swatch legend-shift" aria-hidden="true"></span>Schicht</li>
+            <li><span class="legend-swatch legend-conflict" aria-hidden="true"></span>Konflikt</li>
+          </ul>
+        </header>
+        {% if posting.schedule == "flexible" %}
+          <p class="muted">Flexible Zeiten: Du legst die Schichten selbst in deine freien Blöcke.</p>
+        {% endif %}
+        <div class="week">
+          <div class="week-axis" aria-hidden="true">
+            {% for mark in week.hours %}<span style="top: {{ mark.top }}%">{{ mark.label }}</span>{% endfor %}
+          </div>
+          {% for day in week.days %}
+            <section class="week-day" aria-label="{{ day.label }}">
+              <h3 class="week-day-label">{{ day.label }}</h3>
+              <div class="week-track">
+                {% for block in day.blocks %}
+                  <div class="week-block week-{{ block.kind }}" style="top: {{ block.top }}%; height: {{ block.height }}%">
+                    <strong>{{ block.label }}</strong> <span>{{ block.time }}</span>
+                  </div>
+                {% endfor %}
+              </div>
+            </section>
+          {% endfor %}
+        </div>
+      </section>
     {% else %}
       <div class="details-grid">
         <div class="details-main">
