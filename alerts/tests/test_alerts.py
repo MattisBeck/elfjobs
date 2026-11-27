@@ -113,3 +113,14 @@ def test_logged_out_has_no_hint_and_no_save_button(client, db):
 def test_save_needs_post_and_login(client, db):
     assert client.post("/alerts/neu/", {"query": "q=x"}).status_code == 302
     assert not JobAlert.objects.exists()
+
+
+def test_hint_has_short_form_for_phones(client, lena):
+    """Auf dem Handy steht nur „1 neue“, der Rest ist ausblendbar und steht im Tooltip (#124)."""
+    save_alert(client, "q=Lager")
+    make_posting("Aushilfe Lager")
+
+    content = client.get("/jobs/").content.decode()
+
+    assert '1 neue<span class="alert-hint-long"> passende Stelle</span>' in content
+    assert 'title="1 neue passende Stelle"' in content
