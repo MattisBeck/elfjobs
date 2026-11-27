@@ -34,6 +34,9 @@
           <span class="job-row-wage">{{ posting.effective_wage }} €</span>
           <span class="job-row-meta">{{ posting.company.name }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>
           <span class="job-row-gross">brutto {{ posting.hourly_wage }} €</span>
+          {% if posting.fit %}
+            <span class="job-row-fit fit-{{ posting.fit.status }}"><span class="fit-dot" aria-hidden="true"></span>{{ posting.fit.text }}</span>
+          {% endif %}
           {% if posting.skill_hint %}<span class="job-row-skills">{{ posting.skill_hint }}</span>{% endif %}
         </a>
       </li>

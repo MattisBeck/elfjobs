@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Mein Stundenplan · elfjobs{% endblock %}
+
+{% block content %}
+<section class="timetable-page">
+  <header class="timetable-head">
+    <h1>Mein Stundenplan</h1>
+    <p class="muted">Trag deine Vorlesungen und Übungen ein. Daraus sehen wir, welche Jobs in deine Woche passen.</p>
+  </header>
+
+  {% for message in messages %}
+    <p class="notice">{{ message }}</p>
+  {% endfor %}
+
+  <p class="free-summary">Frei zwischen 8 und 20 Uhr: <strong>{{ free_hours|floatformat:"-1" }} h</strong> in Blöcken ab 2 Stunden</p>
+
+  <div class="timetable-days">
+    {% for day in days %}
+      <section class="timetable-day" aria-label="{{ day.label }}">
+        <h2>{{ day.label }}</h2>
+        {% if not day.has_lectures %}
+          <p class="muted">Keine Termine</p>
+        {% endif %}
+        {% for entry in day.entries %}
+          {% if entry.lecture %}
+            {% with lecture=entry.lecture %}
+              <div class="lecture-row">
+                <span class="lecture-time">{{ lecture.start|time:"G:i" }}–{{ lecture.end|time:"G:i" }}</span>
+                <span class="lecture-title">{{ lecture.title }}</span>
+                <span class="lecture-actions">
+                  <a href="{% url 'lecture_edit' lecture.pk %}">Ändern</a>
+                  <form method="post" action="{% url 'lecture_delete' lecture.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="link-button" aria-label="{{ lecture.title }} am {{ day.label }} löschen">Löschen</button>
+                  </form>
+                </span>
+              </div>
+            {% endwith %}
+          {% else %}
+            <p class="free-block">frei {{ entry.free.start|time:"G:i" }}–{{ entry.free.end|time:"G:i" }}</p>
+          {% endif %}
+        {% endfor %}
+      </section>
+    {% endfor %}
+  </div>
+
+  <section class="timetable-add">
+    <h2>Termin hinzufügen</h2>
+    <form method="post" class="form form-inline">
+      {% csrf_token %}
+      {{ form.as_div }}
+      <button type="submit" class="button button-primary">Eintragen</button>
+    </form>
+  </section>
+</section>
+{% endblock %}

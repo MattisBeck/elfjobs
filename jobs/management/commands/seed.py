@@ -13,6 +13,7 @@ from accounts.models import ProfileSkill, StudentProfile
 from jobs.models import Company, Fair, JobPosting, Shift, Tag
 from studies.curriculum import CURRICULUM
 from studies.models import Course, StudyProgram
+from timetable.models import LectureSlot
 
 SEED = 42
 NUM_COMPANIES = 20
@@ -183,6 +184,18 @@ def create_curriculum():
 DEMO_EMAIL = "mia@student.hpi.uni-potsdam.de"
 
 
+# Wochentag 0–4 (Mo–Fr), Beginn, Ende, Veranstaltung
+DEMO_LECTURES = [
+    (0, time(9, 15), time(12, 30), "Mathematik I"),
+    (0, time(13, 30), time(15, 0), "Programmiertechnik I"),
+    (1, time(9, 15), time(10, 45), "Digitale Systeme"),
+    (1, time(11, 0), time(12, 30), "Modellierung I"),
+    (2, time(9, 15), time(12, 30), "Programmiertechnik I"),
+    (3, time(13, 30), time(17, 0), "Übungen Mathe / Digitale Systeme"),
+    (4, time(9, 15), time(12, 30), "Wirtschaftliche Grundlagen"),
+]
+
+
 def create_demo_student(password):
     """Demo-Studentin Mia aus docs/design.md, Login mit DEMO_EMAIL und DEMO_PASSWORD."""
     user, _ = User.objects.get_or_create(username=DEMO_EMAIL)
@@ -206,6 +219,11 @@ def create_demo_student(password):
         through_defaults={"source": ProfileSkill.Source.PROFILE},
     )
     profile.courses.set(itse.courses.filter(short_name__in=["PT1", "MA1"]))
+
+    # Mias Stundenplan aus docs/design.md, bei jedem Seed neu.
+    profile.lectures.all().delete()
+    for weekday, start, end, title in DEMO_LECTURES:
+        LectureSlot.objects.create(profile=profile, weekday=weekday, start=start, end=end, title=title)
 
 
 class Command(BaseCommand):

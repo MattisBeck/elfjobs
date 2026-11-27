@@ -28,7 +28,7 @@
 
     <nav class="tabs" aria-label="Ansicht">
       <a href="{{ details_url }}"{% if view == "details" %} aria-current="page"{% endif %}>Details</a>
-      <a href="{{ week_url }}"{% if view == "woche" %} aria-current="page"{% endif %}><span class="tab-dot" aria-hidden="true"></span>In meiner Woche</a>
+      <a href="{{ week_url }}"{% if view == "woche" %} aria-current="page"{% endif %}><span class="tab-dot{% if posting.fit %} fit-{{ posting.fit.status }}{% endif %}" aria-hidden="true"></span>In meiner Woche{% if posting.fit %}<span class="visually-hidden">: {{ posting.fit.text }}</span>{% endif %}</a>
     </nav>
 
     {% if view == "woche" %}
