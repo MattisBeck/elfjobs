@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static demo_login %}
 
 {% block title %}Anmelden · elfjobs{% endblock %}
 
@@ -13,6 +13,7 @@
     <input type="hidden" name="next" value="{{ next }}">
     <button type="submit" class="button button-primary">Anmelden</button>
   </form>
+  {% demo_login "student" %}
   <p class="muted">Noch kein Konto? <a href="{% url 'signup' %}">Registrieren</a></p>
   <p class="muted">Bestätigungsmail nicht bekommen? <a href="{% url 'confirm_pending' %}">Neu senden</a></p>
   <p class="muted">Ihr sucht Studierende? <a href="{% url 'company_login' %}">Firmen-Login</a></p>

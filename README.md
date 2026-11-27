@@ -53,6 +53,8 @@ Nach dem Registrieren ist das Konto erst aktiv, wenn der Link aus der Bestätigu
 
 Firmen melden sich unter http://localhost:8000/firma/anmelden/ an und pflegen dort ihre Stellen. Demo-Firmenkonto: `weihmann@firma.elfjobs.local` (Weihmann GbR) mit demselben Passwort wie Mia. Unter http://localhost:8000/firma/verfuegbarkeit/ sehen Firmen als Heatmap, wann Studierende mit den gewählten Skills keine Vorlesung haben (nur Anzahlen, unter 3 keine genaue Zahl).
 
+**Demo-Login:** Mit `DEMO_LOGIN=1` (in `.env`, lokal Standard bei `DJANGO_DEBUG=1`) steht auf den Login-Seiten eine Auswahl von Demo-Konten, die ohne Passwort anmeldet. Nur für Vorführungen; Staff und Admins sind nie dabei. In Produktion `DEMO_LOGIN=0`.
+
 Jede Person hat ihre eigene lokale Datenbank. `seed` erzeugt bei allen dieselben Demo-Daten, den Admin-Benutzer legt jede Person selbst an.
 
 ## Lehrplan importieren (optional)
