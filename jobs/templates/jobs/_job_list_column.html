@@ -3,7 +3,7 @@
 
   <div class="chips" role="group" aria-label="Filter">
     {% for chip in chips %}
-      <a class="chip{% if chip.active %} is-active{% endif %}" href="{{ chip.url }}"{% if chip.active %} aria-pressed="true"{% endif %}>{{ chip.label }}</a>
+      <a class="chip{% if chip.active %} is-active{% endif %}" href="{{ chip.url }}"{% if chip.active %} aria-current="true"{% endif %}>{{ chip.label }}</a>
     {% endfor %}
   </div>
 

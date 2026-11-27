@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from jobs.models import Company, JobPosting
+from jobs.models import Company, JobPosting, Tag
 
 
 def make_posting(title, kind, workplace, wage):
@@ -86,3 +86,25 @@ def test_rows_link_to_detail(client, postings):
 def test_detail_page_and_404(client, postings):
     assert client.get(f'/jobs/{postings["short_onsite"].pk}/').status_code == 200
     assert client.get("/jobs/999999/").status_code == 404
+
+
+def test_search_matches_title_company_and_tag(client, postings):
+    postings["short_remote"].tags.add(Tag.objects.create(name="Python"))
+
+    assert titles(client.get("/jobs/?q=vor ort")) == ["Werkstudent Vor Ort", "Kurzjob Vor Ort"]
+    assert len(titles(client.get("/jobs/?q=testfirma"))) == 4
+    assert titles(client.get("/jobs/?q=python")) == ["Kurzjob Remote"]
+
+
+def test_search_combines_with_filters_and_chips_keep_it(client, postings):
+    response = client.get("/jobs/?filter=werkstudent&q=remote")
+
+    assert titles(response) == ["Werkstudent Remote"]
+    by_label = {chip["label"]: chip for chip in response.context["chips"]}
+    assert by_label["Werkstudent"]["url"] == "/jobs/?q=remote"
+
+
+def test_jobs_nav_is_current_on_detail_page(client, postings):
+    content = client.get(f'/jobs/{postings["short_onsite"].pk}/').content.decode()
+
+    assert 'aria-current="page">Jobs</a>' in content
