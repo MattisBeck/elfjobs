@@ -11,9 +11,10 @@ from accounts.models import StudentProfile
 from jobs.models import Weekday
 from jobs.travel import apply_home_commutes
 
+from .columns import overlaps, side_by_side
 from .forms import IcsUploadForm, LectureSlotForm
-from .free_time import DAY_END, DAY_START, free_blocks, free_hours
 from .conflicts import shift_conflicts
+from .free_time import DAY_END, DAY_START, free_blocks, free_hours, to_minutes
 from .ics import IcsError, parse_ics
 from .models import LectureSlot
 
@@ -129,13 +130,36 @@ def lecture_json(lecture):
     }
 
 
+def calendar_layout(lectures):
+    """Wo jeder Termin im Raster steht (#135): {ID: {"left", "width", "overlaps"}}.
+
+    Was sich überschneidet, steht nebeneinander (gleiche Regel wie „In meiner Woche“).
+    "overlaps" sind die Titel der Termine, mit denen er sich überschneidet.
+    """
+    layout = {}
+    for weekday in Weekday.values:
+        day = [lecture for lecture in lectures if lecture.weekday == weekday and in_grid(lecture)]
+        spans = [(to_minutes(lecture.start), to_minutes(lecture.end)) for lecture in day]
+        for lecture, span, position in zip(day, spans, side_by_side(spans)):
+            layout[str(lecture.pk)] = {
+                **position,
+                "overlaps": [
+                    other.title for other, other_span in zip(day, spans)
+                    if other is not lecture and overlaps(span, other_span)
+                ],
+            }
+    return layout
+
+
 def calendar_state(lectures, shifts):
-    """Freie Blöcke und Stunden nach einer Änderung, damit das Raster sie neu zeichnen kann.
+    """Freie Blöcke, Stunden und Spalten nach einer Änderung, damit das Raster sie neu zeichnen kann.
 
     Eigene Schichten (#140) belegen Zeit wie Vorlesungen.
     """
-    blocks = free_blocks(list(lectures) + list(shifts))
+    lectures = list(lectures)
+    blocks = free_blocks(lectures + list(shifts))
     return {
+        "layout": calendar_layout(lectures),
         "free": [
             {"weekday": b.weekday, "start": b.start.strftime("%H:%M"), "end": b.end.strftime("%H:%M")}
             for b in blocks

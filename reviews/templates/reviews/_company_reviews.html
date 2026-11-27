@@ -1,0 +1,38 @@
+{# Bewertungen der Firma im Stellendetail (#32). Daten aus reviews/ratings.py (review_context). #}
+<section id="bewertungen" class="reviews">
+  <h2>Bewertungen für {{ review.company.name }}</h2>
+  {% if review.count %}
+    <p class="reviews-summary"><strong>{{ review.average|floatformat:1 }} von 5 Sternen</strong> · {{ review.count }} Bewertung{{ review.count|pluralize:"en" }}</p>
+    <ul class="review-list">
+      {% for item in review.reviews %}
+        <li class="review">
+          <span class="review-stars" aria-label="{{ item.stars }} von 5 Sternen">{% for n in "12345" %}<span aria-hidden="true"{% if forloop.counter > item.stars %} class="review-star-off"{% endif %}>★</span>{% endfor %}</span>
+          <p>{{ item.text }}</p>
+          <small class="muted">{{ item.updated_at|date:"d.m.Y" }}{% if item == review.own %} · deine Bewertung{% endif %}</small>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">Noch keine Bewertungen.</p>
+  {% endif %}
+
+  {% if review.form %}
+    {% for message in messages %}
+      <p class="notice">{{ message }}</p>
+    {% endfor %}
+    <form class="review-form" method="post" action="{% url 'review_company' review.company.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}#bewertungen">
+      <h3>{% if review.own %}Deine Bewertung ändern{% else %}Du hast dich hier beworben. Wie war es?{% endif %}</h3>
+      <fieldset class="review-stars-input">
+        <legend>Sterne</legend>
+        {% for radio in review.form.stars %}
+          <label>{{ radio.tag }} {{ radio.choice_label }}</label>
+        {% endfor %}
+      </fieldset>
+      <label for="{{ review.form.text.id_for_label }}">{{ review.form.text.label }}</label>
+      {{ review.form.text }}
+      <button type="submit" class="button button-primary">{% if review.own %}Bewertung ändern{% else %}Bewerten{% endif %}</button>
+    </form>
+  {% endif %}
+</section>
