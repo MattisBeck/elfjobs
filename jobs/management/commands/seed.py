@@ -11,6 +11,7 @@ from django.db import transaction
 from faker import Faker
 
 from accounts.models import ProfileSkill, StudentProfile
+from applications.models import Application
 from companies.models import CompanyMember
 from jobs.models import Company, Fair, JobPosting, SavedPosting, Shift, Tag
 from studies.curriculum import CURRICULUM
@@ -247,6 +248,9 @@ def create_demo_student(password):
     user.saved_postings.all().delete()
     for posting in JobPosting.objects.order_by("id")[:DEMO_SAVED_POSTINGS]:
         SavedPosting.objects.create(user=user, posting=posting)
+    # Mia hat sich auf zwei Werkstudentenstellen beworben (#14), damit „Meine Bewerbungen“ etwas zeigt.
+    for posting in JobPosting.objects.filter(kind=JobPosting.Kind.WORKING_STUDENT).order_by("id")[:2]:
+        Application.objects.get_or_create(profile=profile, posting=posting)
 
     # Mias Stundenplan aus docs/design.md, bei jedem Seed neu.
     profile.lectures.all().delete()

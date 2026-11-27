@@ -54,6 +54,14 @@
       {% endif %}
     {% endif %}
   </section>
+  <section id="bewerbungen" class="my-applications">
+    <h2>Meine Bewerbungen</h2>
+    {% for application in my_applications %}
+      <p><a href="{% url 'job_detail' application.posting.pk %}">{{ application.posting.title }}</a> <span class="muted">· {{ application.posting.company.name }} · {{ application.applied_at|date:"d.m.Y" }} · {{ application.get_status_display }}</span></p>
+    {% empty %}
+      <p class="muted">Noch keine. Im Stellendetail bewirbst du dich mit einem Klick: <a href="{% url 'job_list' %}">Jobs ansehen →</a></p>
+    {% endfor %}
+  </section>
   <section class="my-fairs">
     <h2>Meine Messen</h2>
     {% for fair in my_fairs %}

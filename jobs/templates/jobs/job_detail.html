@@ -23,7 +23,6 @@
           {% if verdict.detail %}<p class="fit-badge-detail">{{ verdict.detail }}</p>{% endif %}
         {% endif %}
       </div>
-      {# Bewerben (#14) bekommt seine Funktion mit einem eigenen Issue. #}
       <div class="job-actions">
         {# Merken (#13): nur Studierende, anonym führt der Knopf zum Login. Erneuter Klick entfernt. #}
         {% if can_save %}
@@ -35,7 +34,7 @@
         {% elif not user.is_authenticated %}
           <a class="button" href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">Merken</a>
         {% endif %}
-        <button type="button" class="button button-primary">Mit Profil bewerben</button>
+        {% include "applications/_apply_button.html" %}
       </div>
     </header>
 

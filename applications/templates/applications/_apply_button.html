@@ -1,0 +1,9 @@
+{# Knopf „Mit Profil bewerben“ (#14). Firmenkonten sehen ihn nicht. #}
+{% if application %}
+  <button type="button" class="button button-primary" disabled title="Bewerbung gesendet">✓ Beworben am {{ application.applied_at|date:"d.m.Y" }}</button>
+{% elif not is_company %}
+  <form method="post" action="{% url 'apply' posting.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="button button-primary">Mit Profil bewerben</button>
+  </form>
+{% endif %}

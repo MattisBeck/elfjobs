@@ -12,6 +12,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from accounts.models import StudentProfile
+from companies.models import CompanyMember
 from studies.qualification import LEARNED, classify, skill_lookup, summary, verdict
 from timetable.fit import FLEXIBEL, KOLLIDIERT, PASST, TEILWEISE, posting_fit
 from timetable.models import PlannedShift
@@ -253,6 +254,10 @@ def job_detail(request, pk):
         apply_home_commutes(profile, [posting])
         posting.fit = posting_fit(posting, profile.lectures.all())
 
+    # Knopf „Mit Profil bewerben“ (#14): schon beworben? Firmenkonten bekommen keinen Knopf.
+    application = posting.applications.filter(profile=profile).first() if profile else None
+    is_company = request.user.is_authenticated and CompanyMember.objects.filter(user=request.user).exists()
+
     # "Das bringst du mit": jede Anforderung eingeordnet (gelernt, kommt noch, nicht im Studium).
     # Ohne Login oder Profil nur die Namen.
     requirements = classify(skills or {}, posting.tags.all())
@@ -292,6 +297,8 @@ def job_detail(request, pk):
         # Merken (#13): nur Studierende, Firmenkonten sehen keinen Knopf.
         "can_save": is_student(request.user),
         "is_saved": is_student(request.user) and posting.saved_by.filter(user=request.user).exists(),
+        "application": application,
+        "is_company": is_company,
     })
 
 
