@@ -81,6 +81,43 @@ DESIGN_EXAMPLE_SHIFTS = {
     ("Promoter*in", "Weihmann GbR", 7): [(1, time(15, 0), time(18, 30)), (2, time(16, 30), time(20, 0))],
 }
 
+# Orte für Stellen vor Ort und hybrid (#20): Berliner Kieze und Umland, Koordinaten
+# fest eingetragen (Ortsmitte, auf ~0,01° genau), Adressen erfunden, PLZ passend zum Ort.
+LOCATIONS = [
+    ("Alexanderstraße 7, 10178 Berlin", "52.5219", "13.4132"),
+    ("Friedrichstraße 120, 10117 Berlin", "52.5170", "13.3889"),
+    ("Kastanienallee 32, 10435 Berlin", "52.5389", "13.4100"),
+    ("Schönhauser Allee 80, 10439 Berlin", "52.5480", "13.4130"),
+    ("Oranienstraße 45, 10999 Berlin", "52.5010", "13.4190"),
+    ("Mehringdamm 61, 10961 Berlin", "52.4930", "13.3880"),
+    ("Warschauer Straße 33, 10243 Berlin", "52.5100", "13.4500"),
+    ("Sonnenallee 102, 12045 Berlin", "52.4810", "13.4350"),
+    ("Karl-Marx-Straße 150, 12043 Berlin", "52.4760", "13.4390"),
+    ("Kantstraße 58, 10627 Berlin", "52.5060", "13.3060"),
+    ("Kurfürstendamm 190, 10707 Berlin", "52.5010", "13.3150"),
+    ("Hauptstraße 12, 10827 Berlin", "52.4860", "13.3550"),
+    ("Schloßstraße 30, 12163 Berlin", "52.4580", "13.3220"),
+    ("Turmstraße 21, 10559 Berlin", "52.5260", "13.3420"),
+    ("Müllerstraße 140, 13353 Berlin", "52.5470", "13.3540"),
+    ("Altstädter Ring 5, 13597 Berlin", "52.5370", "13.2040"),
+    ("Berliner Straße 90, 13507 Berlin", "52.5890", "13.2840"),
+    ("Breite Straße 18, 13187 Berlin", "52.5690", "13.4040"),
+    ("Frankfurter Allee 210, 10365 Berlin", "52.5150", "13.4850"),
+    ("Marzahner Promenade 9, 12679 Berlin", "52.5450", "13.5650"),
+    ("Bahnhofstraße 40, 12555 Berlin", "52.4580", "13.5760"),
+    ("Rudower Straße 65, 12524 Berlin", "52.4330", "13.5300"),
+    ("Brandenburgische Straße 20, 14467 Potsdam", "52.3990", "13.0600"),
+    ("August-Bebel-Straße 88, 14482 Potsdam", "52.3940", "13.1300"),
+    ("Potsdamer Straße 14, 14513 Teltow", "52.4020", "13.2700"),
+    ("Breitscheidstraße 23, 16321 Bernau bei Berlin", "52.6790", "13.5870"),
+    ("Bahnhofstraße 6, 15711 Königs Wusterhausen", "52.2970", "13.6310"),
+    ("Berliner Straße 44, 16515 Oranienburg", "52.7540", "13.2370"),
+    ("Spandauer Straße 120, 14612 Falkensee", "52.5600", "13.0920"),
+    ("Rathausstraße 3, 15732 Schönefeld", "52.3900", "13.5100"),
+]
+# Höchstens so weit (in Grad) liegt eine Stelle neben dem Ortspunkt, damit nicht alle übereinander liegen.
+LOCATION_JITTER = 0.01
+
 
 def random_wage(low, high):
     """Zufälliger Stundenlohn, auf 0,50 € genau."""
@@ -121,7 +158,10 @@ def create_curriculum():
     """Studiengänge und Module aus studies/curriculum.py, fehlende Tags werden angelegt.
 
     Studiengänge und Module werden aktualisiert statt gelöscht, damit Profile ihre
-    Auswahl behalten.
+    Auswahl behalten. Ein Modul wird wie bei import_lehrplan über sein Kürzel gefunden.
+    Hat der Import es umbenannt (z. B. „Programmiertechnik 1“), bleibt der Name aus dem
+    Katalog. Ältere Datenbanken kennen manche Module noch unter einem alten Kürzel
+    (z. B. MOD1 statt MO), die findet der Seed über den Namen.
     """
     for name, abbreviation, university, standard_semesters, courses in CURRICULUM:
         program, _ = StudyProgram.objects.update_or_create(
@@ -130,11 +170,14 @@ def create_curriculum():
             defaults={"name": name, "standard_semesters": standard_semesters},
         )
         for semester, short_name, course_name, skills in courses:
-            course, _ = Course.objects.update_or_create(
-                program=program,
-                name=course_name,
-                defaults={"short_name": short_name, "semester": semester},
+            course = (
+                Course.objects.filter(program=program, short_name=short_name).first()
+                or Course.objects.filter(program=program, name=course_name).first()
+                or Course(program=program, name=course_name)
             )
+            course.short_name = short_name
+            course.semester = semester
+            course.save()
             course.skills.set([Tag.objects.get_or_create(name=skill)[0] for skill in skills])
 
 
@@ -252,6 +295,22 @@ class Command(BaseCommand):
         for posting in JobPosting.objects.filter(schedule=JobPosting.Schedule.FIXED).order_by("id"):
             for weekday, start, end in make_shifts(posting, shift_random):
                 Shift.objects.create(posting=posting, weekday=weekday, start=start, end=end)
+
+        # Orte (#20) mit eigenem Zufallsgenerator, Remote-Stellen bleiben ohne Ort.
+        location_random = random.Random(SEED + 20)
+        onsite_postings = JobPosting.objects.exclude(
+            workplace=JobPosting.Workplace.REMOTE
+        ).order_by("id")
+        for posting in onsite_postings:
+            address, latitude, longitude = location_random.choice(LOCATIONS)
+            posting.address = address
+            posting.latitude = round(
+                Decimal(latitude) + Decimal(location_random.uniform(-LOCATION_JITTER, LOCATION_JITTER)), 6
+            )
+            posting.longitude = round(
+                Decimal(longitude) + Decimal(location_random.uniform(-LOCATION_JITTER, LOCATION_JITTER)), 6
+            )
+            posting.save()
 
         # Lehrpläne (#30) nach den Stellen, mit eigenem Zufallsgenerator für die Anforderungen.
         create_curriculum()

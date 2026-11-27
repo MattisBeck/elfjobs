@@ -815,6 +815,69 @@ a {
   border-top: 1px solid var(--line);
 }
 
+/* Karte (#21): Liste links, Karte rechts; auf dem Handy die Karte oben. */
+.map-link {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+
+.map-link a {
+  color: var(--accent-ink);
+}
+
+.map-hint {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.map-section-heading {
+  margin: 24px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.map-column {
+  min-width: 0;
+}
+
+/* Leaflet braucht eine feste Höhe. */
+.job-map {
+  height: 420px;
+  border-bottom: 1px solid var(--line);
+}
+
+@media (min-width: 901px) {
+  .map-column {
+    position: sticky;
+    top: 0;
+    align-self: start;
+  }
+
+  .job-map {
+    height: calc(100vh - 61px);
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .map-split .map-column {
+    order: -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .job-map {
+    height: 320px;
+  }
+
+  .map-link a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
 /* Mein Stundenplan (#7) */
 .timetable-page {
   max-width: 1080px;

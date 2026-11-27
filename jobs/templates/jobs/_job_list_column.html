@@ -16,6 +16,9 @@
     <strong>{{ postings|length }} Stelle{{ postings|length|pluralize:"n" }}</strong>
     <span>sortiert nach effektivem Stundenlohn</span>
   </p>
+  {% if not selected_pk %}
+    <p class="map-link"><a href="{% url 'job_map' %}{% if filter_query %}?{{ filter_query }}{% endif %}">Auf der Karte ansehen</a></p>
+  {% endif %}
 
   <ul class="job-rows">
     {% for posting in postings %}

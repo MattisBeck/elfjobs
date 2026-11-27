@@ -28,3 +28,10 @@ class JobPostingAdmin(admin.ModelAdmin):
     inlines = [ShiftInline]
     list_display = ("title", "company", "kind", "workplace", "schedule", "hourly_wage")
     list_filter = ("kind", "workplace", "schedule")
+    fieldsets = [
+        (None, {"fields": [
+            "company", "title", "description", "kind", "workplace", "schedule",
+            "hourly_wage", "hours_per_week", "tags",
+        ]}),
+        ("Ort", {"fields": ["address", ("latitude", "longitude")]}),
+    ]

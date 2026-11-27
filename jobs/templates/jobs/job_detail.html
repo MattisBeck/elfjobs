@@ -75,6 +75,7 @@
             <dl class="facts">
               <dt>Art</dt><dd>{{ posting.get_kind_display }}</dd>
               <dt>Arbeitsort</dt><dd>{{ posting.get_workplace_display }}</dd>
+              {% if posting.address %}<dt>Adresse</dt><dd>{{ posting.address }}</dd>{% endif %}
               <dt>Stunden pro Woche</dt><dd>{{ posting.hours_per_week }} h</dd>
               <dt>Arbeitszeiten</dt>
               <dd>{% if posting.schedule == "flexible" %}Flexibel, du planst selbst{% else %}Feste Zeiten{% endif %}</dd>

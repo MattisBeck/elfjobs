@@ -81,6 +81,15 @@ class JobPosting(models.Model):
     tags = models.ManyToManyField(
         Tag, related_name="postings", blank=True, verbose_name="Tags"
     )
+    # Ort der Stelle (#20). Remote-Stellen haben keinen. Koordinaten als Decimal mit
+    # 6 Nachkommastellen (~10 cm): exakt gespeichert, damit der Seed reproduzierbar bleibt.
+    address = models.CharField("Adresse", max_length=200, blank=True)  # Straße, PLZ, Ort
+    latitude = models.DecimalField(
+        "Breitengrad", max_digits=9, decimal_places=6, null=True, blank=True
+    )
+    longitude = models.DecimalField(
+        "Längengrad", max_digits=9, decimal_places=6, null=True, blank=True
+    )
     created_at = models.DateTimeField("Erstellt am", auto_now_add=True)
 
     class Meta:
@@ -90,6 +99,11 @@ class JobPosting(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def has_location(self):
+        """True, wenn die Stelle Koordinaten hat (für Karte und Anreise)."""
+        return self.latitude is not None and self.longitude is not None
 
     # Effektiver Stundenlohn, Regeln aus docs/design.md. Für feste Stellen
     # vorher prefetch_related("shifts") nutzen, sonst eine Abfrage pro Stelle.
