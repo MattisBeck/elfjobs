@@ -5,7 +5,7 @@
 {% block content %}
 <section class="form-page">
   <a class="back-link-plain" href="{% url 'timetable' %}">← Mein Stundenplan</a>
-  <h1>Termin ändern</h1>
+  <h1>{{ lecture.title }} ändern</h1>
   <form method="post" class="form">
     {% csrf_token %}
     {{ form.as_div }}

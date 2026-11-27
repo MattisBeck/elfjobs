@@ -107,9 +107,14 @@ def job_list(request):
 
 def job_detail(request, pk):
     posting = get_object_or_404(
-        JobPosting.objects.select_related("company").prefetch_related("tags"),
+        JobPosting.objects.select_related("company").prefetch_related("tags", "shifts"),
         pk=pk,
     )
+    # Passung der geöffneten Stelle für den Punkt am Tab „In meiner Woche“.
+    if request.user.is_authenticated:
+        profile = StudentProfile.objects.filter(user=request.user).first()
+        if profile:
+            posting.fit = posting_fit(posting, profile.lectures.all())
     postings, chips, filter_params = filtered_postings(request)
     view = "woche" if request.GET.get("ansicht") == "woche" else "details"
     return render(request, "jobs/job_detail.html", {

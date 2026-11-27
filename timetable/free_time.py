@@ -38,11 +38,12 @@ def free_blocks(lectures):
     day_start, day_end = to_minutes(DAY_START), to_minutes(DAY_END)
     blocks = []
     for weekday in Weekday.values:
-        # Termine auf 8–20 Uhr begrenzen und nach Beginn sortieren.
+        # Termine auf 8–20 Uhr begrenzen und nach Beginn sortieren. Termine ganz außerhalb
+        # (z. B. 20:30–22:00) fallen weg, sonst würden sie den letzten freien Block verlängern.
         busy = sorted(
             (max(to_minutes(l.start), day_start), min(to_minutes(l.end), day_end))
             for l in lectures
-            if l.weekday == weekday
+            if l.weekday == weekday and to_minutes(l.start) < day_end and to_minutes(l.end) > day_start
         )
         cursor = day_start
         for start, end in busy + [(day_end, day_end)]:

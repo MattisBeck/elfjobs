@@ -6,10 +6,6 @@ from jobs.models import JobPosting
 
 from .free_time import to_minutes
 
-# Pufferzeit vor und nach jeder Vorlesung, damit man zur Arbeit kommt.
-# Wird durch die Fahrzeit der Firma aus #12 ersetzt.
-COMMUTE_BUFFER_MINUTES = 30
-
 PASST = "passt"
 TEILWEISE = "teilweise"
 KOLLIDIERT = "kollidiert"
@@ -44,14 +40,15 @@ def shift_collides(shift, lectures, buffer_minutes):
 def posting_fit(posting, lectures):
     """Passung einer Stelle zu einer Liste von Terminen (alles mit weekday, start und end).
 
-    Der Puffer gilt vor und nach der Vorlesung, außer bei Remote-Stellen (kein Weg).
-    Hybrid hat Weg, bekommt also den Puffer.
+    Puffer vor und nach der Vorlesung ist die einfache Fahrzeit der Firma (#12, docs/design.md),
+    damit man zur Arbeit und zurück kommt. Remote-Stellen haben keinen Weg und keinen Puffer,
+    Hybrid hat einen Weg und bekommt ihn. Für viele Stellen vorher select_related("company").
     """
     shifts = list(posting.shifts.all())
     if posting.schedule == JobPosting.Schedule.FLEXIBLE or not shifts:
         return Fit(FLEXIBEL, 0, len(shifts), "Flexible Zeiten, du wählst die Schichten")
 
-    buffer_minutes = 0 if posting.workplace == JobPosting.Workplace.REMOTE else COMMUTE_BUFFER_MINUTES
+    buffer_minutes = 0 if posting.workplace == JobPosting.Workplace.REMOTE else posting.company.commute_minutes
     total = len(shifts)
     colliding = sum(shift_collides(shift, lectures, buffer_minutes) for shift in shifts)
 

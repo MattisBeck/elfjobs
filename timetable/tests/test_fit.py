@@ -14,8 +14,11 @@ from timetable.models import LectureSlot
 MONDAY, TUESDAY, THURSDAY = 0, 1, 3
 
 
-def make_posting(title="Stelle", shifts=(), workplace=JobPosting.Workplace.ONSITE, schedule=None):
-    company, _ = Company.objects.get_or_create(name="Testfirma", industry="Tech")
+def make_posting(title="Stelle", shifts=(), workplace=JobPosting.Workplace.ONSITE, schedule=None, commute=30):
+    # Der Puffer ist die einfache Fahrzeit der Firma; die Tests unten rechnen mit 30 min.
+    company, _ = Company.objects.get_or_create(
+        name=f"Testfirma {commute} min", industry="Tech", defaults={"commute_minutes": commute}
+    )
     if schedule is None:
         schedule = JobPosting.Schedule.FIXED if shifts else JobPosting.Schedule.FLEXIBLE
     posting = JobPosting.objects.create(
@@ -100,6 +103,15 @@ def test_buffer_is_applied_on_both_sides():
 
     assert posting_fit(after, LECTURE).status == KOLLIDIERT
     assert posting_fit(before, LECTURE).status == KOLLIDIERT
+
+
+@pytest.mark.django_db
+def test_buffer_is_the_commute_of_the_company():
+    # Vorlesung endet 12:00, Schicht beginnt 12:15: bei 10 min Fahrzeit passt das, bei 30 min nicht.
+    shifts = [(MONDAY, time(12, 15), time(14, 0))]
+
+    assert posting_fit(make_posting(shifts=shifts, commute=10), LECTURE).status == PASST
+    assert posting_fit(make_posting(shifts=shifts, commute=30), LECTURE).status == KOLLIDIERT
 
 
 @pytest.mark.django_db
@@ -253,3 +265,19 @@ def test_seed_example_fits_mia_and_all_statuses_occur(client, db):
     fits = {(p.title, p.company.name, p.hours_per_week): p.fit for p in response.context["postings"]}
     assert fits[("Promoter*in", "Weihmann GbR", 7)].status == PASST
     assert {fit.status for fit in fits.values()} == {PASST, TEILWEISE, KOLLIDIERT, FLEXIBEL}
+
+
+@pytest.mark.django_db
+def test_detail_tab_dot_shows_the_fit(client):
+    user = User.objects.create_user("mia@student.hpi.uni-potsdam.de")
+    profile = StudentProfile.objects.create(user=user)
+    LectureSlot.objects.create(profile=profile, weekday=MONDAY, start=time(10, 0), end=time(12, 0), title="Mathe")
+    clash = make_posting("Kollision", shifts=[(MONDAY, time(11, 0), time(13, 0))])
+
+    anonymous = client.get(f"/jobs/{clash.pk}/").content.decode()
+    assert 'class="tab-dot"' in anonymous
+
+    client.force_login(user)
+    content = client.get(f"/jobs/{clash.pk}/").content.decode()
+    assert 'class="tab-dot fit-kollidiert"' in content
+    assert ": Kollidiert mit Vorlesungen" in content

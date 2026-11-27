@@ -58,6 +58,14 @@ def test_overlapping_lectures_and_times_outside_the_day():
     assert [str(b) for b in blocks if b.weekday == 2] == ["Mi 09:00–12:00", "Mi 15:00–19:00"]
 
 
+def test_lectures_entirely_outside_the_day_are_ignored():
+    # Ein Termin nach 20 Uhr (oder vor 8 Uhr) darf den freien Block nicht verlängern.
+    blocks = free_blocks([Slot(0, time(20, 30), time(21, 30)), Slot(0, time(6, 0), time(7, 30))])
+
+    assert [str(b) for b in blocks if b.weekday == 0] == ["Mo 08:00–20:00"]
+    assert free_hours(blocks) == 5 * 12
+
+
 @pytest.fixture
 def mia(db):
     user = User.objects.create_user("mia@student.hpi.uni-potsdam.de", first_name="Mia")
