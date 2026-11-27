@@ -10,13 +10,12 @@ from django.core.management import call_command
 from jobs.management.commands.seed import COMPANIES_WITH_LOGO, seed_logo_path
 from jobs.models import Company, JobPosting, company_initials
 
-SVG = b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"></svg>'
-
-
-@pytest.fixture
-def media_root(tmp_path, settings):
-    settings.MEDIA_ROOT = tmp_path
-    return tmp_path
+SVG = b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><script>alert(1)</script></svg>'
+# Nur die ersten Bytes zählen für die Prüfung, der Rest ist Füllmaterial.
+PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 20
+JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 20
+WEBP = b"RIFF\x10\x00\x00\x00WEBPVP8 " + b"\x00" * 20
+# media_root kommt aus conftest.py (autouse, temporärer Ordner).
 
 
 def make_posting(company_name="Weihmann GbR", **company_fields):
@@ -59,11 +58,8 @@ def test_company_without_logo_shows_initials_in_list_and_detail(client):
 
     # Liste: dekorativ, der Name steht daneben.
     assert '<span class="company-logo company-logo-small company-logo-initials" aria-hidden="true">HF</span>' in list_content
-    # Detail: groß und mit Firmenname für Screenreader.
-    assert (
-        '<span class="company-logo company-logo-large company-logo-initials" role="img" '
-        'aria-label="Holsten Förster AG &amp; Co. OHG">HF</span>'
-    ) in detail_content
+    # Detail: groß, ebenfalls dekorativ, weil der Name direkt daneben steht.
+    assert '<span class="company-logo company-logo-large company-logo-initials" aria-hidden="true">HF</span>' in detail_content
     assert "<img class=\"company-logo" not in list_content + detail_content
 
 
@@ -76,17 +72,53 @@ def test_company_with_static_logo_shows_img(client):
 
     assert '<img class="company-logo company-logo-small" src="/static/logos/weihmann-gbr.svg" alt="">' in list_content
     assert (
-        '<img class="company-logo company-logo-large" src="/static/logos/weihmann-gbr.svg" alt="Weihmann GbR">'
+        '<img class="company-logo company-logo-large" src="/static/logos/weihmann-gbr.svg" alt="">'
     ) in detail_content
 
 
 @pytest.mark.django_db
-def test_uploaded_logo_wins_over_static_logo(media_root):
+def test_uploaded_logo_wins_over_static_logo_and_is_served_by_own_view(client, media_root):
     company = Company.objects.create(name="Bauer", industry="Bank", logo_static="logos/bauer.svg")
-    company.logo.save("bauer.svg", SimpleUploadedFile("bauer.svg", SVG))
+    company.logo.save("bauer.png", SimpleUploadedFile("bauer.png", PNG))
 
-    assert company.logo_url == "/media/logos/bauer.svg"
-    assert (media_root / "logos" / "bauer.svg").exists()
+    assert company.logo_url == f"/firmen/{company.pk}/logo"
+    assert (media_root / "logos" / "bauer.png").exists()
+
+    response = client.get(company.logo_url)
+    assert response.status_code == 200
+    assert response["Content-Type"] == "image/png"
+    assert response["X-Content-Type-Options"] == "nosniff"
+    assert b"".join(response.streaming_content) == PNG
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("filename, content, content_type", [
+    ("logo.jpg", JPEG, "image/jpeg"),
+    ("logo.webp", WEBP, "image/webp"),
+])
+def test_logo_view_sets_content_type(client, filename, content, content_type):
+    company = Company.objects.create(name="Bauer", industry="Bank")
+    company.logo.save(filename, SimpleUploadedFile(filename, content))
+
+    assert client.get(f"/firmen/{company.pk}/logo")["Content-Type"] == content_type
+
+
+@pytest.mark.django_db
+def test_logo_view_is_404_without_upload(client):
+    company = Company.objects.create(name="Bauer", industry="Bank", logo_static="logos/bauer.svg")
+
+    assert client.get(f"/firmen/{company.pk}/logo").status_code == 404
+    assert client.get("/firmen/999999/logo").status_code == 404
+
+
+@pytest.mark.django_db
+def test_media_is_not_served_directly(client, media_root):
+    """Unter MEDIA_ROOT liegen auch private Dateien (Lebensläufe), deshalb keine /media/-Route."""
+    company = Company.objects.create(name="Bauer", industry="Bank")
+    company.logo.save("bauer.png", SimpleUploadedFile("bauer.png", PNG))
+
+    assert client.get("/media/logos/bauer.png").status_code == 404
+    assert not hasattr(settings, "MEDIA_URL") or settings.MEDIA_URL in ("", "/")
 
 
 @pytest.mark.django_db
@@ -95,9 +127,19 @@ def test_company_without_any_logo_has_no_logo_url():
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("filename", ["logo.gif", "logo.exe", "logo.svg.html", "logo"])
-def test_upload_with_wrong_extension_is_rejected(media_root, filename):
-    company = Company(name="Bauer", industry="Bank", logo=SimpleUploadedFile(filename, SVG))
+@pytest.mark.parametrize("filename, content", [
+    ("logo.svg", SVG),  # SVG kann Skripte enthalten, Upload nie
+    ("logo.gif", PNG),
+    ("logo.exe", PNG),
+    ("logo.png.html", PNG),
+    ("logo", PNG),
+    ("logo.png", SVG),  # umbenannte SVG: falsche Magic Bytes
+    ("logo.png", JPEG),  # Endung passt nicht zum Inhalt
+    ("logo.jpg", PNG),
+    ("logo.webp", b"RIFF\x10\x00\x00\x00WAVEfmt " + b"\x00" * 20),
+])
+def test_upload_with_wrong_extension_or_content_is_rejected(filename, content):
+    company = Company(name="Bauer", industry="Bank", logo=SimpleUploadedFile(filename, content))
 
     with pytest.raises(ValidationError) as error:
         company.full_clean()
@@ -106,9 +148,22 @@ def test_upload_with_wrong_extension_is_rejected(media_root, filename):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("filename", ["logo.svg", "logo.png", "logo.JPG", "logo.jpeg", "logo.webp"])
-def test_upload_with_allowed_extension_is_accepted(media_root, filename):
-    Company(name="Bauer", industry="Bank", logo=SimpleUploadedFile(filename, SVG)).full_clean()
+def test_upload_larger_than_1_mb_is_rejected():
+    big = PNG + b"\x00" * (1024 * 1024)
+    company = Company(name="Bauer", industry="Bank", logo=SimpleUploadedFile("logo.png", big))
+
+    with pytest.raises(ValidationError) as error:
+        company.full_clean()
+
+    assert "1 MB" in str(error.value.message_dict["logo"])
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("filename, content", [
+    ("logo.png", PNG), ("logo.PNG", PNG), ("logo.jpg", JPEG), ("logo.jpeg", JPEG), ("logo.webp", WEBP),
+])
+def test_upload_with_allowed_extension_and_content_is_accepted(filename, content):
+    Company(name="Bauer", industry="Bank", logo=SimpleUploadedFile(filename, content)).full_clean()
 
 
 @pytest.mark.django_db

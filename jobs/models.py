@@ -2,16 +2,44 @@ import math
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.templatetags.static import static
+from django.urls import reverse
 
 
 # Minijob-Grenze 2026 in Euro pro Monat
 MINIJOB_LIMIT = 603
 
-# Firmenlogos (#73): erlaubte Endungen für den Upload im Admin. Kein ImageField, damit wir kein Pillow brauchen.
-LOGO_EXTENSIONS = ["svg", "png", "jpg", "jpeg", "webp"]
+# Firmenlogos (#73): Upload im Admin nur als Rasterbild. Kein SVG, weil darin Skripte stecken können.
+# Kein ImageField, damit wir kein Pillow brauchen: Endung und die ersten Bytes werden selbst geprüft.
+LOGO_CONTENT_TYPES = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp"}
+LOGO_MAX_BYTES = 1024 * 1024
+
+
+def logo_format(header):
+    """Bildformat aus den ersten Bytes der Datei (Magic Bytes), sonst None."""
+    if header.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if header.startswith(b"\xff\xd8\xff"):
+        return "jpeg"
+    if header[:4] == b"RIFF" and header[8:12] == b"WEBP":
+        return "webp"
+    return None
+
+
+def validate_logo_file(file):
+    """Höchstens 1 MB und der Inhalt muss zur Endung passen (eine umbenannte SVG fällt hier auf)."""
+    if file.size > LOGO_MAX_BYTES:
+        raise ValidationError("Das Logo darf höchstens 1 MB groß sein.")
+    file.seek(0)
+    header = file.read(12)
+    file.seek(0)
+    extension = file.name.rsplit(".", 1)[-1].lower()
+    expected = "jpeg" if extension == "jpg" else extension
+    if logo_format(header) != expected:
+        raise ValidationError("Die Datei ist kein PNG-, JPG- oder WebP-Bild.")
 
 # Rechtsformen zählen nicht für die Initialen: „Holsten Förster AG & Co. OHG“ → „HF“.
 LEGAL_FORMS = {"gmbh", "mbh", "ag", "kg", "kgaa", "ohg", "gbr", "ug", "se", "co", "e.v", "ev", "eg", "stiftung"}
@@ -40,12 +68,12 @@ class Company(models.Model):
     # Logo (#73): ein Upload im Admin hat Vorrang vor einer Datei unter static/ (für Seed-Firmen).
     logo = models.FileField(
         "Logo", upload_to="logos/", blank=True,
-        validators=[FileExtensionValidator(LOGO_EXTENSIONS)],
-        help_text="SVG, PNG, JPG oder WebP.",
+        validators=[FileExtensionValidator(list(LOGO_CONTENT_TYPES)), validate_logo_file],
+        help_text="PNG, JPG oder WebP, höchstens 1 MB.",
     )
     logo_static = models.CharField(
         "Logo aus static/", max_length=200, blank=True,
-        help_text="Pfad unter static/, z. B. logos/weihmann.svg. Ein hochgeladenes Logo hat Vorrang.",
+        help_text="Pfad unter static/, z. B. logos/weihmann-gbr.svg (SVG nur hier, aus dem Repo). Ein hochgeladenes Logo hat Vorrang.",
     )
 
     class Meta:
@@ -59,7 +87,8 @@ class Company(models.Model):
     def logo_url(self):
         """URL des Logos: Upload vor statischer Datei, ohne Logo None (dann zeigt das Template Initialen)."""
         if self.logo:
-            return self.logo.url
+            # Kein öffentliches /media/: Uploads kommen über eine eigene View (dort liegen auch Lebensläufe).
+            return reverse("company_logo", args=[self.pk])
         if self.logo_static:
             return static(self.logo_static)
         return None
