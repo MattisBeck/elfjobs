@@ -158,6 +158,11 @@ class OnboardingSkillsForm(forms.Form):
         required=False, widget=forms.CheckboxSelectMultiple,
     )
 
+    def __init__(self, *args, course_skills=(), **kwargs):
+        super().__init__(*args, **kwargs)
+        # Skills aus den Modulen stehen schon oben, sie werden nicht noch einmal angeboten (#106).
+        self.fields["skills"].queryset = Tag.objects.exclude(pk__in=course_skills).order_by("name")
+
 
 class CvSampleForm(forms.ModelForm):
     """Auswahl eines Beispiel-Lebenslaufs (#50), bis der echte Upload (#38) da ist."""

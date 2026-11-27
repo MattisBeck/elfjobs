@@ -1430,3 +1430,16 @@ a.button {
   background: var(--surface-muted);
   text-align: center;
 }
+
+/* Onboarding auf dem Handy: Hinweis-Link und Auswahl mindestens 44 px hoch (#106) */
+.onboarding-hint a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+@media (max-width: 720px) {
+  .onboarding .skill-choices label {
+    min-height: 44px;
+  }
+}

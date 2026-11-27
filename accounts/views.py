@@ -168,23 +168,21 @@ def cv_pdf(request):
 def onboarding_skills(request):
     """Schritt 1: Skills. Was aus den belegten Modulen kommt, steht schon fest."""
     student, _ = StudentProfile.objects.get_or_create(user=request.user)
+    course_skills = Tag.objects.filter(courses__in=student.courses.all()).distinct().order_by("name")
     if request.method == "POST":
         if "ueberspringen" in request.POST:
             return redirect("onboarding_timetable")
-        form = OnboardingSkillsForm(request.POST)
+        form = OnboardingSkillsForm(request.POST, course_skills=course_skills)
         if form.is_valid():
             set_profile_skills(student, form.cleaned_data["skills"])
             return redirect("onboarding_timetable")
     else:
-        form = OnboardingSkillsForm(initial={
+        form = OnboardingSkillsForm(course_skills=course_skills, initial={
             "skills": Tag.objects.filter(
                 profile_skills__profile=student, profile_skills__source=ProfileSkill.Source.PROFILE
             )
         })
-    return render(request, "accounts/onboarding_skills.html", {
-        "form": form,
-        "course_skills": Tag.objects.filter(courses__in=student.courses.all()).distinct().order_by("name"),
-    })
+    return render(request, "accounts/onboarding_skills.html", {"form": form, "course_skills": course_skills})
 
 
 @login_required
