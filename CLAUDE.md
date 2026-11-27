@@ -25,6 +25,8 @@ Fünf Leute arbeiten parallel. Die GitHub-Issues sind die einzige Liste dessen, 
 
 Ein Issue ist **klein**: in ein bis zwei Tagen fertig. Größere Features werden in mehrere Issues geteilt. Wenn du merkst, dass deine Arbeit ein fremdes Issue berührt, schreib einen Kommentar dort.
 
+**Gegenseitig pingen:** Menschen und ihre Claude-Agenten erwähnen sich mit `@login` in Issue- und PR-Kommentaren, zum Beispiel für ein Review, eine Frage zu einem fremden Issue oder eine Überschneidung. Im Team: `@MattisBeck`, `@Lille2008`, `@AuchHabicht`, `@ShadowAlyx`, `@Tobi-St`. Wer gepingt wird, antwortet im selben Thread. Ein Ping ersetzt keine Zuweisung: An einem Issue, das jemand anderem gehört, arbeitest du erst nach Absprache.
+
 **Migrationen** kollidieren, wenn zwei Branches gleichzeitig Migrationen in derselben App anlegen. Hole vor `makemigrations` den aktuellen `main` in deinen Branch (`git pull origin main`). Kommt nach dem Merge trotzdem ein Konflikt: deine eigene Migration löschen und `makemigrations` neu ausführen.
 
 ## Portabilität: fünf Rechner, ein Setup
