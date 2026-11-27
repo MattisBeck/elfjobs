@@ -96,3 +96,20 @@ def test_onboarding_needs_login(client, itse):  # noqa: F811
 
 def test_existing_user_can_still_open_onboarding_by_hand(client, existing_user):
     assert client.get("/willkommen/").status_code == 200
+
+
+def test_step_one_offers_only_skills_not_from_courses(client, new_user):
+    """#106: Skills aus den Modulen stehen oben als ✓, nicht noch einmal in der Auswahl."""
+    from studies.models import Course
+
+    sql = Tag.objects.create(name="SQL")
+    Tag.objects.create(name="Excel")
+    pt1 = Course.objects.get(short_name="PT1")
+    pt1.skills.add(sql)
+    new_user.profile.courses.add(pt1)
+
+    form = client.get("/willkommen/").context["form"]
+
+    choices = [tag.name for tag in form.fields["skills"].queryset]
+    assert "Excel" in choices
+    assert "SQL" not in choices
