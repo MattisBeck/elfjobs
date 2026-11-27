@@ -3,7 +3,10 @@
 Die Werte kommen als GET-Parameter, damit man eine Suche teilen kann:
 min_lohn (Stundenlohn ab, brutto), max_anreise (Minuten, einfach),
 min_stunden und max_stunden (pro Woche) und auf der Karte max_km (Luftlinie).
-Ungültige Werte (Text, negativ, zu groß) werden ignoriert.
+Ungültige Werte (Text, negativ, zu groß) werden ignoriert, ebenso Werte
+auf der „egal“-Stellung der Schieberegler (siehe SLIDERS). Werte werden auf
+zwei Nachkommastellen gerundet; ein Lohn bis zum Mindestlohn und ein Minimum
+von 0 sind also kein Filter.
 """
 
 from decimal import Decimal, InvalidOperation
@@ -16,21 +19,52 @@ MAP_FILTER_FIELDS = FILTER_FIELDS + ["max_km"]
 
 # Größere Zahlen ergeben keinen Sinn und werden ignoriert.
 MAX_VALUE = Decimal(10000)
+# Auf zwei Nachkommastellen runden, damit z. B. 1e-50 nicht als Chip mit 50 Stellen erscheint.
+CENT = Decimal("0.01")
 
 # Regler „Stundenlohn ab“ (#77): beginnt beim gesetzlichen Mindestlohn 2026, darunter gibt es
 # keine Stelle. Ein Wert bis zum Mindestlohn heißt „egal“ und wird nicht als Filter gezählt.
 LEGAL_MINIMUM_WAGE = Decimal("13.90")
 WAGE_SCALE_MAX = Decimal(25)
 
+# Schieberegler im Filterformular: Spanne, Schrittweite und die „egal“-Stellung.
+# Als Text, damit Django im Template kein deutsches Komma daraus macht ("0,5").
+# Die „egal“-Stellung filtert nicht: bei min_* alles bis dahin, bei max_* alles ab dort.
+# Werte außerhalb der Spanne (z. B. ?min_lohn=40) bleiben gültige Filter, der Regler wird dann länger.
+SLIDERS = {
+    "min_lohn": {
+        "min": f"{LEGAL_MINIMUM_WAGE.normalize():f}",
+        "max": f"{WAGE_SCALE_MAX:f}",
+        "step": "0.1",
+        "neutral": f"{LEGAL_MINIMUM_WAGE.normalize():f}",
+    },
+    "max_anreise": {"min": "0", "max": "60", "step": "5", "neutral": "60"},
+    "max_km": {"min": "1", "max": "30", "step": "1", "neutral": "30"},
+    "min_stunden": {"min": "0", "max": "40", "step": "1", "neutral": "0"},
+    "max_stunden": {"min": "0", "max": "40", "step": "1", "neutral": "40"},
+}
+
+
+def is_neutral(name, number):
+    """Steht der Wert auf (oder hinter) der „egal“-Stellung des Reglers?"""
+    neutral = Decimal(SLIDERS[name]["neutral"])
+    if name.startswith("min_"):
+        return number <= neutral
+    return number >= neutral
+
 
 def parse_number(value):
-    """Zahl >= 0 aus einem GET-Wert ("15", "15,50", "15.5"), sonst None."""
+    """Zahl >= 0 mit zwei Nachkommastellen aus einem GET-Wert ("15", "15,50", "15.5"), sonst None."""
     try:
         number = Decimal(value.strip().replace(",", "."))
     except (AttributeError, InvalidOperation):
         return None
     if not number.is_finite() or number < 0 or number > MAX_VALUE:
         return None
+    number = number.quantize(CENT)
+    # "-0" wäre sonst ein Chip „max. -0 min“.
+    if number == 0:
+        return Decimal("0.00")
     return number
 
 
@@ -39,10 +73,9 @@ def parse_filters(get, fields=FILTER_FIELDS):
     filters = {}
     for name in fields:
         number = parse_number(get.get(name, ""))
-        if number is not None:
+        # „egal“ filtert nicht, z. B. "ab 0 €". Bei max_* heißt 0 dagegen etwas (z. B. nur remote).
+        if number is not None and not is_neutral(name, number):
             filters[name] = number
-    if "min_lohn" in filters and filters["min_lohn"] <= LEGAL_MINIMUM_WAGE:
-        del filters["min_lohn"]
     # "von 20 bis 10 Stunden" passt zu keiner Stelle, also beide ignorieren.
     if "min_stunden" in filters and "max_stunden" in filters:
         if filters["max_stunden"] < filters["min_stunden"]:
@@ -59,6 +92,19 @@ def format_number(number, separator=","):
 def filter_number_params(filters):
     """Filter als (Name, Wert)-Paare für Links, in fester Reihenfolge."""
     return [(name, format_number(filters[name], ".")) for name in MAP_FILTER_FIELDS if name in filters]
+
+
+def slider_settings(filters):
+    """Einstellungen je Regler mit Startwert: aktiver Filter, sonst „egal“.
+
+    Liegt der Filter rechts über der Spanne (z. B. ?min_lohn=40), wird der Regler länger (#77).
+    """
+    sliders = {}
+    for name, spec in SLIDERS.items():
+        value = max(filters.get(name, Decimal(spec["neutral"])), Decimal(spec["min"]))
+        high = max(Decimal(spec["max"]), value)
+        sliders[name] = {**spec, "max": format_number(high, "."), "value": format_number(value, ".")}
+    return sliders
 
 
 def commute_minutes(posting):

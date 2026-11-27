@@ -190,6 +190,43 @@ def test_parse_filters_returns_only_valid_values():
     assert parse_filters(get, MAP_FILTER_FIELDS)["max_km"] == Decimal("3")
 
 
+@pytest.mark.parametrize("query", ["min_lohn=-0", "min_lohn=1e-50", "min_lohn=0.001", "min_lohn=0", "min_stunden=-0"])
+def test_zero_and_tiny_minimums_are_no_filter(client, postings, query):
+    response = client.get(f"/jobs/?{query}")
+
+    assert titles(response) == ["Hybrid", "Remote", "Nah", "Fern"]
+    assert remove_chips(response) == {}
+
+
+@pytest.mark.parametrize("value", ["-0", "1e-50", "0.0000"])
+def test_zero_and_tiny_maximums_count_as_zero(client, postings, value):
+    response = client.get(f"/jobs/?max_anreise={value}")
+
+    assert titles(response) == ["Remote"]
+    assert list(remove_chips(response)) == ["max. 0 min Anreise"]
+
+
+@pytest.mark.parametrize("value", ["-0", "0"])
+def test_zero_commute_slider_starts_at_zero_not_neutral(client, postings, value):
+    form = client.get(f"/jobs/?max_anreise={value}").content.decode().split('class="filter-form"')[1].split("</form>")[0]
+
+    # Der Regler steht auf 0 (nicht auf „egal“ = 60), das JS zeigt dann „max. 0 min“.
+    assert 'name="max_anreise" min="0" max="60" step="5" value="0" data-neutral="60" data-text="max. {} min"' in form
+
+
+def test_max_values_at_neutral_after_rounding_do_not_filter(client, postings):
+    response = client.get("/jobs/?max_anreise=59.999&max_stunden=39.999")
+
+    assert remove_chips(response) == {}
+
+
+def test_parse_filters_rounds_to_two_decimals():
+    get = QueryDict("min_lohn=15.499&max_anreise=-0&min_stunden=1e-50")
+
+    assert parse_filters(get) == {"min_lohn": Decimal("15.50"), "max_anreise": Decimal("0")}
+    assert str(parse_filters(get)["max_anreise"]) == "0.00"
+
+
 # Entfernen-Chips
 
 def test_remove_chips_drop_only_their_filter(client, postings):
@@ -251,9 +288,69 @@ def test_filter_form_keeps_chips_search_and_start(client, postings):
     assert '<input type="hidden" name="filter" value="kurzjob">' in form
     assert '<input type="hidden" name="q" value="Firma">' in form
     assert '<input type="hidden" name="lat" value="52.5219">' in form
-    assert 'type="range" name="min_lohn" min="13.9" max="25" step="0.1" value="15"' in form
+    assert 'type="range" id="filter-min-lohn" name="min_lohn" min="13.9" max="25" step="0.1" value="15"' in form
     assert 'name="max_km"' in form
     assert '<details class="filter-panel" open>' in content
+
+
+# Schieberegler
+
+def test_sliders_start_at_url_values(client, postings):
+    content = client.get(f"/jobs/karte/?{START}&min_lohn=14,5&max_anreise=30&max_km=10&min_stunden=10&max_stunden=20").content.decode()
+    form = content.split('class="filter-form"')[1].split("</form>")[0]
+
+    assert 'name="min_lohn" min="13.9" max="25" step="0.1" value="14.5" data-neutral="13.9" data-text="{} € brutto"' in form
+    assert 'name="max_anreise" min="0" max="60" step="5" value="30" data-neutral="60"' in form
+    assert 'name="max_km" min="1" max="30" step="1" value="10" data-neutral="30"' in form
+    assert 'name="min_stunden" min="0" max="40" step="1" value="10" data-neutral="0"' in form
+    assert 'name="max_stunden" min="0" max="40" step="1" value="20" data-neutral="40"' in form
+    assert '<label for="filter-min-lohn">' in form
+
+
+def test_sliders_start_neutral_without_filters(client, postings):
+    form = client.get(f"/jobs/karte/?{START}").content.decode().split('class="filter-form"')[1].split("</form>")[0]
+
+    assert 'name="min_lohn" min="13.9" max="25" step="0.1" value="13.9"' in form
+    assert 'name="max_anreise" min="0" max="60" step="5" value="60"' in form
+    assert 'name="max_km" min="1" max="30" step="1" value="30"' in form
+    assert 'name="min_stunden" min="0" max="40" step="1" value="0"' in form
+    assert 'name="max_stunden" min="0" max="40" step="1" value="40"' in form
+
+
+@pytest.mark.parametrize("query", [
+    "min_lohn=0", "max_anreise=60", "max_anreise=90", "min_stunden=0", "max_stunden=40", "max_stunden=45",
+    "min_lohn=0&max_anreise=60&min_stunden=0&max_stunden=40",
+])
+def test_neutral_slider_values_do_not_filter(client, postings, query):
+    response = client.get(f"/jobs/?{query}")
+
+    assert titles(response) == ["Hybrid", "Remote", "Nah", "Fern"]
+    assert remove_chips(response) == {}
+    assert '<details class="filter-panel">' in response.content.decode()
+
+
+@pytest.mark.parametrize("query", ["max_km=30", "max_km=50"])
+def test_neutral_distance_does_not_filter(client, postings, query):
+    response = client.get(f"/jobs/karte/?{START}&{query}")
+
+    assert titles(response, "nearby") == ["Nah", "Hybrid", "Fern"]
+    assert remove_chips(response) == {}
+
+
+def test_neutral_slider_values_are_left_out_of_links(client, postings):
+    response = client.get("/jobs/?min_lohn=0&max_anreise=60&min_stunden=10")
+
+    urls = {chip["label"]: chip["url"] for chip in response.context["chips"]}
+    assert urls["Remote"] == "/jobs/?filter=remote&min_stunden=10"
+
+
+def test_values_beyond_slider_range_still_filter(client, postings):
+    response = client.get("/jobs/?min_lohn=15,1")
+    assert titles(response) == ["Hybrid", "Nah", "Fern"]
+
+    response = client.get("/jobs/?min_lohn=40")
+    assert titles(response) == []
+    assert "ab 40 € brutto" in remove_chips(response)
 
 
 def test_filter_panel_closed_without_filters(client, postings):
@@ -293,6 +390,33 @@ def test_travel_sorting_keeps_filters(client, postings):
     assert urls["Kurzjob"] == f"/jobs/karte/?filter=kurzjob&max_km=5&{START}&sortierung=anreise"
 
 
+def test_max_commute_on_map_uses_travel_minutes_when_sorted_by_travel(client, postings):
+    # Nah: Firma sagt 10 min, ÖPNV 45 min. Fern: Firma sagt 45 min, ÖPNV 25 min.
+    # Hybrid hat keine ÖPNV-Minuten und bleibt bei der Firmenfahrzeit (25 min).
+    minutes = {postings["nah"].id: 45, postings["fern"].id: 25}
+    with patch("jobs.views.travel_times", return_value=minutes):
+        response = client.get(f"/jobs/karte/?{START}&sortierung=anreise&max_anreise=30")
+
+    assert titles(response, "nearby") == ["Fern", "Hybrid"]
+    assert titles(response, "remote") == ["Remote"]
+    assert [marker["title"] for marker in response.context["markers"]] == ["Fern", "Hybrid"]
+
+
+def test_max_commute_on_map_uses_company_time_without_travel_sorting(client, postings):
+    with patch("jobs.views.travel_times") as mock_travel_times:
+        response = client.get(f"/jobs/karte/?{START}&max_anreise=30")
+
+    assert mock_travel_times.call_count == 0
+    assert titles(response, "nearby") == ["Nah", "Hybrid"]
+
+
+def test_max_commute_help_text_on_map_only(client, postings):
+    hint = "Bei Sortierung nach Anreisedauer die ÖPNV-Zeit, sonst die Fahrzeit der Firma."
+
+    assert hint in client.get("/jobs/karte/").content.decode()
+    assert hint not in client.get("/jobs/").content.decode()
+
+
 def test_list_links_to_map_with_filters(client, postings):
     content = client.get("/jobs/?min_lohn=15").content.decode()
 
@@ -322,10 +446,10 @@ def test_wage_slider_starts_at_legal_minimum(client, postings):
 
     assert "Stundenlohn ab" in form
     assert "Mindestlohn (€ pro Stunde)" not in form
-    assert 'type="range" name="min_lohn" min="13.9" max="25" step="0.1" value="13.9"' in form
+    assert 'type="range" id="filter-min-lohn" name="min_lohn" min="13.9" max="25" step="0.1" value="13.9"' in form
 
 
 def test_wage_slider_grows_for_higher_values(client, postings):
     content = client.get("/jobs/?min_lohn=40").content.decode()
 
-    assert 'type="range" name="min_lohn" min="13.9" max="40" step="0.1" value="40"' in content
+    assert 'type="range" id="filter-min-lohn" name="min_lohn" min="13.9" max="40" step="0.1" value="40"' in content

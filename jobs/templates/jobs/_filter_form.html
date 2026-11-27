@@ -1,4 +1,5 @@
 {# Suchfilter (#71): GET-Formular, damit man Suchen teilen kann. Chips, Suche und Startpunkt bleiben als versteckte Felder erhalten. #}
+{# Schieberegler: Spanne und „egal“-Stellung kommen aus jobs/filters.py (SLIDERS). data-text ist die Anzeige, {} wird zur Zahl. #}
 <details class="filter-panel"{% if filter_form.open %} open{% endif %}>
   <summary>Filter</summary>
   <form class="filter-form" action="{{ filter_form.action }}" method="get">
@@ -7,36 +8,128 @@
     {% endfor %}
 
     {# Regler ab dem gesetzlichen Mindestlohn (#77). Ganz links heißt „egal“, das zählt nicht als Filter. #}
-    <label class="filter-field">
-      <span>Stundenlohn ab <output class="filter-wage-value">{{ filter_form.wage.label }} €</output></span>
-      <input type="range" name="min_lohn" min="{{ filter_form.wage.min }}" max="{{ filter_form.wage.max }}" step="0.1" value="{{ filter_form.wage.value }}"
-             oninput="this.previousElementSibling.querySelector('output').value = this.value.replace('.', ',') + ' €'">
-      <small>Brutto. Ganz links: alle Stellen ab Mindestlohn.</small>
-    </label>
+    {% with slider=filter_form.sliders.min_lohn %}
+      <div class="filter-field">
+        <div class="filter-slider-head">
+          <label for="filter-min-lohn">Stundenlohn ab</label>
+          <output for="filter-min-lohn"></output>
+        </div>
+        <input type="range" id="filter-min-lohn" name="min_lohn" min="{{ slider.min }}" max="{{ slider.max }}" step="{{ slider.step }}" value="{{ slider.value }}" data-neutral="{{ slider.neutral }}" data-text="{} € brutto" data-decimals="2">
+        <small>Brutto. Ganz links: alle Stellen ab Mindestlohn.</small>
+      </div>
+    {% endwith %}
 
-    <label class="filter-field">
-      <span>Maximale Anreise (min)</span>
-      <input type="number" name="max_anreise" min="0" step="1" inputmode="numeric" value="{{ filter_form.values.max_anreise }}">
-      <small>Einfache Strecke, remote zählt als 0.</small>
-    </label>
+    {% with slider=filter_form.sliders.max_anreise %}
+      <div class="filter-field">
+        <div class="filter-slider-head">
+          <label for="filter-max-anreise">Maximale Anreise</label>
+          <output for="filter-max-anreise"></output>
+        </div>
+        <input type="range" id="filter-max-anreise" name="max_anreise" min="{{ slider.min }}" max="{{ slider.max }}" step="{{ slider.step }}" value="{{ slider.value }}" data-neutral="{{ slider.neutral }}" data-text="max. {} min">
+        <small>Einfache Strecke, remote zählt als 0.{% if filter_form.show_km %} Bei Sortierung nach Anreisedauer die ÖPNV-Zeit, sonst die Fahrzeit der Firma.{% endif %}</small>
+      </div>
+    {% endwith %}
 
     {% if filter_form.show_km %}
-      <label class="filter-field">
-        <span>Maximale Entfernung (km)</span>
-        <input type="number" name="max_km" min="0" step="0.1" inputmode="decimal" value="{{ filter_form.values.max_km }}">
-        <small>Luftlinie zum Startpunkt.</small>
-      </label>
+      {% with slider=filter_form.sliders.max_km %}
+        <div class="filter-field">
+          <div class="filter-slider-head">
+            <label for="filter-max-km">Maximale Entfernung</label>
+            <output for="filter-max-km"></output>
+          </div>
+          <input type="range" id="filter-max-km" name="max_km" min="{{ slider.min }}" max="{{ slider.max }}" step="{{ slider.step }}" value="{{ slider.value }}" data-neutral="{{ slider.neutral }}" data-text="max. {} km">
+          <small>Luftlinie zum Startpunkt.</small>
+        </div>
+      {% endwith %}
     {% endif %}
 
     <fieldset class="filter-field filter-range">
-      <legend>Stunden pro Woche</legend>
+      <legend class="filter-slider-head">
+        <span>Stunden pro Woche</span>
+        <output for="filter-min-stunden filter-max-stunden" data-both="{}–{} h"></output>
+      </legend>
       <div class="filter-range-inputs">
-        <input type="number" name="min_stunden" min="0" step="1" inputmode="numeric" placeholder="von" aria-label="Stunden pro Woche von" value="{{ filter_form.values.min_stunden }}">
-        <span aria-hidden="true">–</span>
-        <input type="number" name="max_stunden" min="0" step="1" inputmode="numeric" placeholder="bis" aria-label="Stunden pro Woche bis" value="{{ filter_form.values.max_stunden }}">
+        {% with slider=filter_form.sliders.min_stunden %}
+          <label for="filter-min-stunden">von</label>
+          <input type="range" id="filter-min-stunden" name="min_stunden" min="{{ slider.min }}" max="{{ slider.max }}" step="{{ slider.step }}" value="{{ slider.value }}" data-neutral="{{ slider.neutral }}" data-text="ab {} h">
+        {% endwith %}
+        {% with slider=filter_form.sliders.max_stunden %}
+          <label for="filter-max-stunden">bis</label>
+          <input type="range" id="filter-max-stunden" name="max_stunden" min="{{ slider.min }}" max="{{ slider.max }}" step="{{ slider.step }}" value="{{ slider.value }}" data-neutral="{{ slider.neutral }}" data-text="bis {} h">
+        {% endwith %}
       </div>
     </fieldset>
 
     <button type="submit" class="button button-primary">Anwenden</button>
   </form>
 </details>
+<script>
+  // Schieberegler im Suchfilter: Wert live anzeigen und „egal“-Stellungen nicht mitschicken.
+  document.querySelectorAll(".filter-form").forEach(function (form) {
+    var sliders = form.querySelectorAll('input[type="range"]');
+
+    function isNeutral(slider) {
+      return Number(slider.value) === Number(slider.dataset.neutral);
+    }
+
+    // 14.5 -> "14,50" (Lohn) bzw. 30 -> "30"
+    function number(slider) {
+      return Number(slider.value).toFixed(Number(slider.dataset.decimals || 0)).replace(".", ",");
+    }
+
+    function text(slider) {
+      return isNeutral(slider) ? "egal" : slider.dataset.text.replace("{}", number(slider));
+    }
+
+    function update() {
+      sliders.forEach(function (slider) {
+        slider.setAttribute("aria-valuetext", text(slider));
+      });
+      // Eine Anzeige kann zu zwei Reglern gehören (Stunden von–bis).
+      form.querySelectorAll("output").forEach(function (output) {
+        var active = Array.from(output.htmlFor).map(function (id) {
+          return document.getElementById(id);
+        }).filter(function (slider) {
+          return !isNeutral(slider);
+        });
+        if (active.length === 0) {
+          output.textContent = "egal";
+        } else if (active.length === 1) {
+          output.textContent = text(active[0]);
+        } else {
+          output.textContent = output.dataset.both.replace("{}", number(active[0])).replace("{}", number(active[1]));
+        }
+      });
+    }
+
+    // „von“ darf nicht über „bis“ liegen: den anderen Regler nachziehen.
+    var low = form.elements.min_stunden;
+    var high = form.elements.max_stunden;
+    low.addEventListener("input", function () {
+      if (Number(low.value) > Number(high.value)) high.value = low.value;
+    });
+    high.addEventListener("input", function () {
+      if (Number(high.value) < Number(low.value)) low.value = high.value;
+    });
+
+    sliders.forEach(function (slider) {
+      slider.addEventListener("input", update);
+    });
+
+    // Deaktivierte Felder schickt der Browser nicht mit: saubere URL, keine Chips wie „ab 0 €“.
+    form.addEventListener("submit", function () {
+      sliders.forEach(function (slider) {
+        slider.disabled = isNeutral(slider);
+      });
+    });
+    // Nach „Zurück“ kann die Seite aus dem Cache kommen, dann wieder freigeben.
+    window.addEventListener("pageshow", function () {
+      sliders.forEach(function (slider) {
+        slider.disabled = false;
+      });
+      update();
+    });
+
+    update();
+  });
+</script>
