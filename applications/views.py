@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect
 
 from accounts.models import StudentProfile
@@ -7,6 +8,7 @@ from companies.models import CompanyMember
 from jobs.models import JobPosting
 
 from .models import Application
+from .quota import applications_left
 
 
 @login_required
@@ -20,6 +22,22 @@ def apply(request, pk):
         raise PermissionDenied("Firmenkonten können sich nicht bewerben.")
     if request.method == "POST":
         profile, _ = StudentProfile.objects.get_or_create(user=request.user)
-        # get_or_create: Ein zweiter Klick legt keine zweite Bewerbung an.
-        Application.objects.get_or_create(profile=profile, posting=posting)
+        already_applied = Application.objects.filter(profile=profile, posting=posting).exists()
+        # Freemium (#62): Ist das Wochenkontingent aufgebraucht, entsteht keine neue Bewerbung.
+        # Das Stellendetail zeigt dann den deaktivierten Knopf mit dem Hinweis.
+        if not already_applied and applications_left(profile) > 0:
+            # get_or_create: Ein zweiter Klick legt keine zweite Bewerbung an.
+            application, created = Application.objects.get_or_create(profile=profile, posting=posting)
+            if created:
+                application.attach_cv()  # Lebenslauf mitschicken (#38)
     return redirect("job_detail", pk=posting.pk)
+
+
+@login_required
+def sent_cv(request, pk):
+    """Der mit einer Bewerbung gesendete Lebenslauf (#38). Nur für die Bewerberin selbst und Admins."""
+    application = get_object_or_404(Application, pk=pk)
+    is_owner = application.profile.user_id == request.user.id
+    if not (is_owner or request.user.is_staff) or not application.cv:
+        raise Http404("Kein Lebenslauf.")
+    return FileResponse(application.cv.open("rb"), content_type="application/pdf", filename="lebenslauf.pdf")
