@@ -12,7 +12,7 @@ from faker import Faker
 
 from accounts.models import ProfileSkill, StudentProfile
 from companies.models import CompanyMember
-from jobs.models import Company, Fair, JobPosting, Shift, Tag
+from jobs.models import Company, Fair, JobPosting, SavedPosting, Shift, Tag
 from studies.curriculum import CURRICULUM
 from studies.models import Course, StudyProgram
 from timetable.models import LectureSlot
@@ -185,6 +185,8 @@ def create_curriculum():
 
 
 DEMO_EMAIL = "mia@student.hpi.uni-potsdam.de"
+# Mia hat so viele Stellen gemerkt (#13), die ersten nach id.
+DEMO_SAVED_POSTINGS = 2
 # Demo-Firmenkonto (#66) für die Firma aus docs/design.md, Login unter /firma/anmelden/.
 DEMO_COMPANY_EMAIL = "weihmann@firma.elfjobs.local"
 DEMO_COMPANY = "Weihmann GbR"
@@ -241,6 +243,10 @@ def create_demo_student(password):
     profile.courses.set(itse.courses.filter(short_name__in=["PT1", "MA1"]))
     # Mia geht zur Jobmesse Potsdam (#33), damit „Meine Messen“ im Profil etwas zeigt.
     user.fairs.set(Fair.objects.filter(name="Jobmesse Potsdam 2027"))
+    # Zwei gemerkte Stellen (#13), damit „Gemerkt · 2“ in der Demo etwas zeigt.
+    user.saved_postings.all().delete()
+    for posting in JobPosting.objects.order_by("id")[:DEMO_SAVED_POSTINGS]:
+        SavedPosting.objects.create(user=user, posting=posting)
 
     # Mias Stundenplan aus docs/design.md, bei jedem Seed neu.
     profile.lectures.all().delete()
