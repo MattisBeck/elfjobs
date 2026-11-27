@@ -2623,3 +2623,30 @@ a.button {
 .profile-page .cv-section .button {
   align-self: flex-start;
 }
+
+/* Firmenbereich im Profil-Stil (#158) */
+.company-logo-hero {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.company-logo-hero.company-logo-initials {
+  font-size: 24px;
+}
+
+.profile-stats span {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-row);
+  background: var(--bg-subtle);
+  color: var(--muted);
+}
+
+.status-pill-muted {
+  background: var(--surface-muted);
+  color: var(--muted);
+}

@@ -171,3 +171,13 @@ def test_seed_creates_demo_company_account(client):
     assert client.login(username=DEMO_COMPANY_EMAIL, password="test-passwort")
     content = client.get("/firma/").content.decode()
     assert "Promoter*in" in content
+
+
+def test_company_home_shows_profile_style_header_and_stats(company_client):
+    """Firmenseite im Profil-Stil (#158): Kopf mit Branche, Kennzahlen und Bewerbungen je Stelle."""
+    content = company_client.get("/firma/").content.decode()
+
+    assert 'class="profile-hero"' in content
+    assert 'class="profile-stats"' in content
+    assert "Eure Stellen" in content
+    assert "noch keine Bewertung" in content
