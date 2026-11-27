@@ -1,12 +1,15 @@
 import math
+import os
 import random
 from datetime import date, time
 from decimal import Decimal
 
-from django.core.management.base import BaseCommand
+from django.contrib.auth.models import User
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from faker import Faker
 
+from accounts.models import StudentProfile
 from jobs.models import Company, Fair, JobPosting, Shift, Tag
 
 SEED = 42
@@ -96,11 +99,32 @@ def make_shifts(posting, rng):
     return shifts
 
 
+DEMO_EMAIL = "mia@student.hpi.uni-potsdam.de"
+
+
+def create_demo_student(password):
+    """Demo-Studentin Mia aus docs/design.md, Login mit DEMO_EMAIL und DEMO_PASSWORD."""
+    user, _ = User.objects.get_or_create(username=DEMO_EMAIL)
+    user.email = DEMO_EMAIL
+    user.first_name = "Mia"
+    user.set_password(password)
+    user.save()
+    profile, _ = StudentProfile.objects.update_or_create(
+        user=user,
+        defaults={"study_program": "ITSE", "semester": 1, "home_town": "Potsdam"},
+    )
+    profile.skills.set(Tag.objects.filter(name__in=["Python", "Englisch", "Informatik"]))
+
+
 class Command(BaseCommand):
     help = "Füllt die Datenbank mit reproduzierbaren Beispieldaten (Messen, Firmen, Tags, Stellen)."
 
     @transaction.atomic
     def handle(self, *args, **options):
+        demo_password = os.environ.get("DEMO_PASSWORD")
+        if not demo_password:
+            raise CommandError("DEMO_PASSWORD fehlt in .env (Vorlage: .env.example).")
+
         # Immer gleiche Zufallszahlen, damit alle im Team dieselben Daten sehen.
         random.seed(SEED)
         Faker.seed(SEED)
@@ -154,7 +178,9 @@ class Command(BaseCommand):
             for weekday, start, end in make_shifts(posting, shift_random):
                 Shift.objects.create(posting=posting, weekday=weekday, start=start, end=end)
 
+        create_demo_student(demo_password)
+
         self.stdout.write(self.style.SUCCESS(
             f"{NUM_POSTINGS} Stellen von {NUM_COMPANIES} Firmen angelegt "
-            f"({len(fairs)} Messen, {len(tags)} Tags)."
+            f"({len(fairs)} Messen, {len(tags)} Tags), Demo-Login: {DEMO_EMAIL}."
         ))
