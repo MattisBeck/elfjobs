@@ -117,6 +117,10 @@ def profile(request):
         "my_fairs": request.user.fairs.filter(date__gte=timezone.localdate()).order_by("date"),
         # Eigene Bewerbungen (#14), neueste zuerst.
         "my_applications": student.applications.select_related("posting__company").order_by("-applied_at"),
+        # Kennzahlen im Profilkopf (#156). Module und eigene Skills so, wie das Formular sie zeigt.
+        "course_count": len(profile_form["courses"].value() or []),
+        "own_skill_count": len(profile_form["skills"].value() or []),
+        "skill_count": student.skills.count(),
     })
 
 
