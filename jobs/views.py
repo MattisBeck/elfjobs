@@ -1,3 +1,4 @@
+import textwrap
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -300,6 +301,37 @@ def job_detail(request, pk):
         "application": application,
         "is_company": is_company,
     })
+
+
+# Sharepic (#37): höchstens drei Zeilen Titel mit je etwa 22 Zeichen passen auf 1080 px.
+SHAREPIC_LINE_CHARS = 22
+SHAREPIC_MAX_LINES = 3
+
+
+def sharepic_title_lines(title):
+    """Titel in Zeilen umbrechen, ab der vierten Zeile mit „…“ kürzen."""
+    lines = textwrap.wrap(title, SHAREPIC_LINE_CHARS, break_long_words=True) or [""]
+    if len(lines) > SHAREPIC_MAX_LINES:
+        lines = lines[:SHAREPIC_MAX_LINES]
+        lines[-1] = lines[-1][: SHAREPIC_LINE_CHARS - 1] + "…"
+    return lines
+
+
+def job_sharepic(request, pk):
+    """Sharepic einer Stelle als SVG (1080 × 1080) zum Teilen auf Social Media (#37)."""
+    posting = get_object_or_404(JobPosting.objects.select_related("company"), pk=pk)
+    lines = sharepic_title_lines(posting.title)
+    response = render(request, "jobs/sharepic.svg", {
+        "posting": posting,
+        # Erste Zeile bei y=360, je 84 px tiefer; danach Firma und Lohn.
+        "title_lines": [(line, 360 + i * 84) for i, line in enumerate(lines)],
+        "company_y": 360 + len(lines) * 84 + 10,
+    }, content_type="image/svg+xml")
+    disposition = "attachment" if request.GET.get("download") == "1" else "inline"
+    response["Content-Disposition"] = f'{disposition}; filename="elfjobs-{posting.pk}.svg"'
+    # Das SVG kommt mit Texten aus der Datenbank: keine Skripte, keine externen Inhalte.
+    response["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+    return response
 
 
 def is_student(user):

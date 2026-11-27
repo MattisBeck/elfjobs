@@ -1,12 +1,32 @@
 import math
 from decimal import ROUND_HALF_UP, Decimal
+from urllib.parse import urlsplit
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils.deconstruct import deconstructible
 
 
 # Minijob-Grenze 2026 in Euro pro Monat
 MINIJOB_LIMIT = 603
+
+
+@deconstructible
+class SocialLinkValidator:
+    """Social-Media-Link (#37): nur https und nur die Domain der Plattform, mit oder ohne www."""
+
+    def __init__(self, domain):
+        self.domain = domain
+
+    def __call__(self, value):
+        parts = urlsplit(value)
+        host = (parts.hostname or "").lower()
+        if parts.scheme != "https" or host not in (self.domain, "www." + self.domain):
+            raise ValidationError(f"Bitte einen https-Link auf {self.domain} angeben.")
+
+    def __eq__(self, other):
+        return isinstance(other, SocialLinkValidator) and self.domain == other.domain
 
 
 class Company(models.Model):
@@ -16,6 +36,16 @@ class Company(models.Model):
     commute_minutes = models.PositiveSmallIntegerField("Fahrzeit (min, einfach)", default=0)
     fairs = models.ManyToManyField(
         "Fair", related_name="companies", blank=True, verbose_name="Messen"
+    )
+    # Social-Media-Profile (#37), im Stellendetail verlinkt.
+    instagram_url = models.URLField(
+        "Instagram", blank=True, validators=[SocialLinkValidator("instagram.com")]
+    )
+    linkedin_url = models.URLField(
+        "LinkedIn", blank=True, validators=[SocialLinkValidator("linkedin.com")]
+    )
+    tiktok_url = models.URLField(
+        "TikTok", blank=True, validators=[SocialLinkValidator("tiktok.com")]
     )
 
     class Meta:

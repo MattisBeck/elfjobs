@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">{# Sharepic (#37). Alle Texte laufen durch Autoescape, Titel und Firma kommen aus der Datenbank. #}
+  <title>{{ posting.title }} · {{ posting.company.name }} · elfjobs</title>
+  <style>text { font-family: Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums; }</style>
+  <rect width="1080" height="1080" fill="#FFFFFF"/>
+  <rect width="1080" height="16" fill="#2F5BD8"/>
+  <text x="96" y="150" font-size="56" font-weight="700" fill="#1B1E25">elf<tspan fill="#2F5BD8">jobs</tspan></text>
+  <text x="96" y="250" font-size="34" font-weight="500" fill="#646B78">{{ posting.get_kind_display }} · {{ posting.get_workplace_display }}</text>
+  <text font-size="68" font-weight="700" fill="#1B1E25">{% for line, y in title_lines %}<tspan x="96" y="{{ y }}">{{ line }}</tspan>{% endfor %}</text>
+  <text x="96" y="{{ company_y }}" font-size="40" font-weight="500" fill="#3B404B">{{ posting.company.name|truncatechars:36 }}</text>
+  <rect x="96" y="700" width="600" height="200" rx="24" fill="#F3F6FE"/>
+  <text x="136" y="805" font-size="96" font-weight="700" fill="#2A4FBF">{{ posting.hourly_wage }} €</text>
+  <text x="136" y="862" font-size="34" font-weight="500" fill="#3B404B">brutto pro Stunde · {{ posting.hours_per_week }} h pro Woche</text>
+  <text x="96" y="1010" font-size="30" fill="#646B78">Jobs neben dem Studium auf elfjobs</text>
+  {# Maskottchen: Kopie von static/img/elfjobs-mark.svg, eingebettet statt verlinkt. #}
+  <svg x="700" y="600" width="340" height="340" viewBox="84 30 510 510">
+    <g transform="translate(70,0)">
+      <ellipse cx="250" cy="522" rx="120" ry="12" fill="#000" opacity=".07"/>
+      <ellipse cx="218" cy="506" rx="30" ry="17" fill="#8A5A2B"/>
+      <ellipse cx="282" cy="506" rx="30" ry="17" fill="#8A5A2B"/>
+      <path d="M183,350 Q165,400 172,440" fill="none" stroke="#3E9A14" stroke-width="28" stroke-linecap="round"/>
+      <circle cx="173" cy="450" r="15" fill="#FFD9B8"/>
+      <path d="M182,352 Q182,318 222,316 L278,316 Q318,318 318,352 L328,478 Q328,498 308,498 L192,498 Q172,498 172,478 Z" fill="#58C322"/>
+      <path d="M226,316 L250,350 L274,316 Z" fill="#2B7409"/>
+      <rect x="175" y="430" width="150" height="16" rx="6" fill="#8A5A2B"/>
+      <path d="M312,350 Q360,336 392,300" fill="none" stroke="#58C322" stroke-width="28" stroke-linecap="round"/>
+      <circle cx="400" cy="290" r="16" fill="#FFD9B8"/>
+      <path d="M174,238 Q150,222 128,198 Q132,248 172,268 Z" fill="#FFD9B8" stroke="#FFD9B8" stroke-width="12" stroke-linejoin="round"/>
+      <path d="M326,238 Q350,222 372,198 Q368,248 328,268 Z" fill="#FFD9B8" stroke="#FFD9B8" stroke-width="12" stroke-linejoin="round"/>
+      <ellipse cx="250" cy="244" rx="80" ry="88" fill="#FFD9B8"/>
+      <path d="M164,192 C172,112 222,54 290,38 Q338,28 378,60 Q336,56 322,88 C340,122 342,158 338,192 Z" fill="#58C322"/>
+      <path d="M290,38 Q338,28 378,60 Q336,56 322,88 C340,122 342,158 338,192 L300,192 C310,150 312,95 290,38 Z" fill="#3E9A14" opacity=".5"/>
+      <circle cx="382" cy="62" r="18" fill="#FFC83D"/>
+      <rect x="154" y="172" width="192" height="32" rx="16" fill="#2B7409"/>
+      <path d="M205,220 Q220,213 236,219" fill="none" stroke="#5E3A17" stroke-width="7" stroke-linecap="round"/>
+      <path d="M264,219 Q280,213 295,220" fill="none" stroke="#5E3A17" stroke-width="7" stroke-linecap="round"/>
+      <ellipse cx="221" cy="246" rx="18" ry="20" fill="#fff"/>
+      <ellipse cx="279" cy="246" rx="18" ry="20" fill="#fff"/>
+      <circle cx="225" cy="248" r="11" fill="#2A2320"/>
+      <circle cx="283" cy="248" r="11" fill="#2A2320"/>
+      <circle cx="229" cy="243" r="3.5" fill="#fff"/>
+      <circle cx="287" cy="243" r="3.5" fill="#fff"/>
+      <ellipse cx="252" cy="272" rx="8" ry="6" fill="#F5B990"/>
+      <ellipse cx="196" cy="282" rx="13" ry="7" fill="#FF8F9A" opacity=".35"/>
+      <ellipse cx="304" cy="282" rx="13" ry="7" fill="#FF8F9A" opacity=".35"/>
+      <path d="M232,292 Q252,308 272,292" fill="none" stroke="#6E1E22" stroke-width="7" stroke-linecap="round"/>
+    </g>
+  </svg>
+</svg>

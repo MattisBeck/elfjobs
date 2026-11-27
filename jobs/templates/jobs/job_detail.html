@@ -189,6 +189,21 @@
               <span class="wage-note">{% if posting.is_minijob %}unter{% else %}über{% endif %} der Minijob-Grenze (603 €)</span>
             </div>
           </section>
+
+          {# Social Media der Firma und Sharepic (#37). Links nur, wenn die Firma sie eingetragen hat. #}
+          <section class="share-links">
+            {% with company=posting.company %}
+              {% if company.instagram_url or company.linkedin_url or company.tiktok_url %}
+                <h2>{{ company.name }} im Netz</h2>
+                <ul class="link-list">
+                  {% if company.instagram_url %}<li><a href="{{ company.instagram_url }}" target="_blank" rel="noopener noreferrer">Instagram</a></li>{% endif %}
+                  {% if company.linkedin_url %}<li><a href="{{ company.linkedin_url }}" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>{% endif %}
+                  {% if company.tiktok_url %}<li><a href="{{ company.tiktok_url }}" target="_blank" rel="noopener noreferrer">TikTok</a></li>{% endif %}
+                </ul>
+              {% endif %}
+            {% endwith %}
+            <p class="muted">Stelle teilen: <a href="{% url 'job_sharepic' posting.pk %}" target="_blank">Sharepic</a> · <a href="{% url 'job_sharepic' posting.pk %}?download=1">herunterladen</a></p>
+          </section>
         </aside>
       </div>
     {% endif %}
