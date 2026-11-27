@@ -119,3 +119,14 @@ def test_anonymous_sees_no_quota(client, postings):
 
     assert "Mit Profil bewerben" in content
     assert "Bewerbungen diese Woche" not in content
+
+
+def test_apply_step_redirects_when_quota_used(frozen_now, student_client, postings):
+    """Der Schritt „Wann würdest du arbeiten?“ (#141) öffnet sich nicht mehr, wenn das Kontingent leer ist."""
+    for posting in postings[:3]:
+        student_client.post(apply_url(posting))
+
+    response = student_client.get(apply_url(postings[3]))
+
+    assert response.status_code == 302
+    assert response.url == f"/jobs/{postings[3].pk}/"
