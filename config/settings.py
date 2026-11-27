@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "timetable",
     "companies",
     "alerts",
+    "applications",
 ]
 
 MIDDLEWARE = [

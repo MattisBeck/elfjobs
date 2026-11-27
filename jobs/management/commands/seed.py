@@ -11,6 +11,7 @@ from django.db import transaction
 from faker import Faker
 
 from accounts.models import ProfileSkill, StudentProfile
+from applications.models import Application
 from companies.models import CompanyMember
 from jobs.models import Company, Fair, JobPosting, Shift, Tag
 from studies.curriculum import CURRICULUM
@@ -241,6 +242,9 @@ def create_demo_student(password):
     profile.courses.set(itse.courses.filter(short_name__in=["PT1", "MA1"]))
     # Mia geht zur Jobmesse Potsdam (#33), damit „Meine Messen“ im Profil etwas zeigt.
     user.fairs.set(Fair.objects.filter(name="Jobmesse Potsdam 2027"))
+    # Mia hat sich auf zwei Werkstudentenstellen beworben (#14), damit „Meine Bewerbungen“ etwas zeigt.
+    for posting in JobPosting.objects.filter(kind=JobPosting.Kind.WORKING_STUDENT).order_by("id")[:2]:
+        Application.objects.get_or_create(profile=profile, posting=posting)
 
     # Mias Stundenplan aus docs/design.md, bei jedem Seed neu.
     profile.lectures.all().delete()

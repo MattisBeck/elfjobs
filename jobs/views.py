@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from accounts.models import StudentProfile
+from companies.models import CompanyMember
 from studies.qualification import LEARNED, classify, skill_lookup, summary, verdict
 from timetable.fit import FLEXIBEL, KOLLIDIERT, PASST, TEILWEISE, posting_fit
 
@@ -247,6 +248,10 @@ def job_detail(request, pk):
         apply_home_commutes(profile, [posting])
         posting.fit = posting_fit(posting, profile.lectures.all())
 
+    # Knopf „Mit Profil bewerben“ (#14): schon beworben? Firmenkonten bekommen keinen Knopf.
+    application = posting.applications.filter(profile=profile).first() if profile else None
+    is_company = request.user.is_authenticated and CompanyMember.objects.filter(user=request.user).exists()
+
     # "Das bringst du mit": jede Anforderung eingeordnet (gelernt, kommt noch, nicht im Studium).
     # Ohne Login oder Profil nur die Namen.
     requirements = classify(skills or {}, posting.tags.all())
@@ -267,6 +272,8 @@ def job_detail(request, pk):
         "filter_form": filter_form,
         "filter_query": urlencode(filter_params),
         "selected_pk": posting.pk,
+        "application": application,
+        "is_company": is_company,
     })
 
 

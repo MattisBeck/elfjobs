@@ -1320,8 +1320,20 @@ a.button {
   padding-left: 1.2em;
 }
 
-.my-fairs p {
+.my-fairs p,
+.my-applications p {
   margin: 4px 0;
+}
+
+/* Bewerben (#14): Das Formular verhält sich in der Knopfleiste wie der Knopf selbst,
+   nach der Bewerbung ist der Knopf deaktiviert. */
+.job-actions form {
+  display: contents;
+}
+
+.button:disabled {
+  cursor: default;
+  opacity: 0.7;
 }
 
 /* Firmen: Verfügbarkeit als Heatmap (#67). Je dunkler, desto mehr frei; die Zahl steht immer dabei. */

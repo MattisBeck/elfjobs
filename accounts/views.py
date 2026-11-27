@@ -111,6 +111,8 @@ def profile(request):
         "cv_new_skills": new_skills,
         "cv_existing_skills": existing_skills,
         "my_fairs": request.user.fairs.filter(date__gte=timezone.localdate()).order_by("date"),
+        # Eigene Bewerbungen (#14), neueste zuerst.
+        "my_applications": student.applications.select_related("posting__company").order_by("-applied_at"),
     })
 
 
