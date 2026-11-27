@@ -54,6 +54,14 @@
       {% endif %}
     {% endif %}
   </section>
+  <section class="my-fairs">
+    <h2>Meine Messen</h2>
+    {% for fair in my_fairs %}
+      <p><a href="{% url 'fair_list' %}#messe-{{ fair.pk }}">{{ fair.name }}</a> <span class="muted">· {{ fair.date|date:"j. F Y" }}, {{ fair.location }}</span></p>
+    {% empty %}
+      <p class="muted">Noch keine. <a href="{% url 'fair_list' %}">Kommende Messen ansehen →</a></p>
+    {% endfor %}
+  </section>
   <form method="post" action="{% url 'logout' %}" class="logout-form">
     {% csrf_token %}
     <button type="submit" class="button">Abmelden</button>

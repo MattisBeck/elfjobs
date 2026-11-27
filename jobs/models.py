@@ -1,6 +1,7 @@
 import math
 from decimal import ROUND_HALF_UP, Decimal
 
+from django.conf import settings
 from django.db import models
 
 
@@ -29,6 +30,10 @@ class Fair(models.Model):
     name = models.CharField("Name", max_length=200)
     date = models.DateField("Datum")
     location = models.CharField("Ort", max_length=200)
+    # „Ich gehe hin“ (#33)
+    visitors = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, related_name="fairs", blank=True, verbose_name="Besucher*innen"
+    )
 
     class Meta:
         verbose_name = "Messe"

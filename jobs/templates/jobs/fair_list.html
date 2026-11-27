@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Messen · elfjobs{% endblock %}
+
+{% block content %}
+<section class="fair-page">
+  <h1>Messen und Events</h1>
+  <p class="muted">Firmen persönlich kennenlernen: wer kommt und welche Stellen sie offen haben.</p>
+
+  {% for fair in fairs %}
+    <article class="fair" id="messe-{{ fair.pk }}">
+      <header class="fair-head">
+        <div>
+          <h2>{{ fair.name }}</h2>
+          <p class="muted">{{ fair.date|date:"l, j. F Y" }} · {{ fair.location }}</p>
+        </div>
+        {% if user.is_authenticated %}
+          <form method="post" action="{% url 'fair_attend' fair.pk %}">
+            {% csrf_token %}
+            {% if fair.pk in attending %}
+              <button type="submit" class="button button-primary" aria-pressed="true">✓ Du gehst hin</button>
+            {% else %}
+              <button type="submit" class="button" aria-pressed="false">Ich gehe hin</button>
+            {% endif %}
+          </form>
+        {% endif %}
+      </header>
+
+      {% for company in fair.companies.all %}
+        <div class="fair-company">
+          <h3>{{ company.name }} <span class="muted">· {{ company.industry }}</span></h3>
+          {% if company.postings.all %}
+            <ul>
+              {% for posting in company.postings.all %}
+                <li><a href="{% url 'job_detail' posting.pk %}">{{ posting.title }}</a></li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="muted">Gerade keine offenen Stellen.</p>
+          {% endif %}
+        </div>
+      {% empty %}
+        <p class="muted">Noch keine Firmen angemeldet.</p>
+      {% endfor %}
+    </article>
+  {% empty %}
+    <p class="muted">Gerade sind keine Messen geplant.</p>
+  {% endfor %}
+</section>
+{% endblock %}

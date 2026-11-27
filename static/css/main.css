@@ -1228,3 +1228,52 @@ a {
     min-height: 44px;
   }
 }
+
+/* Messen und Events (#33) */
+.fair-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 16px 64px;
+}
+
+.fair {
+  margin-top: var(--space-5);
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.fair-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.fair-head h2,
+.fair-company h3 {
+  margin: 0;
+}
+
+.fair-head p {
+  margin: 4px 0 0;
+}
+
+.fair-company {
+  margin-top: var(--space-4);
+}
+
+.fair-company h3 {
+  font-size: 1rem;
+}
+
+.fair-company ul {
+  margin: 4px 0 0;
+  padding-left: 1.2em;
+}
+
+.my-fairs p {
+  margin: 4px 0;
+}

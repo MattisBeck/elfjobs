@@ -21,7 +21,7 @@ def test_job_list_renders_header(client):
     assert "/static/css/main.css" in content
     assert 'aria-current="page">Jobs</a>' in content
     assert '<span aria-disabled="true">Gemerkt</span>' in content
-    assert '<span aria-disabled="true">Messen</span>' in content
+    assert '<span aria-disabled="true">Messen</span>' not in content  # seit #33 ein Link
 
 
 @pytest.mark.django_db

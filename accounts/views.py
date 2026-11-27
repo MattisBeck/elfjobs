@@ -7,6 +7,7 @@ from django.core.mail import send_mail
 from django.http import FileResponse, Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.http import require_POST
@@ -98,6 +99,7 @@ def profile(request):
         "cv_form": CvSampleForm(instance=student),
         "cv_new_skills": new_skills,
         "cv_existing_skills": existing_skills,
+        "my_fairs": request.user.fairs.filter(date__gte=timezone.localdate()).order_by("date"),
     })
 
 
