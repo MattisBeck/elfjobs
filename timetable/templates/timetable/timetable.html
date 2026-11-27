@@ -20,7 +20,7 @@
       <h2>{{ conflict_shifts|length }} Schicht{{ conflict_shifts|length|pluralize:"en" }} im Konflikt</h2>
       <ul>
         {% for shift in conflict_shifts %}
-          <li>{{ shift.get_weekday_display }} {{ shift.start|time:"G:i" }}–{{ shift.end|time:"G:i" }}, <a href="{% url 'job_detail' shift.posting_id %}?ansicht=woche">{{ shift.posting.title }}</a> ({% include "jobs/_company_logo.html" with company=shift.posting.company decorative=True %}{{ shift.posting.company.name }}): {{ shift.conflict_text }}</li>
+          <li>{{ shift.get_weekday_display }} {{ shift.start|time:"G:i" }}–{{ shift.end|time:"G:i" }}, <a href="{% url 'job_detail' shift.posting_id %}?ansicht=woche">{{ shift.posting.title }}</a> · {% include "jobs/_company_logo.html" with company=shift.posting.company decorative=True %}{{ shift.posting.company.name }}: {{ shift.conflict_text }}</li>
         {% endfor %}
       </ul>
     </section>
@@ -87,7 +87,7 @@
                 <div class="lecture-row shift-row{% if shift.conflict_text %} shift-row-conflict{% endif %}">
                   <span class="lecture-time">{{ shift.start|time:"G:i" }}–{{ shift.end|time:"G:i" }}</span>
                   <span class="lecture-title">
-                    Schicht: <a href="{% url 'job_detail' shift.posting_id %}?ansicht=woche">{{ shift.posting.title }}</a> ({% include "jobs/_company_logo.html" with company=shift.posting.company decorative=True %}{{ shift.posting.company.name }})
+                    Schicht: <a href="{% url 'job_detail' shift.posting_id %}?ansicht=woche">{{ shift.posting.title }}</a> · {% include "jobs/_company_logo.html" with company=shift.posting.company decorative=True %}{{ shift.posting.company.name }}
                     {% if shift.conflict_text %}<span class="shift-conflict-text">{{ shift.conflict_text }}</span>{% endif %}
                   </span>
                 </div>
