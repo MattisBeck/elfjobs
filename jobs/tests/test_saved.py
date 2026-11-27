@@ -199,3 +199,82 @@ def test_seed_gives_mia_two_saved_postings():
     saved = SavedPosting.objects.filter(user__username=DEMO_EMAIL).order_by("posting_id")
     assert saved.count() == 2
     assert [entry.posting for entry in saved] == list(JobPosting.objects.order_by("id")[:2])
+
+
+# Detail aus „Gemerkt“ (#127)
+
+def saved_context(client, user, posting):
+    client.force_login(user)
+    return client.get(reverse("job_detail", args=[posting.pk]) + "?liste=gemerkt")
+
+
+@pytest.mark.django_db
+def test_detail_from_saved_lists_only_saved_postings_and_marks_selected(client):
+    user = make_user()
+    saved_a, saved_b = make_posting("Gemerkte Stelle A"), make_posting("Gemerkte Stelle B")
+    other = make_posting("Nicht gemerkt")
+    SavedPosting.objects.create(user=user, posting=saved_a)
+    SavedPosting.objects.create(user=user, posting=saved_b)
+
+    response = saved_context(client, user, saved_a)
+
+    assert response.status_code == 200
+    assert response.context["postings"] == [saved_b, saved_a]
+    content = response.content.decode()
+    assert "Nicht gemerkt" not in content.split('<article')[0]
+    assert content.count("is-selected") == 1
+    assert f'href="{reverse("job_detail", args=[saved_a.pk])}?liste=gemerkt"' in content
+
+
+@pytest.mark.django_db
+def test_detail_from_saved_keeps_gemerkt_nav_active(client):
+    user = make_user()
+    posting = make_posting()
+    SavedPosting.objects.create(user=user, posting=posting)
+
+    content = saved_context(client, user, posting).content.decode()
+
+    assert f'<a href="{reverse("saved_list")}" aria-current="page">' in content
+    assert f'<a href="{reverse("job_list")}" aria-current="page">' not in content
+
+
+@pytest.mark.django_db
+def test_detail_from_saved_keeps_context_in_tabs_and_rows(client):
+    user = make_user()
+    posting = make_posting()
+    SavedPosting.objects.create(user=user, posting=posting)
+    detail_url = reverse("job_detail", args=[posting.pk])
+
+    response = saved_context(client, user, posting)
+
+    assert response.context["details_url"] == f"{detail_url}?liste=gemerkt"
+    assert response.context["week_url"] == f"{detail_url}?liste=gemerkt&ansicht=woche"
+    week = client.get(detail_url + "?liste=gemerkt&ansicht=woche")
+    assert week.status_code == 200
+    assert week.context["postings"] == [posting]
+    assert f'href="{detail_url}?liste=gemerkt"' in week.content.decode()
+
+
+@pytest.mark.django_db
+def test_detail_without_context_shows_general_list(client):
+    user = make_user()
+    saved, other = make_posting("Gemerkt"), make_posting("Allgemein")
+    SavedPosting.objects.create(user=user, posting=saved)
+    client.force_login(user)
+
+    response = client.get(reverse("job_detail", args=[saved.pk]))
+
+    assert set(response.context["postings"]) == {saved, other}
+    assert f'<a href="{reverse("job_list")}" aria-current="page">' in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_detail_with_saved_context_for_anonymous_shows_general_list(client):
+    posting = make_posting()
+    make_posting("Zweite Stelle")
+
+    response = client.get(reverse("job_detail", args=[posting.pk]) + "?liste=gemerkt")
+
+    assert response.status_code == 200
+    assert len(response.context["postings"]) == 2
+    assert not response.context["from_saved"]

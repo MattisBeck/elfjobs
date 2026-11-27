@@ -4,10 +4,18 @@
 
 {% block content %}
 <div class="split split-has-detail">
-  {% include "jobs/_job_list_column.html" %}
+  {% if from_saved %}
+    {% include "jobs/_saved_column.html" %}
+  {% else %}
+    {% include "jobs/_job_list_column.html" %}
+  {% endif %}
 
   <article class="split-detail job-detail">
-    <a class="back-link" href="{% url 'job_list' %}{% if filter_query %}?{{ filter_query }}{% endif %}">← Alle Jobs</a>
+    {% if from_saved %}
+      <a class="back-link" href="{% url 'saved_list' %}">← Gemerkt</a>
+    {% else %}
+      <a class="back-link" href="{% url 'job_list' %}{% if filter_query %}?{{ filter_query }}{% endif %}">← Alle Jobs</a>
+    {% endif %}
 
     <header class="job-detail-head">
       <div>
@@ -86,6 +94,7 @@
                   {% elif block.kind == "own" %}
                     <form class="week-block week-own" method="post" action="{% url 'planned_shift_delete' posting.pk block.id %}" style="top: {{ block.top }}%; height: {{ block.height }}%">
                       {% csrf_token %}
+                      {% if from_saved %}<input type="hidden" name="liste" value="gemerkt">{% endif %}
                       <button type="submit" aria-label="Deine Schicht {{ day.label }} {{ block.time }} entfernen">
                         <strong>{{ block.label }}</strong> <span>{{ block.time }}</span>
                       </button>
@@ -109,6 +118,7 @@
           {% if planning.form %}
             <form id="schicht-planen" class="plan-form" method="post" action="{% url 'planned_shift_add' posting.pk %}">
               {% csrf_token %}
+              {% if from_saved %}<input type="hidden" name="liste" value="gemerkt">{% endif %}
               <h3>Schicht im freien Block {{ planning.block }}</h3>
               {{ planning.form.weekday }}
               <label>{{ planning.form.start.label }} {{ planning.form.start }}</label>
