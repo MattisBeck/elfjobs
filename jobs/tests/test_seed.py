@@ -3,7 +3,7 @@ from decimal import Decimal
 import pytest
 from django.core.management import call_command
 
-from jobs.management.commands.seed import ONSITE_ONLY_TITLES
+from jobs.management.commands.seed import KINDS, ONSITE_ONLY_TITLES
 from jobs.models import Company, Fair, JobPosting, Tag
 
 
@@ -40,6 +40,8 @@ def test_seed_pays_at_least_minimum_wage():
 
 @pytest.mark.django_db
 def test_seed_onsite_jobs_are_never_remote():
+    # Ein Tippfehler in ONSITE_ONLY_TITLES würde den Test sonst unbemerkt grün lassen.
+    assert ONSITE_ONLY_TITLES <= set(KINDS[JobPosting.Kind.SHORT_JOB]["titles"])
     call_command("seed")
 
     remote_onsite_jobs = JobPosting.objects.filter(
