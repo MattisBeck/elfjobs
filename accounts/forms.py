@@ -1,3 +1,5 @@
+import re
+
 from django import forms
 from django.conf import settings
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
@@ -8,6 +10,26 @@ from jobs.models import Tag
 from studies.models import Course, StudyProgram
 
 from .models import ProfileSkill, StudentProfile
+
+
+# Leerzeichen und unsichtbare Zeichen am Rand, z. B. Tab, geschütztes Leerzeichen oder
+# Zero-Width-Space aus Copy-Paste (#129).
+EMAIL_EDGES = re.compile(r"^[\s\u200b-\u200d\u2060\ufeff]+|[\s\u200b-\u200d\u2060\ufeff]+$")
+
+
+def normalize_email(value):
+    """Mail so, wie wir sie speichern: ohne Zeichen am Rand und kleingeschrieben."""
+    return EMAIL_EDGES.sub("", value).lower()
+
+
+class MailField(forms.EmailField):
+    """Mail-Feld für Login und Registrierung: erst normalisieren, dann als Mail prüfen."""
+
+    widget = forms.EmailInput(attrs={"autocomplete": "email"})
+    default_error_messages = {"invalid": "Das ist keine gültige Mail-Adresse. Steckt ein Leerzeichen drin?"}
+
+    def to_python(self, value):
+        return normalize_email(super().to_python(value))
 
 
 def is_uni_email(email):
@@ -25,7 +47,7 @@ def default_courses(program, semester):
 class SignupForm(UserCreationForm):
     """Registrierung nur mit Uni-Mail. Die Mail ist zugleich der Benutzername."""
 
-    email = forms.EmailField(label="Uni-Mail", help_text="Zum Start nur mit HPI-Mail, z. B. vorname.nachname@student.hpi.uni-potsdam.de")
+    email = MailField(label="Uni-Mail", help_text="Zum Start nur mit HPI-Mail, z. B. vorname.nachname@student.hpi.uni-potsdam.de")
     study_program = forms.ModelChoiceField(label="Studiengang", queryset=StudyProgram.objects.all())
     semester = forms.IntegerField(label="Semester", min_value=1, max_value=20)
 
@@ -39,7 +61,7 @@ class SignupForm(UserCreationForm):
         self.fields.pop("username", None)
 
     def clean_email(self):
-        email = self.cleaned_data["email"].lower()
+        email = self.cleaned_data["email"]
         if not is_uni_email(email):
             raise forms.ValidationError("Bitte registriere dich mit deiner Uni-Mail.")
         if User.objects.filter(username=email).exists():
@@ -64,10 +86,7 @@ class SignupForm(UserCreationForm):
 
 
 class LoginForm(AuthenticationForm):
-    username = forms.CharField(label="Uni-Mail")
-
-    def clean_username(self):
-        return self.cleaned_data["username"].lower()
+    username = MailField(label="Uni-Mail", widget=forms.EmailInput(attrs={"autocomplete": "email", "autofocus": True}))
 
     def clean(self):
         """Django lehnt inaktive Konten mit der allgemeinen Fehlermeldung ab. Stimmt das Passwort,
