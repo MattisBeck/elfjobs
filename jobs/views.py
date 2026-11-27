@@ -11,6 +11,7 @@ from django.views.decorators.http import require_POST
 from accounts.models import StudentProfile
 from studies.qualification import LEARNED, classify, skill_lookup, summary, verdict
 from timetable.fit import FLEXIBEL, KOLLIDIERT, PASST, TEILWEISE, posting_fit
+from timetable.week import week_view
 
 from .filters import (
     FILTER_FIELDS,
@@ -251,8 +252,15 @@ def job_detail(request, pk):
     # Ohne Login oder Profil nur die Namen.
     requirements = classify(skills or {}, posting.tags.all())
 
+    # Tab „In meiner Woche“ (#10): ohne Profil nur die Schichten.
+    week = None
+    if view == "woche":
+        week = week_view(posting, list(profile.lectures.all()) if profile else [])
+
     return render(request, "jobs/job_detail.html", {
         "posting": posting,
+        "week": week,
+        "has_profile": profile is not None,
         "requirements": requirements,
         # „✓ Du bist qualifiziert“ (#86), nur mit Profil.
         "verdict": verdict(requirements) if skills is not None else None,
