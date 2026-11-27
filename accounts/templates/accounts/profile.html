@@ -9,7 +9,7 @@
     <p class="notice">{{ message }}</p>
   {% endfor %}
   <p class="muted">Angemeldet mit {{ user.email }}</p>
-  <p class="profile-links"><a href="{% url 'timetable' %}">Mein Stundenplan →</a></p>
+  <p class="profile-links"><a href="{% url 'timetable' %}">Mein Stundenplan →</a> <a href="{% url 'alert_list' %}">Meine Alerts →</a></p>
   <form method="post" class="form">
     {% csrf_token %}
     {{ name_form.as_div }}

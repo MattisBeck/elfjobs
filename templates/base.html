@@ -31,8 +31,13 @@
       <input type="search" name="q" value="{{ request.GET.q }}" placeholder="Titel, Firma oder Skill" aria-label="Suche">
     </form>
 
+    {% if alert_new_count %}
+      {# Job-Alerts (#34): neue passende Stellen seit dem letzten Ansehen. #}
+      <a class="alert-hint" href="{% url 'alert_list' %}">{{ alert_new_count }} neue passende Stelle{{ alert_new_count|pluralize:"n" }}</a>
+    {% endif %}
     {% if user.is_authenticated %}
-      <a class="profile-button" href="{% url 'profile' %}">
+      {# Firmenkonten (#66) landen im Firmenbereich, Studierende im Profil. #}
+      <a class="profile-button" href="{% if user.company_member %}{% url 'company_home' %}{% else %}{% url 'profile' %}{% endif %}">
         <span class="avatar" aria-hidden="true">{{ user.get_full_name|default:user.username|first|upper }}</span>
         <span class="profile-text">
           <span class="profile-name">{{ user.get_full_name|default:user.username }}</span>

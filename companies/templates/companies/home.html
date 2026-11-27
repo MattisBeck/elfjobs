@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}{{ company.name }} · elfjobs{% endblock %}
+
+{% block content %}
+<section class="form-page company-home">
+  <h1>{{ company.name }}</h1>
+  {% for message in messages %}
+    <p class="notice">{{ message }}</p>
+  {% endfor %}
+  <p><a class="button button-primary" href="{% url 'company_posting_new' %}">Neue Stelle</a></p>
+
+  <h2>Eure Stellen</h2>
+  <ul class="company-postings">
+    {% for posting in postings %}
+      <li>
+        <a href="{% url 'company_posting_edit' posting.pk %}">{{ posting.title }}</a>
+        <span class="muted">{{ posting.get_kind_display }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche · brutto {{ posting.hourly_wage }} €</span>
+        <a class="muted" href="{% url 'job_detail' posting.pk %}">So sehen Studierende sie</a>
+      </li>
+    {% empty %}
+      <li class="muted">Noch keine Stellen. Leg die erste an!</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

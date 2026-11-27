@@ -427,6 +427,36 @@ a {
   color: var(--muted);
 }
 
+/* Job-Alerts (#34): Hinweis in der Kopfzeile und Liste der Alerts. */
+.alert-hint {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.alert-save {
+  margin: 0 0 8px;
+}
+
+.alert-list {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.alert-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
 /* Umschalter „Passt am besten · Effektiver Lohn“ (#42). */
 .sort-links a {
   color: var(--muted);

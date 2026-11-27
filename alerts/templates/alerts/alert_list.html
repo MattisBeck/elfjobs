@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Meine Alerts · elfjobs{% endblock %}
+
+{% block content %}
+<section class="form-page">
+  <h1>Meine Alerts</h1>
+  {% for message in messages %}
+    <p class="notice">{{ message }}</p>
+  {% endfor %}
+  <p class="muted">Speichere in der Stellenliste deine Filter als Alert. Neue passende Stellen zeigen wir dir oben in der Kopfzeile.</p>
+  <ul class="alert-list">
+    {% for alert in alerts %}
+      <li>
+        <strong>{{ alert.label }}</strong>
+        <span class="muted">{% if alert.new_count %}{{ alert.new_count }} neue Stelle{{ alert.new_count|pluralize:"n" }}{% else %}nichts Neues{% endif %}</span>
+        <form method="post" action="{% url 'alert_view' alert.pk %}">{% csrf_token %}<button type="submit" class="button{% if alert.new_count %} button-primary{% endif %}">Ansehen</button></form>
+        <form method="post" action="{% url 'alert_delete' alert.pk %}">{% csrf_token %}<button type="submit" class="button">Löschen</button></form>
+      </li>
+    {% empty %}
+      <li class="muted">Noch keine Alerts. <a href="{% url 'job_list' %}">Zur Stellenliste</a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}
