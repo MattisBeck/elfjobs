@@ -512,6 +512,36 @@ a {
   color: var(--muted);
 }
 
+/* „✓ Du kannst diesen Job“ (#86): grün, wenn alles gelernt; blau, wenn der Rest noch im Studium kommt. */
+.fit-badge {
+  justify-self: start;
+  grid-column: 1 / -1;
+  width: fit-content;
+  margin: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--ok-soft);
+  color: var(--ok-ink);
+}
+
+.fit-badge-bald {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.job-detail-head .fit-badge {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.fit-badge-detail {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 .job-list-empty {
   padding: 24px 0;
   color: var(--muted);

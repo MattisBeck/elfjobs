@@ -56,3 +56,23 @@ def summary(requirements):
     learned = sum(1 for requirement in requirements if requirement["status"] == LEARNED)
     noun = "Anforderung" if len(requirements) == 1 else "Anforderungen"
     return f"{learned} von {len(requirements)} {noun} aus dem Studium"
+
+
+def verdict(requirements):
+    """Ermutigendes Urteil für eine Stelle (#86), gegen die Angst vorm Bewerben.
+
+    - alles gelernt (oder keine Anforderungen) → „✓ Du bist qualifiziert“
+    - der Rest kommt noch im eigenen Studium → „✓ Passt zu deinem Studium“ plus was wann kommt
+    - sonst None, dann bleibt es beim Hinweis aus summary()
+
+    Gibt {"level", "label", "detail"} zurück; level ist "kannst" oder "bald" (für die CSS-Klasse).
+    """
+    if not requirements:
+        return {"level": "kannst", "label": "✓ Keine Vorkenntnisse nötig", "detail": ""}
+    if any(requirement["status"] == NOT_IN_STUDIES for requirement in requirements):
+        return None
+    upcoming = [r for r in requirements if r["status"] == UPCOMING]
+    if not upcoming:
+        return {"level": "kannst", "label": "✓ Du bist qualifiziert", "detail": ""}
+    later = ", ".join(f"{r['tag'].name} {r['text']}" for r in upcoming)
+    return {"level": "bald", "label": "✓ Passt zu deinem Studium", "detail": f"Den Rest lernst du noch: {later}."}

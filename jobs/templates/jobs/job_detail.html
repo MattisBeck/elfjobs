@@ -18,6 +18,10 @@
         </ul>
         <h1 class="job-title">{{ posting.title }}</h1>
         <p class="job-company">{{ posting.company.name }} · {{ posting.company.industry }}</p>
+        {% if verdict %}
+          <p class="fit-badge fit-badge-{{ verdict.level }}">{{ verdict.label }}</p>
+          {% if verdict.detail %}<p class="fit-badge-detail">{{ verdict.detail }}</p>{% endif %}
+        {% endif %}
       </div>
       {# Merken (#13) und Bewerben (#14) bekommen ihre Funktion mit eigenen Issues. #}
       <div class="job-actions">
