@@ -9,6 +9,7 @@ Stack: Python 3.12, uv, Django 5.2, PostgreSQL 17, Docker Compose (Services `bac
 - Docker Desktop (macOS, Windows, Linux). Auf macOS geht auch [Colima](https://github.com/abiosoft/colima) (`brew install colima docker docker-compose`, dann `colima start`).
 - Windows: Repo innerhalb von WSL2 klonen und dort arbeiten (nicht unter `C:\`), sonst ist der Bind-Mount langsam.
 - Git
+- GitHub CLI (`gh`), danach einmal `gh auth login`. Damit arbeiten wir mit Issues und Pull Requests (siehe `CLAUDE.md`).
 - uv (nur für die Autovervollständigung im Editor): lokal `uv sync` ausführen, das erzeugt `.venv`. Dieses `.venv` im Editor als Interpreter auswählen.
 
 ## Erster Start
@@ -57,7 +58,7 @@ Jede Person hat ihre eigene lokale Datenbank. `seed` erzeugt bei allen dieselben
 ## Teamregeln
 
 - Pakete nur mit `uv add <paket>` hinzufügen. Danach die Container mit `docker compose up --build` neu bauen.
-- Arbeit in Feature-Branches, Änderungen per Pull Request in `main`.
+- Nie direkt auf `main` arbeiten. Für jede Änderung einen eigenen Branch anlegen (`git switch -c feature/<name>`), pushen und per Pull Request in `main` mergen.
 - Jede Änderung kommt mit pytest-Tests. Tests ausführen: `docker compose exec backend uv run pytest`.
 - Bei einem Konflikt in `uv.lock` eine Seite übernehmen und anschließend `uv lock` ausführen.
 - Datenbank zurücksetzen: `docker compose down -v`. Das löscht alle Daten; danach `migrate` und `seed` erneut ausführen.
