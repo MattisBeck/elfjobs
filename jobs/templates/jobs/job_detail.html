@@ -2,6 +2,16 @@
 
 {% block title %}{{ posting.title }} · elfjobs{% endblock %}
 
+{% block head %}
+  {% if detail_map %}
+    {# Leaflet 1.9.4 wie auf der Karte (job_map.html), feste Version mit SRI-Hash. #}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  {% endif %}
+{% endblock %}
+
 {% block content %}
 <div class="split split-has-detail">
   {% include "jobs/_job_list_column.html" %}
@@ -167,6 +177,10 @@
               <dt>Arbeitszeiten</dt>
               <dd>{% if posting.schedule == "flexible" %}Flexibel, du planst selbst{% else %}Feste Zeiten{% endif %}</dd>
             </dl>
+            {% if detail_map %}
+              <div id="detail-map" class="detail-map" role="region" aria-label="Karte: Lage der Stelle"></div>
+              <p class="detail-map-link"><a href="{{ detail_map.map_url }}">Auf der großen Karte ansehen</a>{% if detail_map.travel %} · {{ detail_map.travel }}{% endif %}</p>
+            {% endif %}
           </section>
 
           <section class="wage-calc" aria-label="Lohnrechnung">
@@ -194,6 +208,39 @@
     {% endif %}
   </article>
 </div>
+{% if detail_map %}
+  {{ detail_map|json_script:"detail-map-data" }}
+  <script>
+    // Kleine, feste Karte: kein Zoomen, kein Ziehen. Klick öffnet die große Karte.
+    (function () {
+      var data = JSON.parse(document.getElementById("detail-map-data").textContent);
+      var map = L.map("detail-map", {
+        zoomControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false,
+        boxZoom: false, keyboard: false, touchZoom: false,
+      }).setView([data.lat, data.lon], 14);
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
+      }).addTo(map);
+
+      // Der Marker der Stelle bleibt ohne Beschriftung: Titel und Firma stehen direkt darüber,
+      // und eine lange Beschriftung würde am Kartenrand abgeschnitten. Name für Screenreader per textContent.
+      L.circleMarker([data.lat, data.lon], {
+        radius: 8, color: "#fff", weight: 2, fillColor: "#2F5BD8", fillOpacity: 0.95, interactive: false,
+      }).addTo(map);
+      document.getElementById("detail-map").setAttribute("aria-label", "Karte: Lage von " + data.title + " · " + data.company);
+
+      if (data.home) {
+        L.circleMarker([data.home.lat, data.home.lon], {
+          radius: 7, color: "#fff", weight: 2, fillColor: "#1B1E25", fillOpacity: 1, interactive: false,
+        }).addTo(map).bindTooltip("Du", { permanent: true, direction: "top", offset: [0, -6] });
+        map.fitBounds([[data.lat, data.lon], [data.home.lat, data.home.lon]], { padding: [30, 30], maxZoom: 14 });
+      }
+
+      map.on("click", function () { window.location.href = data.map_url; });
+    })();
+  </script>
+{% endif %}
 <script>
   // Die geöffnete Stelle in der Liste links sichtbar machen (nur Desktop, dort scrollt die Liste selbst).
   (function () {

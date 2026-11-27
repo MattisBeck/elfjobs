@@ -277,6 +277,7 @@ def job_detail(request, pk):
 
     return render(request, "jobs/job_detail.html", {
         "posting": posting,
+        "detail_map": detail_map_data(posting, profile) if view == "details" else None,
         "week": week,
         "planning": planning,
         "has_profile": profile is not None,
@@ -300,6 +301,31 @@ def job_detail(request, pk):
         "application": application,
         "is_company": is_company,
     })
+
+
+def detail_map_data(posting, profile):
+    """Daten für das Kartenfenster im Stellendetail (#75), oder None ohne Ort / bei Remote.
+
+    Zweiter Marker „Du“ nur mit Wohnort im Profil. Die Anreisedauer kommt nur aus dem
+    Cache (cached_travel_times), nie aus einer neuen Abfrage.
+    """
+    if not posting.has_location or posting.workplace == JobPosting.Workplace.REMOTE:
+        return None
+    data = {
+        "lat": float(posting.latitude),
+        "lon": float(posting.longitude),
+        "title": posting.title,
+        "company": posting.company.name,
+        "home": None,
+        "travel": "",
+    }
+    data["map_url"] = with_query(reverse("job_map"), [("lat", data["lat"]), ("lon", data["lon"])])
+    if profile and profile.home:
+        data["home"] = {"lat": profile.home[0], "lon": profile.home[1]}
+        minutes = cached_travel_times(profile.home, [posting]).get(posting.id)
+        if minutes is not None:
+            data["travel"] = f"ca. {minutes} min mit ÖPNV"
+    return data
 
 
 def is_student(user):
