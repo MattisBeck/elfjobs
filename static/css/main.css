@@ -990,6 +990,25 @@ a.button {
   color: var(--muted);
 }
 
+/* Social Media der Firma und Sharepic (#37) */
+.share-links {
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.share-links p {
+  margin: 0;
+}
+
+.link-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
 /* Neben der Liste wird die Detailspalte unter 1200 px zu schmal für zwei Spalten. */
 @media (max-width: 1200px) {
   .details-grid {
