@@ -24,6 +24,9 @@
           <span class="job-row-title">{{ posting.title }}</span>
           <span class="job-row-wage">{{ posting.hourly_wage }} €</span>
           <span class="job-row-meta">{{ posting.company.name }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>
+          {% if posting.fit %}
+            <span class="job-row-fit fit-{{ posting.fit.status }}"><span class="fit-dot" aria-hidden="true"></span>{{ posting.fit.text }}</span>
+          {% endif %}
         </a>
       </li>
     {% empty %}
