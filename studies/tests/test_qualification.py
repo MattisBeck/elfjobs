@@ -7,7 +7,7 @@ from django.core.management import call_command
 from accounts.models import ProfileSkill, StudentProfile
 from jobs.models import Company, JobPosting, Tag
 from studies.models import Course, StudyProgram
-from studies.qualification import LEARNED, NOT_IN_STUDIES, UPCOMING, classify, skill_lookup, summary
+from studies.qualification import LEARNED, NOT_IN_STUDIES, UPCOMING, classify, skill_lookup, summary, verdict
 
 MIA = "mia@student.hpi.uni-potsdam.de"
 
@@ -189,3 +189,99 @@ def test_mia_sees_sql_from_third_semester(client):
     assert '<li class="tag tag-upcoming">SQL · ab 3. Semester</li>' in response.content.decode()
     hints = [p.skill_hint for p in response.context["postings"] if p.tags.all()]
     assert hints and all(hint.endswith(" aus dem Studium") for hint in hints)
+
+
+# Urteil „Du bist qualifiziert“ (#86)
+
+
+def test_verdict_all_learned(profile):
+    requirements = classify(skill_lookup(profile), [Tag.objects.get(name="Git")])
+
+    assert verdict(requirements) == {"level": "kannst", "label": "✓ Du bist qualifiziert", "detail": ""}
+
+
+def test_verdict_rest_comes_in_studies(profile):
+    requirements = classify(skill_lookup(profile), [Tag.objects.get(name="Git"), Tag.objects.get(name="SQL")])
+
+    assert verdict(requirements) == {
+        "level": "bald",
+        "label": "✓ Passt zu deinem Studium",
+        "detail": "Den Rest lernst du noch: SQL ab 3. Semester.",
+    }
+
+
+def test_verdict_none_when_something_is_not_in_studies(profile):
+    requirements = classify(skill_lookup(profile), [Tag.objects.get(name="Git"), Tag.objects.create(name="Kassieren")])
+
+    assert verdict(requirements) is None
+
+
+def test_verdict_without_requirements(profile):
+    assert verdict([]) == {"level": "kannst", "label": "✓ Keine Vorkenntnisse nötig", "detail": ""}
+
+
+def test_profile_skill_counts_for_verdict(profile):
+    excel = Tag.objects.create(name="Excel")
+    ProfileSkill.objects.create(profile=profile, tag=excel)
+
+    requirements = classify(skill_lookup(profile), [excel])
+
+    assert verdict(requirements)["level"] == "kannst"
+
+
+def test_list_and_detail_show_verdict_badge(client, profile):
+    can = make_posting("Kann ich", [Tag.objects.get(name="Git")])
+    make_posting("Bald", [Tag.objects.get(name="Git"), Tag.objects.get(name="SQL")])
+    make_posting("Fremd", [Tag.objects.create(name="Kassieren")])
+    client.force_login(profile.user)
+
+    response = client.get("/jobs/")
+    badges = {p.title: (p.verdict or {}).get("label") for p in response.context["postings"]}
+    assert badges == {"Kann ich": "✓ Du bist qualifiziert", "Bald": "✓ Passt zu deinem Studium", "Fremd": None}
+    content = response.content.decode()
+    assert '<span class="fit-badge fit-badge-kannst">✓ Du bist qualifiziert</span>' in content
+    assert '<span class="fit-badge fit-badge-bald">✓ Passt zu deinem Studium</span>' in content
+
+    detail = client.get(f"/jobs/{can.pk}/").content.decode()
+    head = detail.split('class="job-detail-head"')[1].split("</header>")[0]
+    assert '<p class="fit-badge fit-badge-kannst">✓ Du bist qualifiziert</p>' in head
+
+
+def test_detail_explains_what_comes_later(client, profile):
+    posting = make_posting("Bald", [Tag.objects.get(name="Git"), Tag.objects.get(name="SQL")])
+    client.force_login(profile.user)
+
+    content = client.get(f"/jobs/{posting.pk}/").content.decode()
+
+    assert "Den Rest lernst du noch: SQL ab 3. Semester." in content
+
+
+def test_no_verdict_without_login_or_profile(client, profile):
+    posting = make_posting("Kann ich", [Tag.objects.get(name="Git")])
+
+    assert "fit-badge" not in client.get("/jobs/").content.decode()
+    assert "fit-badge" not in client.get(f"/jobs/{posting.pk}/").content.decode()
+
+    client.force_login(User.objects.create_user("firma"))
+    assert "fit-badge" not in client.get("/jobs/").content.decode()
+    assert "fit-badge" not in client.get(f"/jobs/{posting.pk}/").content.decode()
+
+
+def test_map_shows_verdict_badge(client, profile):
+    make_posting("Kann ich", [Tag.objects.get(name="Git")])
+    client.force_login(profile.user)
+
+    content = client.get("/jobs/karte/").content.decode()
+
+    assert '<span class="fit-badge fit-badge-kannst">✓ Du bist qualifiziert</span>' in content
+
+
+@pytest.mark.django_db
+def test_mia_can_do_at_least_one_seed_job(client):
+    call_command("seed")
+    client.login(username=MIA, password="test-passwort")
+
+    response = client.get("/jobs/")
+
+    labels = [p.verdict["label"] for p in response.context["postings"] if p.verdict]
+    assert "✓ Du bist qualifiziert" in labels

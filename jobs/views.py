@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import StudentProfile
-from studies.qualification import classify, skill_lookup, summary
+from studies.qualification import classify, skill_lookup, summary, verdict
 from timetable.fit import FLEXIBEL, PASST, posting_fit
 
 from .filters import (
@@ -161,7 +161,9 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
     )
     if skills is not None:
         for posting in postings:
-            posting.skill_hint = summary(classify(skills, posting.tags.all()))
+            requirements = classify(skills, posting.tags.all())
+            posting.skill_hint = summary(requirements)
+            posting.verdict = verdict(requirements)
 
     # Formular „Filter“: Schieberegler plus versteckt alles andere, damit nichts verloren geht.
     # Die Suche in der Kopfzeile behält alles außer q (das ist ihr eigenes Feld).
@@ -210,6 +212,8 @@ def job_detail(request, pk):
     return render(request, "jobs/job_detail.html", {
         "posting": posting,
         "requirements": requirements,
+        # „✓ Du bist qualifiziert“ (#86), nur mit Profil.
+        "verdict": verdict(requirements) if skills is not None else None,
         "classified": skills is not None,
         # Nur Messen, die noch kommen.
         "fairs": posting.company.fairs.filter(date__gte=timezone.localdate()).order_by("date"),

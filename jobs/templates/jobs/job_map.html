@@ -61,6 +61,7 @@
             {% endif %}
             <span class="job-row-meta">{{ posting.company.name }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>
             <span class="job-row-gross">{% if posting.travel_minutes is not None %}{{ posting.distance_km|floatformat:1 }} km · {% endif %}{{ posting.effective_wage }} € effektiv</span>
+            {% if posting.verdict %}<span class="fit-badge fit-badge-{{ posting.verdict.level }}">{{ posting.verdict.label }}</span>{% endif %}
             {% if posting.skill_hint %}<span class="job-row-skills">{{ posting.skill_hint }}</span>{% endif %}
           </a>
         </li>
@@ -84,6 +85,7 @@
               <span class="job-row-wage">{{ posting.effective_wage }} €</span>
               <span class="job-row-meta">{{ posting.company.name }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>
               <span class="job-row-gross">brutto {{ posting.hourly_wage }} €</span>
+              {% if posting.verdict %}<span class="fit-badge fit-badge-{{ posting.verdict.level }}">{{ posting.verdict.label }}</span>{% endif %}
               {% if posting.skill_hint %}<span class="job-row-skills">{{ posting.skill_hint }}</span>{% endif %}
             </a>
           </li>
