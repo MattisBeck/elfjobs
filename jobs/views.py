@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
 from accounts.models import StudentProfile
-from studies.skills import skill_sources
+from studies.qualification import classify, skill_lookup, summary
 
 from .models import JobPosting
 
@@ -23,11 +23,23 @@ def with_query(path, params):
     return f"{path}?{query}" if query else path
 
 
-def filtered_postings(request):
-    """Stellen und Filter-Chips für die linke Spalte, gesteuert über ?filter=... und ?q=..."""
+def student_skills(request):
+    """Skills der eingeloggten Studentin für die Einordnung der Anforderungen, sonst None."""
+    if not request.user.is_authenticated:
+        return None
+    profile = StudentProfile.objects.filter(user=request.user).first()
+    return skill_lookup(profile) if profile else None
+
+
+def filtered_postings(request, skills=None):
+    """Stellen und Filter-Chips für die linke Spalte, gesteuert über ?filter=... und ?q=...
+
+    Mit skills (aus student_skills) bekommt jede Stelle einen Hinweis wie
+    „2 von 3 Anforderungen aus dem Studium“ (posting.skill_hint).
+    """
     active = [f for f in request.GET.getlist("filter") if f in FILTER_CHIPS]
 
-    postings = JobPosting.objects.select_related("company").prefetch_related("shifts")
+    postings = JobPosting.objects.select_related("company").prefetch_related("shifts", "tags")
 
     # Werkstudent und Kurzjob zusammen zeigen beides, Remote schränkt zusätzlich ein.
     kinds = []
@@ -61,11 +73,14 @@ def filtered_postings(request):
     filter_params = [("filter", f) for f in active] + search_params
     # Sortiert nach effektivem Stundenlohn (#12). Der wird in Python berechnet, nicht in der DB.
     postings = sorted(postings, key=lambda posting: (-posting.effective_wage, posting.title))
+    if skills is not None:
+        for posting in postings:
+            posting.skill_hint = summary(classify(skills, posting.tags.all()))
     return postings, chips, filter_params
 
 
 def job_list(request):
-    postings, chips, filter_params = filtered_postings(request)
+    postings, chips, filter_params = filtered_postings(request, student_skills(request))
     return render(request, "jobs/job_list.html", {
         "postings": postings,
         "chips": chips,
@@ -78,20 +93,18 @@ def job_detail(request, pk):
         JobPosting.objects.select_related("company").prefetch_related("tags"),
         pk=pk,
     )
-    postings, chips, filter_params = filtered_postings(request)
+    skills = student_skills(request)
+    postings, chips, filter_params = filtered_postings(request, skills)
     view = "woche" if request.GET.get("ansicht") == "woche" else "details"
 
-    # "Das bringst du mit": Skills, die die Studentin hat, mit Quelle ("aus PT1").
-    sources = {}
-    if request.user.is_authenticated:
-        profile = StudentProfile.objects.filter(user=request.user).first()
-        if profile:
-            sources = skill_sources(profile)
-    requirements = [{"tag": tag, "source": sources.get(tag.id)} for tag in posting.tags.all()]
+    # "Das bringst du mit": jede Anforderung eingeordnet (gelernt, kommt noch, nicht im Studium).
+    # Ohne Login oder Profil nur die Namen.
+    requirements = classify(skills or {}, posting.tags.all())
 
     return render(request, "jobs/job_detail.html", {
         "posting": posting,
         "requirements": requirements,
+        "classified": skills is not None,
         # Nur Messen, die noch kommen.
         "fairs": posting.company.fairs.filter(date__gte=timezone.localdate()).order_by("date"),
         "view": view,
