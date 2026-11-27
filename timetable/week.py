@@ -9,6 +9,7 @@ from jobs.models import Weekday
 
 from .fit import shift_collides
 from .free_time import DAY_END, DAY_START, to_minutes
+from .planning import block_key, open_blocks
 
 DAY_LABELS = {0: "Mo", 1: "Di", 2: "Mi", 3: "Do", 4: "Fr"}
 
@@ -31,18 +32,26 @@ def _block(kind, label, start, end):
     }
 
 
-def week_view(posting, lectures, shifts=None):
+def week_view(posting, lectures, shifts=None, planned=None):
     """{"days": [{"label", "blocks"}], "hours": [{"label", "top"}]} für die Vorlage.
 
     Vorlesungen sind "lecture", Schichten "shift" oder, wenn sie mit einer Vorlesung
     kollidieren (gleiche Regel und gleicher Puffer wie die Passung), "conflict".
+    Mit planned (eigene Schichten einer flexiblen Stelle, #11) kommen die freien Blöcke
+    als "free" (mit "key" für den Link) und die eigenen Schichten als "own" (mit "id") dazu.
     """
     if shifts is None:
         shifts = list(posting.shifts.all())
     buffer_minutes = posting.one_way_commute_minutes
     days = []
+    free = open_blocks(lectures, planned) if planned is not None else []
     for weekday in Weekday.values:
         blocks = [
+            {**_block("free", "+ frei", block.start, block.end), "key": block_key(block)}
+            for block in free
+            if block.weekday == weekday
+        ]
+        blocks += [
             _block("lecture", lecture.title, lecture.start, lecture.end)
             for lecture in sorted(lectures, key=lambda lecture: lecture.start)
             if lecture.weekday == weekday
@@ -54,6 +63,9 @@ def week_view(posting, lectures, shifts=None):
                 blocks.append(_block("conflict", "Konflikt", shift.start, shift.end))
             else:
                 blocks.append(_block("shift", "Schicht", shift.start, shift.end))
+        for shift in sorted(planned or [], key=lambda shift: shift.start):
+            if shift.weekday == weekday:
+                blocks.append({**_block("own", "Deine Schicht", shift.start, shift.end), "id": shift.pk})
         days.append({"label": DAY_LABELS[weekday], "blocks": blocks})
     hours = [
         {"label": str(hour), "top": f"{_percent(hour * 60):.4f}"}

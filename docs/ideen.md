@@ -74,7 +74,7 @@ Alle Ideen aus der Ideenschmiede und vom Ranking-Board. Status: **Issue** = wird
 
 | Idee | Status |
 |---|---|
-| Stundenplan angeben → passende Jobs finden | Issue #7, #9, #43 |
+| Stundenplan angeben → passende Jobs finden | Issue #7, #9, #43, #87 (eintragen wie im Kalender) |
 | Planbarkeit: Schichten über die Plattform abstimmen | Issue #10, #11 |
 | Effektiver Stundenlohn inkl. Pendelzeit | Issue #12 |
 | Lehrpläne: Skills aus belegten Modulen | Issue #30, #40, #41 |

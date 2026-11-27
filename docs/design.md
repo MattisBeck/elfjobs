@@ -223,6 +223,7 @@ Netto-Lohn, Konten für Firmen, Lehrpläne anderer Hochschulen, Noten und bestan
 | #8 | Schichtzeiten an Stellen | – |
 | #12 | Effektiver Stundenlohn | #4, #5, #8 |
 | #7 | Stundenplan erfassen | #6 |
+| #87 | Stundenplan im Wochenraster: Termine ziehen, verschieben, verlängern | #7, #10 |
 | #9 | Passung und Filter | #4, #7, #8 |
 | #10 | Tab „In meiner Woche“ | #5, #9 |
 | #11 | Flexible Stellen: eigene Schichten | #10 |

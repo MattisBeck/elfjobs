@@ -1,16 +1,21 @@
 from urllib.parse import urlencode
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.db.models import Prefetch, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from accounts.models import StudentProfile
 from studies.qualification import LEARNED, classify, skill_lookup, summary, verdict
 from timetable.fit import FLEXIBEL, KOLLIDIERT, PASST, TEILWEISE, posting_fit
+from timetable.models import PlannedShift
+from timetable.planning import PlannedShiftForm, planning_context, shift_label
 from timetable.week import week_view
 
 from .filters import (
@@ -24,7 +29,7 @@ from .filters import (
     slider_settings,
 )
 from .geo import BERLIN_MITTE, haversine_km, parse_start
-from .models import Company, Fair, JobPosting
+from .models import Company, Fair, JobPosting, SavedPosting
 from .travel import MAX_TRAVEL_REQUESTS, apply_home_commutes, cached_travel_times, fetch_travel_times
 
 # Filter-Chips der Stellenliste: GET-Parameter "filter", mehrere kombinierbar.
@@ -253,13 +258,22 @@ def job_detail(request, pk):
     requirements = classify(skills or {}, posting.tags.all())
 
     # Tab „In meiner Woche“ (#10): ohne Profil nur die Schichten.
+    # Flexible Stellen mit Profil: eigene Schichten in freie Blöcke legen (#11).
     week = None
+    planning = None
     if view == "woche":
-        week = week_view(posting, list(profile.lectures.all()) if profile else [])
+        lectures = list(profile.lectures.all()) if profile else []
+        if profile and posting.schedule == JobPosting.Schedule.FLEXIBLE:
+            planned = list(profile.planned_shifts.filter(posting=posting))
+            week = week_view(posting, lectures, planned=planned)
+            planning = planning_context(posting, lectures, planned, request.GET.get("frei"))
+        else:
+            week = week_view(posting, lectures)
 
     return render(request, "jobs/job_detail.html", {
         "posting": posting,
         "week": week,
+        "planning": planning,
         "has_profile": profile is not None,
         "requirements": requirements,
         # „✓ Du bist qualifiziert“ (#86), nur mit Profil.
@@ -275,7 +289,52 @@ def job_detail(request, pk):
         "filter_form": filter_form,
         "filter_query": urlencode(filter_params),
         "selected_pk": posting.pk,
+        # Merken (#13): nur Studierende, Firmenkonten sehen keinen Knopf.
+        "can_save": is_student(request.user),
+        "is_saved": is_student(request.user) and posting.saved_by.filter(user=request.user).exists(),
     })
+
+
+def is_student(user):
+    """Eingeloggt und kein Firmenkonto (#66). Nur Studierende merken Stellen (#13)."""
+    return user.is_authenticated and not hasattr(user, "company_member")
+
+
+@login_required
+@require_POST
+def job_save(request, pk):
+    """„Merken“ an- und wieder abschalten (#13), danach zurück auf ?next= oder ins Stellendetail."""
+    if not is_student(request.user):
+        raise PermissionDenied("Nur Studierende können Stellen merken.")
+    posting = get_object_or_404(JobPosting, pk=pk)
+    saved, created = SavedPosting.objects.get_or_create(user=request.user, posting=posting)
+    if not created:
+        saved.delete()
+    next_url = request.POST.get("next", "")
+    if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return redirect(next_url)
+    return redirect("job_detail", pk=posting.pk)
+
+
+@login_required
+def saved_list(request):
+    """Seite „Gemerkt“ (#13): die eigenen gemerkten Stellen, zuletzt gemerkte zuerst."""
+    if not is_student(request.user):
+        raise PermissionDenied("Nur Studierende können Stellen merken.")
+    saved = (
+        request.user.saved_postings.select_related("posting__company")
+        .prefetch_related("posting__shifts")
+        .order_by("-created_at")
+    )
+    postings = [entry.posting for entry in saved]
+    # Lohn und Passung wie in der Stellenliste.
+    profile = StudentProfile.objects.filter(user=request.user).first()
+    if profile:
+        apply_home_commutes(profile, postings)
+        lectures = list(profile.lectures.all())
+        for posting in postings:
+            posting.fit = posting_fit(posting, lectures)
+    return render(request, "jobs/saved_list.html", {"postings": postings})
 
 
 def job_map(request):
@@ -430,3 +489,35 @@ def fair_attend(request, pk):
     else:
         fair.visitors.add(request.user)
     return redirect(f"{reverse('fair_list')}#messe-{fair.pk}")
+
+
+@login_required
+@require_POST
+def planned_shift_add(request, pk):
+    """Eigene Schicht bei einer flexiblen Stelle anlegen (#11)."""
+    posting = get_object_or_404(JobPosting, pk=pk, schedule=JobPosting.Schedule.FLEXIBLE)
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    form = PlannedShiftForm(
+        request.POST,
+        posting=posting,
+        lectures=list(profile.lectures.all()),
+        planned=list(profile.planned_shifts.filter(posting=posting)),
+    )
+    if form.is_valid():
+        shift = PlannedShift.objects.create(profile=profile, posting=posting, **form.cleaned_data)
+        messages.success(request, f"Schicht eingeplant: {shift_label(shift.weekday, shift.start, shift.end)}.")
+    else:
+        for errors in form.errors.values():
+            for error in errors:
+                messages.error(request, error)
+    return redirect(reverse("job_detail", args=[posting.pk]) + "?ansicht=woche")
+
+
+@login_required
+@require_POST
+def planned_shift_delete(request, pk, shift_pk):
+    """Eigene Schicht wieder entfernen. Fremde Schichten sind nicht erreichbar."""
+    shift = get_object_or_404(PlannedShift, pk=shift_pk, posting_id=pk, profile__user=request.user)
+    shift.delete()
+    messages.success(request, f"Schicht entfernt: {shift_label(shift.weekday, shift.start, shift.end)}.")
+    return redirect(reverse("job_detail", args=[pk]) + "?ansicht=woche")

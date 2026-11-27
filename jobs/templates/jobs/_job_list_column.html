@@ -45,17 +45,7 @@
   <ul class="job-rows">
     {% for posting in postings %}
       <li>
-        <a class="job-row{% if posting.pk == selected_pk %} is-selected{% endif %}" href="{% url 'job_detail' posting.pk %}{% if filter_query %}?{{ filter_query }}{% endif %}">
-          <span class="job-row-title">{{ posting.title }}</span>
-          <span class="job-row-wage">{{ posting.effective_wage }} €</span>
-          <span class="job-row-meta">{{ posting.company.name }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>
-          <span class="job-row-gross">brutto {{ posting.hourly_wage }} €</span>
-          {% if posting.fit %}
-            <span class="job-row-fit fit-{{ posting.fit.status }}"><span class="fit-dot" aria-hidden="true"></span>{{ posting.fit.text }}</span>
-          {% endif %}
-          {% if posting.verdict %}<span class="fit-badge fit-badge-{{ posting.verdict.level }}">{{ posting.verdict.label }}</span>{% endif %}
-          {% if posting.skill_hint %}<span class="job-row-skills">{{ posting.skill_hint }}</span>{% endif %}
-        </a>
+        {% include "jobs/_job_row.html" %}
       </li>
     {% empty %}
       <li class="job-list-empty">Keine Stellen für diese Filter.</li>

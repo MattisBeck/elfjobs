@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Mein Stundenplan · elfjobs{% endblock %}
 
@@ -13,46 +14,60 @@
     <p class="notice">{{ message }}</p>
   {% endfor %}
 
-  <p class="free-summary">Frei zwischen 8 und 20 Uhr: <strong>{{ free_hours|floatformat:"-1" }} h</strong> in Blöcken ab 2 Stunden</p>
+  <p class="free-summary">Frei zwischen 8 und 20 Uhr: <strong data-free-hours>{{ free_hours|floatformat:"-1" }} h</strong> in Blöcken ab 2 Stunden</p>
 
-  <div class="timetable-days">
-    {% for day in days %}
-      <section class="timetable-day" aria-label="{{ day.label }}">
-        <h2>{{ day.label }}</h2>
-        {% if not day.has_lectures %}
-          <p class="muted">Keine Termine</p>
-        {% endif %}
-        {% for entry in day.entries %}
-          {% if entry.lecture %}
-            {% with lecture=entry.lecture %}
-              <div class="lecture-row">
-                <span class="lecture-time">{{ lecture.start|time:"G:i" }}–{{ lecture.end|time:"G:i" }}</span>
-                <span class="lecture-title">{{ lecture.title }}</span>
-                <span class="lecture-actions">
-                  <a href="{% url 'lecture_edit' lecture.pk %}">Ändern</a>
-                  <form method="post" action="{% url 'lecture_delete' lecture.pk %}">
-                    {% csrf_token %}
-                    <button type="submit" class="link-button" aria-label="{{ lecture.title }} am {{ day.label }} löschen">Löschen</button>
-                  </form>
-                </span>
-              </div>
-            {% endwith %}
-          {% else %}
-            <p class="free-block">frei {{ entry.free.start|time:"G:i" }}–{{ entry.free.end|time:"G:i" }}</p>
-          {% endif %}
-        {% endfor %}
-      </section>
-    {% endfor %}
-  </div>
-
-  <section class="timetable-add">
-    <h2>Termin hinzufügen</h2>
-    <form method="post" class="form form-inline">
-      {% csrf_token %}
-      {{ form.as_div }}
-      <button type="submit" class="button button-primary">Eintragen</button>
-    </form>
+  {# Wochenraster zum Ziehen (#87). Zeichnet static/js/timetable.js; ohne JavaScript bleibt es versteckt. #}
+  <section class="tt-editor week-panel" data-timetable-editor hidden>
+    <p class="tt-help muted">
+      <span class="tt-help-mouse">In eine Spalte klicken und nach unten ziehen, um einen Termin anzulegen. Termine lassen sich verschieben und am unteren Rand verlängern, ein Klick öffnet Titel und Löschen.</span>
+      <span class="tt-help-touch">Auf eine freie Stelle tippen, um einen Termin anzulegen. Termine lassen sich mit dem Finger verschieben und am unteren Rand verlängern, Antippen öffnet Titel und Löschen.</span>
+    </p>
+    <p class="tt-status" role="status" aria-live="polite"></p>
+    <div class="week tt-week"></div>
   </section>
+  {{ calendar|json_script:"timetable-data" }}
+
+  {# Rückfall ohne JavaScript (#7): Liste und Formular. Mit JavaScript blendet timetable.js sie aus. #}
+  <div class="tt-fallback" data-timetable-fallback>
+    <div class="timetable-days">
+      {% for day in days %}
+        <section class="timetable-day" aria-label="{{ day.label }}">
+          <h2>{{ day.label }}</h2>
+          {% if not day.has_lectures %}
+            <p class="muted">Keine Termine</p>
+          {% endif %}
+          {% for entry in day.entries %}
+            {% if entry.lecture %}
+              {% with lecture=entry.lecture %}
+                <div class="lecture-row">
+                  <span class="lecture-time">{{ lecture.start|time:"G:i" }}–{{ lecture.end|time:"G:i" }}</span>
+                  <span class="lecture-title">{{ lecture.title }}</span>
+                  <span class="lecture-actions">
+                    <a href="{% url 'lecture_edit' lecture.pk %}">Ändern</a>
+                    <form method="post" action="{% url 'lecture_delete' lecture.pk %}">
+                      {% csrf_token %}
+                      <button type="submit" class="link-button" aria-label="{{ lecture.title }} am {{ day.label }} löschen">Löschen</button>
+                    </form>
+                  </span>
+                </div>
+              {% endwith %}
+            {% else %}
+              <p class="free-block">frei {{ entry.free.start|time:"G:i" }}–{{ entry.free.end|time:"G:i" }}</p>
+            {% endif %}
+          {% endfor %}
+        </section>
+      {% endfor %}
+    </div>
+
+    <section class="timetable-add">
+      <h2>Termin hinzufügen</h2>
+      <form method="post" class="form form-inline">
+        {% csrf_token %}
+        {{ form.as_div }}
+        <button type="submit" class="button button-primary">Eintragen</button>
+      </form>
+    </section>
+  </div>
 
   {# Stundenplan als ICS-Datei (#43) #}
   <section class="timetable-add">
@@ -65,4 +80,5 @@
     </form>
   </section>
 </section>
+<script src="{% static 'js/timetable.js' %}" defer></script>
 {% endblock %}

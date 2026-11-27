@@ -2,7 +2,9 @@ from datetime import time
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from accounts.models import StudentProfile
@@ -55,7 +57,83 @@ def render_timetable(request, profile, form, upload_form):
         "free_hours": free_hours(blocks),
         "form": form,
         "upload_form": upload_form,
+        # Daten für das Wochenraster zum Ziehen (#87, static/js/timetable.js).
+        "calendar": {
+            **calendar_state(lectures),
+            "lectures": [lecture_json(lecture) for lecture in lectures],
+            "urls": {
+                "create": reverse("lecture_api_create"),
+                # Platzhalter 0 ersetzt das JavaScript durch die ID des Termins.
+                "update": reverse("lecture_api_update", args=[0]),
+                "delete": reverse("lecture_api_delete", args=[0]),
+            },
+        },
     })
+
+
+# JSON-Endpunkte für das Wochenraster (#87). Gleiche Regeln wie das Formular:
+# LectureSlotForm prüft die Zeiten, und geändert werden nur eigene Termine.
+
+
+def lecture_json(lecture):
+    return {
+        "id": lecture.pk,
+        "title": lecture.title,
+        "weekday": lecture.weekday,
+        "start": lecture.start.strftime("%H:%M"),
+        "end": lecture.end.strftime("%H:%M"),
+    }
+
+
+def calendar_state(lectures):
+    """Freie Blöcke und Stunden nach einer Änderung, damit das Raster sie neu zeichnen kann."""
+    blocks = free_blocks(lectures)
+    return {
+        "free": [
+            {"weekday": b.weekday, "start": b.start.strftime("%H:%M"), "end": b.end.strftime("%H:%M")}
+            for b in blocks
+        ],
+        "free_hours": free_hours(blocks),
+    }
+
+
+def api_login_required(view):
+    """Wie login_required, aber für fetch: 403 statt Weiterleitung zur Anmeldung."""
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({"errors": {"__all__": ["Bitte melde dich an."]}}, status=403)
+        return view(request, *args, **kwargs)
+    return wrapper
+
+
+def save_lecture(request, lecture, status):
+    form = LectureSlotForm(request.POST, instance=lecture)
+    if not form.is_valid():
+        return JsonResponse({"errors": form.errors}, status=400)
+    lecture = form.save()
+    state = calendar_state(list(lecture.profile.lectures.all()))
+    return JsonResponse({"lecture": lecture_json(lecture), **state}, status=status)
+
+
+@require_POST
+@api_login_required
+def lecture_api_create(request):
+    return save_lecture(request, LectureSlot(profile=current_profile(request)), status=201)
+
+
+@require_POST
+@api_login_required
+def lecture_api_update(request, pk):
+    lecture = get_object_or_404(LectureSlot, pk=pk, profile=current_profile(request))
+    return save_lecture(request, lecture, status=200)
+
+
+@require_POST
+@api_login_required
+def lecture_api_delete(request, pk):
+    profile = current_profile(request)
+    get_object_or_404(LectureSlot, pk=pk, profile=profile).delete()
+    return JsonResponse(calendar_state(list(profile.lectures.all())))
 
 
 @login_required
