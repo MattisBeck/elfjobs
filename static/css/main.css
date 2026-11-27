@@ -684,3 +684,164 @@ a {
   padding-top: 24px;
   border-top: 1px solid var(--line);
 }
+
+/* Mein Stundenplan (#7) */
+.timetable-page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.timetable-head h1 {
+  margin: 0 0 var(--space-1);
+  font-size: 20px;
+}
+
+.timetable-head p {
+  margin: 0;
+}
+
+.free-summary {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.timetable-days {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.timetable-day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+}
+
+.timetable-day h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.timetable-day p {
+  margin: 0;
+}
+
+.lecture-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2);
+  border-radius: var(--radius-chip);
+  background: var(--lecture);
+  color: var(--lecture-ink);
+  font-size: 13px;
+}
+
+.lecture-time {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+
+.lecture-title {
+  font-weight: 600;
+}
+
+.lecture-actions {
+  display: flex;
+  gap: var(--space-3);
+  font-size: 12px;
+}
+
+.lecture-actions a,
+.link-button {
+  color: var(--accent-ink);
+}
+
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.free-block {
+  padding: 6px var(--space-2);
+  border: 1.5px dashed var(--accent);
+  border-radius: var(--radius-chip);
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.timetable-add {
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--line);
+}
+
+.timetable-add h2 {
+  margin: 0 0 var(--space-3);
+  font-size: 16px;
+}
+
+.form-inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.form-inline > div {
+  flex: 1 1 160px;
+}
+
+.form input[type="time"],
+.form select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  font: inherit;
+  background: var(--bg);
+}
+
+.back-link-plain {
+  display: inline-block;
+  margin-bottom: var(--space-4);
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.profile-links {
+  margin: 0 0 var(--space-5);
+}
+
+@media (max-width: 900px) {
+  .timetable-days {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .timetable-page {
+    padding: 20px 16px 48px;
+  }
+
+  .lecture-actions a,
+  .link-button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}

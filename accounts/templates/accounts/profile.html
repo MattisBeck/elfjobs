@@ -9,6 +9,7 @@
     <p class="notice">{{ message }}</p>
   {% endfor %}
   <p class="muted">Angemeldet mit {{ user.email }}</p>
+  <p class="profile-links"><a href="{% url 'timetable' %}">Mein Stundenplan →</a></p>
   <form method="post" class="form">
     {% csrf_token %}
     {{ name_form.as_div }}
