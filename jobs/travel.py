@@ -213,15 +213,18 @@ def fetch_travel_times(start, postings, budget=None):
     return times
 
 
-# Ohne gespeicherte ÖPNV-Zeit: Luftlinie mit dieser Geschwindigkeit (ÖPNV plus Fußwege, #53).
-FALLBACK_KMH = 15
+# Ohne gespeicherte ÖPNV-Zeit: Schätzung aus der Luftlinie (#53). Feste Minuten für Fußwege
+# und Warten, dazu Minuten pro km. Auf langen Strecken fährt man S-Bahn oder Regionalbahn,
+# deshalb kein fester Schnitt: 5 km ≈ 18 min, 26 km (Potsdam Hbf–Berlin-Mitte) ≈ 49 min.
+FALLBACK_BASE_MINUTES = 10
+FALLBACK_MINUTES_PER_KM = 1.5
 
 
 def home_commute_minutes(home, postings):
     """Einfache Fahrzeit vom Wohnort zu jeder Stelle: {posting.id: Minuten}.
 
-    Erst die gespeicherte ÖPNV-Zeit (TravelTime, ohne API-Aufruf), sonst Luftlinie mit
-    FALLBACK_KMH. Remote-Stellen und Stellen ohne Ort fehlen im dict.
+    Erst die gespeicherte ÖPNV-Zeit (TravelTime, ohne API-Aufruf), sonst die Schätzung
+    aus der Luftlinie (FALLBACK_*). Remote-Stellen und Stellen ohne Ort fehlen im dict.
     """
     cached = cached_travel_times(home, postings)
     minutes = {}
@@ -232,7 +235,7 @@ def home_commute_minutes(home, postings):
             minutes[posting.id] = cached[posting.id]
         else:
             km = haversine_km(home[0], home[1], float(posting.latitude), float(posting.longitude))
-            minutes[posting.id] = math.ceil(km / FALLBACK_KMH * 60)
+            minutes[posting.id] = math.ceil(FALLBACK_BASE_MINUTES + km * FALLBACK_MINUTES_PER_KM)
     return minutes
 
 

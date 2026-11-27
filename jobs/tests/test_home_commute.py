@@ -14,7 +14,7 @@ from django.contrib.auth.models import User
 from accounts.geocode import geocode
 from accounts.models import StudentProfile
 from jobs.models import Company, JobPosting, Shift
-from jobs.travel import FALLBACK_KMH, apply_home_commutes, home_commute_minutes, save_minutes
+from jobs.travel import apply_home_commutes, home_commute_minutes, save_minutes
 from timetable.fit import KOLLIDIERT, PASST, posting_fit
 from timetable.models import LectureSlot
 
@@ -128,9 +128,18 @@ def test_without_cache_falls_back_to_straight_line(company):
 
     minutes = home_commute_minutes(POTSDAM_HBF, [posting])[posting.id]
 
-    # 5 km bei FALLBACK_KMH, aufgerundet: 15 km/h → 20 min.
-    assert FALLBACK_KMH == 15
-    assert 19 <= minutes <= 21
+    # 10 min + 5 km × 1,5 min ≈ 18 min
+    assert 17 <= minutes <= 19
+
+
+@pytest.mark.django_db
+def test_straight_line_estimate_stays_realistic_on_long_distances(company):
+    """Review #105: Potsdam Hbf → Berlin-Mitte (etwa 26 km) darf nicht 100 min dauern."""
+    posting = make_posting(company, location=(52.520, 13.405))
+
+    minutes = home_commute_minutes(POTSDAM_HBF, [posting])[posting.id]
+
+    assert 45 <= minutes <= 55
 
 
 @pytest.mark.django_db
@@ -138,7 +147,7 @@ def test_no_connection_in_cache_falls_back_to_straight_line(company):
     posting = make_posting(company)
     save_minutes(POTSDAM_HBF, FIVE_KM_EAST, None)
 
-    assert 19 <= home_commute_minutes(POTSDAM_HBF, [posting])[posting.id] <= 21
+    assert 17 <= home_commute_minutes(POTSDAM_HBF, [posting])[posting.id] <= 19
 
 
 @pytest.mark.django_db

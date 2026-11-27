@@ -140,7 +140,7 @@ Fahrzeit pro Woche (h) = Fahrten × 2 × einfache Fahrzeit (min) / 60
 Effektiver Stundenlohn = Bruttolohn × Stunden / (Stunden + Fahrzeit pro Woche)
 ```
 
-**Woher die einfache Fahrzeit kommt (#53):** Wer eingeloggt ist und im Profil einen Wohnort hat, bekommt die Fahrzeit vom Wohnort zur Stelle. Das ist die gespeicherte ÖPNV-Zeit (VBB, siehe README) oder, falls keine gespeichert ist, die Luftlinie bei 15 km/h. Sonst gilt die Annahme der Firma (`Company.commute_minutes`). Dieselbe Fahrzeit ist auch der Puffer in der Passung. Remote zählt immer 0.
+**Woher die einfache Fahrzeit kommt (#53):** Wer eingeloggt ist und im Profil einen Wohnort hat, bekommt die Fahrzeit vom Wohnort zur Stelle. Das ist die gespeicherte ÖPNV-Zeit (VBB, siehe README) oder, falls keine gespeichert ist, eine Schätzung aus der Luftlinie (10 min plus 1,5 min pro km). Sonst gilt die Annahme der Firma (`Company.commute_minutes`). Dieselbe Fahrzeit ist auch der Puffer in der Passung. Remote zählt immer 0.
 
 Beispiele aus den Seed-Daten, ausgeloggt (Fahrzeiten sind Annahmen der Firma; als Mia mit Wohnort Potsdam Hbf ergeben sich andere Werte):
 
