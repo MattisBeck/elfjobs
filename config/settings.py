@@ -99,3 +99,5 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Anreisedauer mit ÖPNV: VBB-API von transport.rest, ohne Key.
 TRAVEL_API_URL = os.environ.get("TRAVEL_API_URL", "https://v6.vbb.transport.rest")
 TRAVEL_API_TIMEOUT = float(os.environ.get("TRAVEL_API_TIMEOUT", "5"))  # Sekunden
+# Geocoding des Wohnorts (#53): Nominatim von OpenStreetMap, ohne Key.
+GEOCODE_API_URL = os.environ.get("GEOCODE_API_URL", "https://nominatim.openstreetmap.org")

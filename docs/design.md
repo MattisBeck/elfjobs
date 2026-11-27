@@ -140,7 +140,9 @@ Fahrzeit pro Woche (h) = Fahrten × 2 × einfache Fahrzeit (min) / 60
 Effektiver Stundenlohn = Bruttolohn × Stunden / (Stunden + Fahrzeit pro Woche)
 ```
 
-Beispiele aus den Seed-Daten (Fahrzeiten sind Annahmen):
+**Woher die einfache Fahrzeit kommt (#53):** Wer eingeloggt ist und im Profil einen Wohnort hat, bekommt die Fahrzeit vom Wohnort zur Stelle. Das ist die gespeicherte ÖPNV-Zeit (VBB, siehe README) oder, falls keine gespeichert ist, die Luftlinie bei 15 km/h. Sonst gilt die Annahme der Firma (`Company.commute_minutes`). Dieselbe Fahrzeit ist auch der Puffer in der Passung. Remote zählt immer 0.
+
+Beispiele aus den Seed-Daten, ausgeloggt (Fahrzeiten sind Annahmen der Firma; als Mia mit Wohnort Potsdam Hbf ergeben sich andere Werte):
 
 | Stelle | Brutto | Std./Woche | Fahrten × einfache Fahrzeit | Fahrzeit | Effektiv |
 |---|---|---|---|---|---|
@@ -184,7 +186,8 @@ Monat ≈ Bruttolohn × Stunden × 4,33, auf ganze Euro gerundet. Bis 603 € (M
 | `LectureSlot` | Profil, Wochentag, Beginn, Ende, Titel (von Hand oder aus `.ics`) | #7, #43 |
 | `Shift` | Stelle, Wochentag, Beginn, Ende | #8 |
 | `PlannedShift` | Profil, Stelle, Wochentag, Beginn, Ende | #11 |
-| `Company.commute_minutes` | einfache Fahrzeit (Annahme im Seed) | #12 |
+| `Company.commute_minutes` | einfache Fahrzeit (Annahme im Seed), wenn kein Wohnort bekannt ist | #12, #53 |
+| `StudentProfile.home_latitude/home_longitude` | Wohnort als Koordinaten, beim Speichern des Profils über Nominatim gesucht | #53 |
 | `SavedPosting` | Profil, Stelle | #13 |
 | `Application` | Profil, Stelle, Zeitpunkt, Status | #14 |
 

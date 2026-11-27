@@ -12,7 +12,11 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.http import require_POST
 
+from jobs.models import JobPosting
+from jobs.travel import warm_home_commutes
+
 from .cv import accept_cv_skills, cv_suggestions, sample_cv_path
+from .geocode import geocode
 from .forms import CvSampleForm, NameForm, ProfileForm, SignupForm
 from .models import StudentProfile
 
@@ -88,6 +92,8 @@ def profile(request):
             name_form.save()
             profile_form.save()
             messages.success(request, "Profil gespeichert.")
+            if "home_town" in profile_form.changed_data:
+                update_home(request, student)
             return redirect("profile")
     else:
         name_form = NameForm(instance=request.user)
@@ -101,6 +107,21 @@ def profile(request):
         "cv_existing_skills": existing_skills,
         "my_fairs": request.user.fairs.filter(date__gte=timezone.localdate()).order_by("date"),
     })
+
+
+def update_home(request, student):
+    """Wohnort geändert: Koordinaten suchen (#53) und ÖPNV-Zeiten zu den nächsten Stellen holen."""
+    point = geocode(student.home_town) if student.home_town else None
+    student.home_latitude, student.home_longitude = point if point else (None, None)
+    student.save(update_fields=["home_latitude", "home_longitude"])
+    if point:
+        warm_home_commutes(student, list(JobPosting.objects.exclude(latitude=None)))
+    elif student.home_town:
+        messages.warning(
+            request,
+            f"„{student.home_town}“ haben wir auf der Karte nicht gefunden. "
+            "Bis dahin rechnen wir mit der geschätzten Fahrzeit der Firmen.",
+        )
 
 
 @login_required

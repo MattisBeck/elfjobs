@@ -228,6 +228,9 @@ def create_demo_student(password):
             "study_program": itse,
             "semester": 1,
             "home_town": "Potsdam",
+            # Feste Koordinaten (Potsdam Hbf), kein Geocoding im Seed (#53).
+            "home_latitude": Decimal("52.392000"),
+            "home_longitude": Decimal("13.067000"),
             "cv_sample": StudentProfile.CvSample.MIA,
         },
     )

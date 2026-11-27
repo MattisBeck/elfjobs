@@ -48,7 +48,8 @@ def posting_fit(posting, lectures):
     if posting.schedule == JobPosting.Schedule.FLEXIBLE or not shifts:
         return Fit(FLEXIBEL, 0, len(shifts), "Flexible Zeiten, du wählst die Schichten")
 
-    buffer_minutes = 0 if posting.workplace == JobPosting.Workplace.REMOTE else posting.company.commute_minutes
+    # Puffer = einfache Fahrzeit: vom Wohnort, wenn bekannt (#53), sonst Annahme der Firma; remote 0.
+    buffer_minutes = posting.one_way_commute_minutes
     total = len(shifts)
     colliding = sum(shift_collides(shift, lectures, buffer_minutes) for shift in shifts)
 

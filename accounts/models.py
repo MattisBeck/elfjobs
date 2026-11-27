@@ -26,6 +26,9 @@ class StudentProfile(models.Model):
     )
     semester = models.PositiveSmallIntegerField("Semester", null=True, blank=True)
     home_town = models.CharField("Wohnort", max_length=100, blank=True)
+    # Koordinaten des Wohnorts, beim Speichern des Profils über Nominatim gesucht (#53).
+    home_latitude = models.DecimalField("Wohnort Breite", max_digits=9, decimal_places=6, null=True, blank=True)
+    home_longitude = models.DecimalField("Wohnort Länge", max_digits=9, decimal_places=6, null=True, blank=True)
     # Selbst eingetragene Skills mit Herkunft (siehe ProfileSkill).
     # Skills aus Modulen werden nicht gespeichert, sondern aus courses abgeleitet (studies/skills.py).
     skills = models.ManyToManyField(
@@ -42,6 +45,13 @@ class StudentProfile(models.Model):
 
     def __str__(self):
         return self.user.get_full_name() or self.user.username
+
+    @property
+    def home(self):
+        """Wohnort als (lat, lon) oder None."""
+        if self.home_latitude is None or self.home_longitude is None:
+            return None
+        return (float(self.home_latitude), float(self.home_longitude))
 
     @property
     def summary(self):
