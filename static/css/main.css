@@ -679,6 +679,21 @@ a {
   color: #fff;
 }
 
+/* Knopf als Link (z. B. „Neue Mail anfordern“): sonst bleibt er inline und min-height greift nicht (#97). */
+a.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+/* Klickflächen auf dem Handy mindestens 44 px (docs/design.md, #97). */
+@media (max-width: 720px) {
+  .button {
+    min-height: 44px;
+  }
+}
+
 .tabs {
   display: inline-flex;
   gap: 2px;
@@ -904,6 +919,7 @@ a {
 }
 
 .form input[type="text"],
+.form input[type="email"],
 .form input[type="password"],
 .form input[type="number"] {
   width: 100%;
