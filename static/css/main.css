@@ -1415,3 +1415,18 @@ a.button {
     font-size: 12px;
   }
 }
+
+/* Onboarding (#35) */
+.onboarding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.onboarding-hint {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-muted);
+  text-align: center;
+}
