@@ -42,13 +42,19 @@ KINDS = {
     },
     JobPosting.Kind.SHORT_JOB: {
         "hours": (3, 12),
-        "wage": (13, 17),
+        "wage": (14, 17),  # Mindestlohn 2026: 13,90 €
         "titles": [
             "Aushilfe Inventur", "Servicekraft Messecatering", "Promoter*in",
             "Aushilfe Lager", "Event-Helfer*in", "Kassenaushilfe",
             "Umfrage-Interviewer*in", "Flyer-Verteilung",
         ],
     },
+}
+
+# Diese Jobs gehen nur vor Ort, alle anderen können auch hybrid oder remote sein.
+ONSITE_ONLY_TITLES = {
+    "Aushilfe Inventur", "Servicekraft Messecatering", "Promoter*in",
+    "Aushilfe Lager", "Event-Helfer*in", "Kassenaushilfe", "Flyer-Verteilung",
 }
 
 
@@ -87,12 +93,17 @@ class Command(BaseCommand):
         for _ in range(NUM_POSTINGS):
             kind = random.choice(list(KINDS))
             rules = KINDS[kind]
+            title = random.choice(rules["titles"])
+            if title in ONSITE_ONLY_TITLES:
+                workplace = JobPosting.Workplace.ONSITE
+            else:
+                workplace = random.choice(JobPosting.Workplace.values)
             posting = JobPosting.objects.create(
                 company=random.choice(companies),
-                title=random.choice(rules["titles"]),
+                title=title,
                 description=fake.paragraph(nb_sentences=3),
                 kind=kind,
-                workplace=random.choice(JobPosting.Workplace.values),
+                workplace=workplace,
                 schedule=random.choice(JobPosting.Schedule.values),
                 hourly_wage=random_wage(*rules["wage"]),
                 hours_per_week=random.randint(*rules["hours"]),
