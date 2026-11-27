@@ -288,6 +288,11 @@ a {
 }
 
 /* Suchfilter (#71): aufklappbar unter den Chips. */
+/* Abstand vor dem ✕ in entfernbaren Filter-Chips (inline-flex verschluckt das Leerzeichen). */
+.chip [aria-hidden="true"] {
+  margin-left: 6px;
+}
+
 .filter-panel {
   margin-top: 12px;
   border: 1px solid var(--line);
