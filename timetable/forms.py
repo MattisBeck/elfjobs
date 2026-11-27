@@ -18,3 +18,9 @@ class LectureSlotForm(forms.ModelForm):
         if start and end and end <= start:
             self.add_error("end", "Das Ende muss nach dem Beginn liegen.")
         return cleaned
+
+
+class IcsUploadForm(forms.Form):
+    """Stundenplan als Kalenderdatei (#43), z. B. aus dem Uni-Kalender exportiert."""
+
+    datei = forms.FileField(label="Kalenderdatei (.ics)", widget=forms.ClearableFileInput(attrs={"accept": ".ics,text/calendar"}))
