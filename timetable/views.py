@@ -42,8 +42,9 @@ def timetable(request):
 
 def render_timetable(request, profile, form, upload_form):
     lectures = list(profile.lectures.all())
-    blocks = free_blocks(lectures)
     shifts = planned_shifts(profile)
+    # Frei ist, was weder Vorlesung noch eigene Schicht ist (#140).
+    blocks = free_blocks(lectures + shifts)
     conflicts = shift_conflicts(shifts, lectures)
     for shift in shifts:
         shift.conflict_text = "; ".join(conflicts.get(shift.pk, []))
@@ -71,7 +72,7 @@ def render_timetable(request, profile, form, upload_form):
         # Daten für das Wochenraster zum Ziehen (#87, static/js/timetable.js). Das Raster zeigt
         # 8–20 Uhr; was nicht ganz hineinpasst, steht darunter mit Ändern und Löschen (#123).
         "calendar": {
-            **calendar_state(lectures),
+            **calendar_state(lectures, shifts),
             "lectures": [lecture_json(lecture) for lecture in lectures if in_grid(lecture)],
             # Eigene Schichten (#140): nur anzeigen, nicht ziehbar. Ändern und Löschen geht bei der Stelle.
             "shifts": [shift_json(shift) for shift in shifts],
@@ -128,9 +129,12 @@ def lecture_json(lecture):
     }
 
 
-def calendar_state(lectures):
-    """Freie Blöcke und Stunden nach einer Änderung, damit das Raster sie neu zeichnen kann."""
-    blocks = free_blocks(lectures)
+def calendar_state(lectures, shifts):
+    """Freie Blöcke und Stunden nach einer Änderung, damit das Raster sie neu zeichnen kann.
+
+    Eigene Schichten (#140) belegen Zeit wie Vorlesungen.
+    """
+    blocks = free_blocks(list(lectures) + list(shifts))
     return {
         "free": [
             {"weekday": b.weekday, "start": b.start.strftime("%H:%M"), "end": b.end.strftime("%H:%M")}
@@ -154,7 +158,7 @@ def save_lecture(request, lecture, status):
     if not form.is_valid():
         return JsonResponse({"errors": form.errors}, status=400)
     lecture = form.save()
-    state = calendar_state(list(lecture.profile.lectures.all()))
+    state = calendar_state(lecture.profile.lectures.all(), lecture.profile.planned_shifts.all())
     return JsonResponse({"lecture": lecture_json(lecture), **state}, status=status)
 
 
@@ -176,7 +180,7 @@ def lecture_api_update(request, pk):
 def lecture_api_delete(request, pk):
     profile = current_profile(request)
     get_object_or_404(LectureSlot, pk=pk, profile=profile).delete()
-    return JsonResponse(calendar_state(list(profile.lectures.all())))
+    return JsonResponse(calendar_state(profile.lectures.all(), profile.planned_shifts.all()))
 
 
 @login_required

@@ -211,3 +211,15 @@ def test_nav_tab_is_hidden_for_companies(client, db):
     client.force_login(user)
 
     assert "Stundenplan" not in nav(client.get("/jobs/"))
+
+
+def test_free_blocks_leave_out_own_shifts(profile):
+    """Freie Blöcke und freie Stunden im Stundenplan zählen eigene Schichten als belegt."""
+    from timetable.views import calendar_state
+
+    before = calendar_state(profile.lectures.all(), [])
+    plan(profile, make_posting(), 1, time(15), time(18))
+    after = calendar_state(profile.lectures.all(), profile.planned_shifts.all())
+    tuesday = [block for block in after["free"] if block["weekday"] == 1]
+    assert all(block["end"] <= "15:00" or block["start"] >= "18:00" for block in tuesday)
+    assert after["free_hours"] < before["free_hours"]
