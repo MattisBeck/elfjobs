@@ -1,12 +1,13 @@
+import math
 import random
-from datetime import date
+from datetime import date, time
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from faker import Faker
 
-from jobs.models import Company, Fair, JobPosting, Tag
+from jobs.models import Company, Fair, JobPosting, Shift, Tag
 
 SEED = 42
 NUM_COMPANIES = 20
@@ -60,10 +61,39 @@ ONSITE_ONLY_TITLES = {
     "Event-Helfer*in", "Kassenaushilfe", "Flyer-Verteilung", "Promoter*in",
 }
 
+# Schichten der Stellen mit festen Zeiten: höchstens 4 h pro Schicht, meist nachmittags.
+MAX_SHIFT_MINUTES = 4 * 60
+# Die Beispielstelle aus docs/design.md bekommt genau die Zeiten aus dem Design-Canvas.
+DESIGN_EXAMPLE_SHIFTS = {
+    ("Promoter*in", "Weihmann GbR", 7): [(1, time(15, 0), time(18, 30)), (2, time(16, 30), time(20, 0))],
+}
+
 
 def random_wage(low, high):
     """Zufälliger Stundenlohn, auf 0,50 € genau."""
     return Decimal(random.randint(low * 2, high * 2)) / 2
+
+
+def make_shifts(posting, rng):
+    """Schichten, die zusammen genau hours_per_week ergeben, an verschiedenen Wochentagen."""
+    key = (posting.title, posting.company.name, posting.hours_per_week)
+    if key in DESIGN_EXAMPLE_SHIFTS:
+        return DESIGN_EXAMPLE_SHIFTS[key]
+
+    total = posting.hours_per_week * 60
+    count = math.ceil(total / MAX_SHIFT_MINUTES)
+    # Gleichmäßig auf halbe Stunden verteilen, der Rest landet in der letzten Schicht.
+    length = round(total / count / 30) * 30
+    lengths = [length] * (count - 1) + [total - length * (count - 1)]
+
+    shifts = []
+    for weekday, minutes in zip(sorted(rng.sample(range(5), count)), lengths):
+        # Beginn zwischen 13:00 und so spät, dass die Schicht bis 20:00 endet.
+        latest_start = 20 * 60 - minutes
+        start = rng.randrange(13 * 60, latest_start + 1, 30)
+        end = start + minutes
+        shifts.append((weekday, time(start // 60, start % 60), time(end // 60, end % 60)))
+    return shifts
 
 
 class Command(BaseCommand):
@@ -117,6 +147,12 @@ class Command(BaseCommand):
                 hours_per_week=random.randint(*rules["hours"]),
             )
             posting.tags.set(random.sample(tags, random.randint(0, 3)))
+
+        # Eigener Zufallsgenerator, damit neue Daten die Stellen oben nicht verändern.
+        shift_random = random.Random(SEED)
+        for posting in JobPosting.objects.filter(schedule=JobPosting.Schedule.FIXED).order_by("id"):
+            for weekday, start, end in make_shifts(posting, shift_random):
+                Shift.objects.create(posting=posting, weekday=weekday, start=start, end=end)
 
         self.stdout.write(self.style.SUCCESS(
             f"{NUM_POSTINGS} Stellen von {NUM_COMPANIES} Firmen angelegt "
