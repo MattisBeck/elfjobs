@@ -1,7 +1,7 @@
 """Suchfilter für Stellenliste, Stellendetail und Karte (#71).
 
 Die Werte kommen als GET-Parameter, damit man eine Suche teilen kann:
-min_lohn (€ pro Stunde, effektiv), max_anreise (Minuten, einfach),
+min_lohn (Stundenlohn ab, brutto), max_anreise (Minuten, einfach),
 min_stunden und max_stunden (pro Woche) und auf der Karte max_km (Luftlinie).
 Ungültige Werte (Text, negativ, zu groß) werden ignoriert.
 """
@@ -16,6 +16,11 @@ MAP_FILTER_FIELDS = FILTER_FIELDS + ["max_km"]
 
 # Größere Zahlen ergeben keinen Sinn und werden ignoriert.
 MAX_VALUE = Decimal(10000)
+
+# Regler „Stundenlohn ab“ (#77): beginnt beim gesetzlichen Mindestlohn 2026, darunter gibt es
+# keine Stelle. Ein Wert bis zum Mindestlohn heißt „egal“ und wird nicht als Filter gezählt.
+LEGAL_MINIMUM_WAGE = Decimal("13.90")
+WAGE_SCALE_MAX = Decimal(25)
 
 
 def parse_number(value):
@@ -36,6 +41,8 @@ def parse_filters(get, fields=FILTER_FIELDS):
         number = parse_number(get.get(name, ""))
         if number is not None:
             filters[name] = number
+    if "min_lohn" in filters and filters["min_lohn"] <= LEGAL_MINIMUM_WAGE:
+        del filters["min_lohn"]
     # "von 20 bis 10 Stunden" passt zu keiner Stelle, also beide ignorieren.
     if "min_stunden" in filters and "max_stunden" in filters:
         if filters["max_stunden"] < filters["min_stunden"]:
@@ -67,7 +74,7 @@ def commute_minutes(posting):
 
 def matches(posting, filters):
     """Passt die Stelle zu den Filtern? max_km prüft die Karte selbst (braucht den Startpunkt)."""
-    if "min_lohn" in filters and posting.effective_wage < filters["min_lohn"]:
+    if "min_lohn" in filters and posting.hourly_wage < filters["min_lohn"]:
         return False
     if "max_anreise" in filters and commute_minutes(posting) > filters["max_anreise"]:
         return False
@@ -87,7 +94,7 @@ def filter_labels(filters):
     """Texte für die aktiven Filter und welche Parameter ein Klick auf ✕ entfernt."""
     labels = []
     if "min_lohn" in filters:
-        labels.append((f"ab {format_number(filters['min_lohn'])} €", ["min_lohn"]))
+        labels.append((f"ab {format_number(filters['min_lohn'])} € brutto", ["min_lohn"]))
     if "max_anreise" in filters:
         labels.append((f"max. {format_number(filters['max_anreise'])} min Anreise", ["max_anreise"]))
     if "max_km" in filters:
