@@ -1,5 +1,6 @@
 from urllib.parse import urlencode
 
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 
 from .models import JobPosting
@@ -28,10 +29,20 @@ def job_list(request):
     if "remote" in active:
         postings = postings.filter(workplace=JobPosting.Workplace.REMOTE)
 
+    # Suchfeld in der Kopfzeile: Titel, Firma oder Skill (Tag).
+    q = request.GET.get("q", "").strip()
+    if q:
+        postings = postings.filter(
+            Q(title__icontains=q) | Q(company__name__icontains=q) | Q(tags__name__icontains=q)
+        ).distinct()
+
     chips = []
     for key, label in FILTER_CHIPS.items():
         toggled = [f for f in active if f != key] if key in active else active + [key]
-        query = urlencode([("filter", f) for f in toggled])
+        params = [("filter", f) for f in toggled]
+        if q:
+            params.append(("q", q))
+        query = urlencode(params)
         chips.append({
             "label": label,
             "active": key in active,
