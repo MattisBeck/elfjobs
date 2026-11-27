@@ -236,6 +236,8 @@ def create_demo_student(password):
         through_defaults={"source": ProfileSkill.Source.PROFILE},
     )
     profile.courses.set(itse.courses.filter(short_name__in=["PT1", "MA1"]))
+    # Mia geht zur Jobmesse Potsdam (#33), damit „Meine Messen“ im Profil etwas zeigt.
+    user.fairs.set(Fair.objects.filter(name="Jobmesse Potsdam 2027"))
 
     # Mias Stundenplan aus docs/design.md, bei jedem Seed neu.
     profile.lectures.all().delete()

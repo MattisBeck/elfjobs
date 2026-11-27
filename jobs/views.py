@@ -1,10 +1,12 @@
 from urllib.parse import urlencode
 
-from django.db.models import Q
+from django.contrib.auth.decorators import login_required
+from django.db.models import Prefetch, Q
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from accounts.models import StudentProfile
 from studies.qualification import LEARNED, classify, skill_lookup, summary, verdict
@@ -21,7 +23,7 @@ from .filters import (
     slider_settings,
 )
 from .geo import BERLIN_MITTE, haversine_km, parse_start
-from .models import JobPosting
+from .models import Company, Fair, JobPosting
 from .travel import MAX_TRAVEL_REQUESTS, cached_travel_times, fetch_travel_times
 
 # Filter-Chips der Stellenliste: GET-Parameter "filter", mehrere kombinierbar.
@@ -389,3 +391,31 @@ def job_map_travel(request):
     )
     times = fetch_travel_times(start, list(postings))
     return JsonResponse({str(id): minutes for id, minutes in times.items() if minutes is not None})
+
+
+def fair_list(request):
+    """Kommende Messen und Events nach Datum, mit Firmen und deren Stellen (#33)."""
+    companies = Company.objects.order_by("name").prefetch_related(
+        Prefetch("postings", queryset=JobPosting.objects.order_by("title"))
+    )
+    fairs = (
+        Fair.objects.filter(date__gte=timezone.localdate())
+        .order_by("date", "name")
+        .prefetch_related(Prefetch("companies", queryset=companies))
+    )
+    attending = set()
+    if request.user.is_authenticated:
+        attending = set(request.user.fairs.values_list("pk", flat=True))
+    return render(request, "jobs/fair_list.html", {"fairs": fairs, "attending": attending})
+
+
+@login_required
+@require_POST
+def fair_attend(request, pk):
+    """„Ich gehe hin“ an- und wieder abschalten."""
+    fair = get_object_or_404(Fair, pk=pk)
+    if fair.visitors.filter(pk=request.user.pk).exists():
+        fair.visitors.remove(request.user)
+    else:
+        fair.visitors.add(request.user)
+    return redirect(f"{reverse('fair_list')}#messe-{fair.pk}")

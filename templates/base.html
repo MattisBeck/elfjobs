@@ -18,9 +18,9 @@
     <nav class="main-nav" aria-label="Hauptnavigation">
       <a href="{% url 'job_list' %}"{% if request.resolver_match.url_name == "job_list" or request.resolver_match.url_name == "job_detail" %} aria-current="page"{% endif %}>Jobs</a>
       <a href="{% url 'job_map' %}"{% if request.resolver_match.url_name == "job_map" %} aria-current="page"{% endif %}>Karte</a>
-      {# Gemerkt (#13) und Messen bekommen ihre Seiten mit eigenen Issues. #}
+      {# Gemerkt bekommt seine Seite mit #13. #}
       <span aria-disabled="true">Gemerkt</span>
-      <span aria-disabled="true">Messen</span>
+      <a href="{% url 'fair_list' %}"{% if request.resolver_match.url_name == "fair_list" %} aria-current="page"{% endif %}>Messen</a>
     </nav>
 
     {# Auf der Karte bleibt die Suche auf der Karte. Chips, Suchfilter und Startpunkt bleiben erhalten. #}
