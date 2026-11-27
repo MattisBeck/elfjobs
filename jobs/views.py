@@ -1,5 +1,6 @@
 from urllib.parse import urlencode
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Prefetch, Q
 from django.http import JsonResponse
@@ -11,6 +12,8 @@ from django.views.decorators.http import require_POST
 from accounts.models import StudentProfile
 from studies.qualification import LEARNED, classify, skill_lookup, summary, verdict
 from timetable.fit import FLEXIBEL, KOLLIDIERT, PASST, TEILWEISE, posting_fit
+from timetable.models import PlannedShift
+from timetable.planning import PlannedShiftForm, planning_context, shift_label
 from timetable.week import week_view
 
 from .filters import (
@@ -253,13 +256,22 @@ def job_detail(request, pk):
     requirements = classify(skills or {}, posting.tags.all())
 
     # Tab „In meiner Woche“ (#10): ohne Profil nur die Schichten.
+    # Flexible Stellen mit Profil: eigene Schichten in freie Blöcke legen (#11).
     week = None
+    planning = None
     if view == "woche":
-        week = week_view(posting, list(profile.lectures.all()) if profile else [])
+        lectures = list(profile.lectures.all()) if profile else []
+        if profile and posting.schedule == JobPosting.Schedule.FLEXIBLE:
+            planned = list(profile.planned_shifts.filter(posting=posting))
+            week = week_view(posting, lectures, planned=planned)
+            planning = planning_context(posting, lectures, planned, request.GET.get("frei"))
+        else:
+            week = week_view(posting, lectures)
 
     return render(request, "jobs/job_detail.html", {
         "posting": posting,
         "week": week,
+        "planning": planning,
         "has_profile": profile is not None,
         "requirements": requirements,
         # „✓ Du bist qualifiziert“ (#86), nur mit Profil.
@@ -430,3 +442,35 @@ def fair_attend(request, pk):
     else:
         fair.visitors.add(request.user)
     return redirect(f"{reverse('fair_list')}#messe-{fair.pk}")
+
+
+@login_required
+@require_POST
+def planned_shift_add(request, pk):
+    """Eigene Schicht bei einer flexiblen Stelle anlegen (#11)."""
+    posting = get_object_or_404(JobPosting, pk=pk, schedule=JobPosting.Schedule.FLEXIBLE)
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    form = PlannedShiftForm(
+        request.POST,
+        posting=posting,
+        lectures=list(profile.lectures.all()),
+        planned=list(profile.planned_shifts.filter(posting=posting)),
+    )
+    if form.is_valid():
+        shift = PlannedShift.objects.create(profile=profile, posting=posting, **form.cleaned_data)
+        messages.success(request, f"Schicht eingeplant: {shift_label(shift.weekday, shift.start, shift.end)}.")
+    else:
+        for errors in form.errors.values():
+            for error in errors:
+                messages.error(request, error)
+    return redirect(reverse("job_detail", args=[posting.pk]) + "?ansicht=woche")
+
+
+@login_required
+@require_POST
+def planned_shift_delete(request, pk, shift_pk):
+    """Eigene Schicht wieder entfernen. Fremde Schichten sind nicht erreichbar."""
+    shift = get_object_or_404(PlannedShift, pk=shift_pk, posting_id=pk, profile__user=request.user)
+    shift.delete()
+    messages.success(request, f"Schicht entfernt: {shift_label(shift.weekday, shift.start, shift.end)}.")
+    return redirect(reverse("job_detail", args=[pk]) + "?ansicht=woche")

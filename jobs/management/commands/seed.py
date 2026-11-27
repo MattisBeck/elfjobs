@@ -15,7 +15,7 @@ from companies.models import CompanyMember
 from jobs.models import Company, Fair, JobPosting, Shift, Tag
 from studies.curriculum import CURRICULUM
 from studies.models import Course, StudyProgram
-from timetable.models import LectureSlot
+from timetable.models import LectureSlot, PlannedShift
 
 SEED = 42
 NUM_COMPANIES = 20
@@ -246,6 +246,12 @@ def create_demo_student(password):
     profile.lectures.all().delete()
     for weekday, start, end, title in DEMO_LECTURES:
         LectureSlot.objects.create(profile=profile, weekday=weekday, start=start, end=end, title=title)
+
+    # Eine eigene Schicht bei der ersten flexiblen Stelle vor Ort (#11): Di 15–18 Uhr liegt frei.
+    flexible = JobPosting.objects.filter(
+        schedule=JobPosting.Schedule.FLEXIBLE, workplace=JobPosting.Workplace.ONSITE, hours_per_week__gte=3
+    ).order_by("id").first()
+    PlannedShift.objects.create(profile=profile, posting=flexible, weekday=1, start=time(15), end=time(18))
 
 # Demo-Studierende (#79): studi-001@… bis studi-500@…, alle mit DEMO_PASSWORD.
 STUDENT_EMAIL = "studi-{number:03d}@student.hpi.uni-potsdam.de"
