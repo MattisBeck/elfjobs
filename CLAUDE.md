@@ -4,6 +4,8 @@
 
 elfjobs ist die Jobbörse für **kurze Jobs neben dem Studium**: Werkstudentenstellen und Kurzjobs mit wenigen Stunden pro Woche. Beide Seiten wissen, woran sie sind: Firmen suchen Studierende, Studierende binden sich nicht für Jahre. Die Hürde, einen Job anzufangen, soll so niedrig sein wie bei Too Good To Go, nicht so förmlich wie bei LinkedIn oder Indeed.
 
+**Kern der Idee** (Ideen-Dashboard der Gruppe): *Stundenplan × Lehrplan = Job.* Das Problem ist der schwere Einstieg in einen Job. Der Stundenplan zeigt, ob jemand Zeit für eine Stelle hat. Der Lehrplan, also was im Studium unterrichtet wird, zeigt, ob jemand schon qualifiziert ist oder es bald sein wird. Beides fließt in die Sortierung der Jobs ein (#41, #42). Firmen erreichen so Studierende direkt aus ihrer Branche.
+
 **Für wen** (Personas aus den Interviews, siehe Protokoll vom Kick-off):
 
 - **Julia**, 18, Politikwissenschaft: finanziert ihr Studium selbst und hat wenig Zeit. Sie braucht Geld, aber auch Zeit zum Studieren, und Arbeitszeiten, die planbar in ihre Woche passen.
@@ -14,10 +16,10 @@ Aus den Interviews: Zeitmangel und Planbarkeit sind das größte Problem. Viele 
 **Priorität der Features** (Ranking der Gruppe nach Nutzen und Umsetzbarkeit):
 
 1. Sortieren nach Distanz, Stundenlohn inklusive Pendelzeit und Bewertung (#12, #22, #32)
-2. Lehrpläne und Closed Access ⭐: Registrieren nur mit Uni-Mail, zum Start nur HPI (#6, #31). Aus belegten Modulen folgen Skills (wer PT1 belegt hat, kann C-Grundlagen), damit sich Studierende mehr zutrauen und Arbeitgeber nach Skills suchen können (#30).
+2. Lehrpläne und Closed Access ⭐: Registrieren nur mit Uni-Mail, zum Start nur HPI (#6, #31). Aus belegten Modulen folgen Skills (wer PT1 belegt hat, kann C-Grundlagen), damit sich Studierende mehr zutrauen und Arbeitgeber nach Skills suchen können (#30, #40, #41).
 3. Eventhub: Jobmessen und Events, Alerts für passende Jobs (#33, #34)
 4. Wiki zu Bürokratie und Bewerbung, von Studierenden geschrieben
-5. Stundenplan eintragen und Jobs finden, die hineinpassen ⭐ (#7, #9)
+5. Stundenplan eintragen oder hochladen und Jobs finden, die hineinpassen ⭐ (#7, #9, #43)
 6. Karte: Wo sind Jobs in meiner Nähe? (#20, #21)
 
 ⭐ = im Protokoll auf dem Whiteboard rot markiert.
