@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Jobart · Willkommen · elfjobs{% endblock %}
+
+{% block content %}
+<section class="form-page onboarding">
+  <p class="muted">Schritt 3 von 3</p>
+  <h1>Was für einen Job suchst du?</h1>
+  <form method="post" class="form">
+    {% csrf_token %}
+    <div class="skill-choices">
+      {% for key, label in chips.items %}
+        <label><input type="checkbox" name="filter" value="{{ key }}"> {{ label }}</label>
+      {% endfor %}
+    </div>
+    <div class="onboarding-actions">
+      <button type="submit" class="button button-primary">Jobs ansehen</button>
+      <button type="submit" name="ueberspringen" value="1" class="button">Überspringen</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

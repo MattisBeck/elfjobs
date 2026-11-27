@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Stundenplan · Willkommen · elfjobs{% endblock %}
+
+{% block content %}
+<section class="form-page onboarding">
+  <p class="muted">Schritt 2 von 3</p>
+  <h1>Wann hast du Zeit?</h1>
+  <p>Trag deine Vorlesungen ein. Dann zeigen wir dir zuerst Jobs, die in deine Woche passen.</p>
+  <div class="onboarding-actions">
+    <a class="button button-primary" href="{% url 'timetable' %}">Stundenplan eintragen</a>
+    <a class="button" href="{% url 'onboarding_kinds' %}">Überspringen</a>
+  </div>
+  <p class="muted">Fertig mit dem Stundenplan? Oben in der Kopfzeile geht es weiter.</p>
+</section>
+{% endblock %}

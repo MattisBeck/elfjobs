@@ -130,16 +130,29 @@ class ProfileForm(forms.ModelForm):
         return profile
 
     def save_profile_skills(self):
-        profile = self.instance
-        selected = set(self.cleaned_data["skills"])
-        ProfileSkill.objects.filter(profile=profile, source=ProfileSkill.Source.PROFILE).exclude(
-            tag__in=selected
-        ).delete()
-        for tag in selected:
-            # Steht der Skill schon aus dem Lebenslauf drin, bleibt diese Quelle.
-            ProfileSkill.objects.get_or_create(
-                profile=profile, tag=tag, defaults={"source": ProfileSkill.Source.PROFILE}
-            )
+        set_profile_skills(self.instance, self.cleaned_data["skills"])
+
+
+def set_profile_skills(profile, tags):
+    """Selbst eingetragene Skills (Quelle "profil") auf genau diese Tags setzen."""
+    selected = set(tags)
+    ProfileSkill.objects.filter(profile=profile, source=ProfileSkill.Source.PROFILE).exclude(
+        tag__in=selected
+    ).delete()
+    for tag in selected:
+        # Steht der Skill schon aus dem Lebenslauf drin, bleibt diese Quelle.
+        ProfileSkill.objects.get_or_create(
+            profile=profile, tag=tag, defaults={"source": ProfileSkill.Source.PROFILE}
+        )
+
+
+class OnboardingSkillsForm(forms.Form):
+    """Schritt 1 im Onboarding (#35): Skills, die nicht schon aus den Modulen kommen."""
+
+    skills = forms.ModelMultipleChoiceField(
+        label="Was kannst du außerdem?", queryset=Tag.objects.order_by("name"),
+        required=False, widget=forms.CheckboxSelectMultiple,
+    )
 
 
 class CvSampleForm(forms.ModelForm):
