@@ -3,7 +3,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.forms import inlineformset_factory
 
-from jobs.models import Company, JobPosting, Shift
+from jobs.models import Company, JobPosting, Shift, Tag
 
 from .models import CompanyMember
 
@@ -66,3 +66,12 @@ ShiftFormSet = inlineformset_factory(
         "end": forms.TimeInput(attrs={"type": "time", "aria-label": "Ende"}),
     },
 )
+
+
+class AvailabilityForm(forms.Form):
+    """Skills für die Heatmap (#67). Ohne Auswahl zählen alle Studierenden."""
+
+    skills = forms.ModelMultipleChoiceField(
+        Tag.objects.order_by("name"), required=False, label="Skills",
+        widget=forms.CheckboxSelectMultiple,
+    )
