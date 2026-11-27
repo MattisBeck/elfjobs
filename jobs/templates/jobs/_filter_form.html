@@ -6,10 +6,12 @@
       <input type="hidden" name="{{ name }}" value="{{ value }}">
     {% endfor %}
 
+    {# Regler ab dem gesetzlichen Mindestlohn (#77). Ganz links heißt „egal“, das zählt nicht als Filter. #}
     <label class="filter-field">
-      <span>Mindestlohn (€ pro Stunde)</span>
-      <input type="number" name="min_lohn" min="0" step="0.01" inputmode="decimal" value="{{ filter_form.values.min_lohn }}">
-      <small>Effektiv, die Fahrzeit ist eingerechnet.</small>
+      <span>Stundenlohn ab <output class="filter-wage-value">{{ filter_form.wage.label }} €</output></span>
+      <input type="range" name="min_lohn" min="{{ filter_form.wage.min }}" max="{{ filter_form.wage.max }}" step="0.1" value="{{ filter_form.wage.value }}"
+             oninput="this.previousElementSibling.querySelector('output').value = this.value.replace('.', ',') + ' €'">
+      <small>Brutto. Ganz links: alle Stellen ab Mindestlohn.</small>
     </label>
 
     <label class="filter-field">

@@ -12,10 +12,13 @@ from timetable.fit import FLEXIBEL, PASST, posting_fit
 
 from .filters import (
     FILTER_FIELDS,
+    LEGAL_MINIMUM_WAGE,
     MAP_FILTER_FIELDS,
+    WAGE_SCALE_MAX,
     apply_filters,
     filter_labels,
     filter_number_params,
+    format_number,
     parse_filters,
 )
 from .geo import BERLIN_MITTE, haversine_km, parse_start
@@ -61,6 +64,10 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
 
     Mit skills (aus student_skills) bekommt jede Stelle einen Hinweis wie
     „2 von 3 Anforderungen aus dem Studium“ (posting.skill_hint).
+
+    Mit Stundenplan (eingeloggt mit Profil) bekommt jede Stelle ihre Passung (posting.fit,
+    siehe timetable/fit.py). Der Chip „Passt in meinen Plan“ ist dann an und zeigt nur
+    passende und flexible Stellen; ?plan=aus schaltet ihn ab und bleibt in allen Links erhalten.
 
     Gibt (postings, chips, filter_params, filter_form) zurück. filter_params sind alle
     aktiven Filter als (Name, Wert)-Paare für Links, filter_form die Daten für das
@@ -158,12 +165,20 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
     # Formular „Filter“: Zahlenfelder plus versteckt alles andere, damit nichts verloren geht.
     # Die Suche in der Kopfzeile behält alles außer q (das ist ihr eigenes Feld).
     other_params = [("filter", f) for f in active] + plan_params + list(keep_params)
+    wage = filters.get("min_lohn", LEGAL_MINIMUM_WAGE)
     filter_form = {
         "action": request.path,
         "values": dict(number_params),
         "hidden": other_params + search_params,
         "search_hidden": other_params + number_params,
         "show_km": "max_km" in fields,
+        # Regler „Stundenlohn ab“: links der Mindestlohn, rechts mindestens WAGE_SCALE_MAX.
+        "wage": {
+            "min": format_number(LEGAL_MINIMUM_WAGE, "."),
+            "max": format_number(max(WAGE_SCALE_MAX, wage), "."),
+            "value": format_number(wage, "."),
+            "label": format_number(wage),
+        },
         "open": bool(filters),
     }
     return postings, chips, filter_params, filter_form

@@ -1,4 +1,4 @@
-"""Suchfilter (#71): Mindestlohn, maximale Anreise, Stunden pro Woche, Entfernung auf der Karte."""
+"""Suchfilter (#71, #77): Stundenlohn ab (brutto), maximale Anreise, Stunden pro Woche, Entfernung auf der Karte."""
 
 from decimal import Decimal
 from unittest.mock import patch
@@ -72,18 +72,29 @@ def test_without_filters_all_postings(client, postings):
     assert remove_chips(response) == {}
 
 
-def test_min_wage_uses_effective_wage_not_gross(client, postings):
-    response = client.get("/jobs/?min_lohn=15")
+def test_wage_filter_uses_gross_wage(client, postings):
+    response = client.get("/jobs/?min_lohn=17")
 
-    # Fern (18 € brutto) und Nah (16 € brutto) fallen wegen der Fahrzeit raus.
-    assert titles(response) == ["Hybrid", "Remote"]
+    # Fern bleibt (18 € brutto), obwohl der effektive Lohn nur 13,09 € ist.
+    # Sortiert wird weiter nach effektivem Lohn.
+    assert titles(response) == ["Hybrid", "Fern"]
 
 
-def test_min_wage_accepts_comma(client, postings):
-    response = client.get("/jobs/?min_lohn=15,4")
+def test_wage_filter_accepts_comma(client, postings):
+    response = client.get("/jobs/?min_lohn=16,5")
 
-    assert titles(response) == ["Hybrid"]
-    assert "ab 15,4 €" in remove_chips(response)
+    assert titles(response) == ["Hybrid", "Fern"]
+    assert "ab 16,5 € brutto" in remove_chips(response)
+
+
+@pytest.mark.parametrize("value", ["13.90", "13,9", "10", "0"])
+def test_wage_at_or_below_legal_minimum_is_no_filter(client, postings, value):
+    # Unter den gesetzlichen Mindestlohn darf keine Stelle fallen, ganz links am Regler heißt „egal“.
+    response = client.get(f"/jobs/?min_lohn={value}")
+
+    assert titles(response) == ["Hybrid", "Remote", "Nah", "Fern"]
+    assert remove_chips(response) == {}
+    assert parse_filters(QueryDict(f"min_lohn={value}")) == {}
 
 
 def test_max_commute_counts_remote_as_zero(client, postings):
@@ -119,19 +130,19 @@ def test_max_distance_is_ignored_in_list(client, postings):
 
 
 def test_map_applies_list_filters(client, postings):
-    response = client.get(f"/jobs/karte/?{START}&min_lohn=15")
+    response = client.get(f"/jobs/karte/?{START}&min_lohn=17")
 
-    assert titles(response, "nearby") == ["Hybrid"]
-    assert titles(response, "remote") == ["Remote"]
+    assert titles(response, "nearby") == ["Hybrid", "Fern"]
+    assert titles(response, "remote") == []
 
 
 # Kombiniert
 
 def test_filters_combine(client, postings):
-    response = client.get("/jobs/?min_lohn=14&max_anreise=20")
+    response = client.get("/jobs/?min_lohn=16&max_anreise=20")
 
-    assert titles(response) == ["Remote", "Nah"]
-    assert "2 Stellen" in response.content.decode()
+    assert titles(response) == ["Nah"]
+    assert "1 Stelle" in response.content.decode()
 
 
 def test_filters_combine_with_chips_and_search(client, postings):
@@ -143,7 +154,7 @@ def test_filters_combine_with_chips_and_search(client, postings):
 
 
 def test_count_line_counts_after_filters(client, postings):
-    content = client.get("/jobs/?min_lohn=15").content.decode()
+    content = client.get("/jobs/?min_lohn=17").content.decode()
 
     assert "2 Stellen" in content
     assert "4 Stellen" not in content
@@ -185,12 +196,12 @@ def test_remove_chips_drop_only_their_filter(client, postings):
     response = client.get("/jobs/?filter=kurzjob&q=Firma&min_lohn=15&max_anreise=30&min_stunden=10&max_stunden=20")
 
     assert remove_chips(response) == {
-        "ab 15 €": "/jobs/?filter=kurzjob&q=Firma&max_anreise=30&min_stunden=10&max_stunden=20",
+        "ab 15 € brutto": "/jobs/?filter=kurzjob&q=Firma&max_anreise=30&min_stunden=10&max_stunden=20",
         "max. 30 min Anreise": "/jobs/?filter=kurzjob&q=Firma&min_lohn=15&min_stunden=10&max_stunden=20",
         "10–20 h/Woche": "/jobs/?filter=kurzjob&q=Firma&min_lohn=15&max_anreise=30",
     }
     content = response.content.decode()
-    assert 'aria-label="Filter ab 15 € entfernen"' in content
+    assert 'aria-label="Filter ab 15 € brutto entfernen"' in content
     assert "✕" in content
 
 
@@ -203,7 +214,7 @@ def test_remove_chip_for_distance_keeps_start_point(client, postings):
     response = client.get(f"/jobs/karte/?{START}&max_km=5&min_lohn=14")
 
     assert remove_chips(response)["max. 5 km"] == f"/jobs/karte/?min_lohn=14&{START}"
-    assert remove_chips(response)["ab 14 €"] == f"/jobs/karte/?max_km=5&{START}"
+    assert remove_chips(response)["ab 14 € brutto"] == f"/jobs/karte/?max_km=5&{START}"
 
 
 # Filter bleiben erhalten
@@ -240,7 +251,7 @@ def test_filter_form_keeps_chips_search_and_start(client, postings):
     assert '<input type="hidden" name="filter" value="kurzjob">' in form
     assert '<input type="hidden" name="q" value="Firma">' in form
     assert '<input type="hidden" name="lat" value="52.5219">' in form
-    assert 'name="min_lohn" min="0" step="0.01" inputmode="decimal" value="15"' in form
+    assert 'type="range" name="min_lohn" min="13.9" max="25" step="0.1" value="15"' in form
     assert 'name="max_km"' in form
     assert '<details class="filter-panel" open>' in content
 
@@ -249,18 +260,18 @@ def test_filter_panel_closed_without_filters(client, postings):
     content = client.get("/jobs/").content.decode()
 
     assert '<details class="filter-panel">' in content
-    assert "Fahrzeit ist eingerechnet" in content
+    assert "Ganz links: alle Stellen ab Mindestlohn" in content
 
 
 def test_detail_links_keep_filters(client, postings):
-    pk = postings["remote"].pk
-    content = client.get("/jobs/?min_lohn=15&max_stunden=20").content.decode()
-    assert f'href="/jobs/{pk}/?min_lohn=15&amp;max_stunden=20"' in content
+    pk = postings["nah"].pk
+    content = client.get("/jobs/?min_lohn=16&max_stunden=16").content.decode()
+    assert f'href="/jobs/{pk}/?min_lohn=16&amp;max_stunden=16"' in content
 
-    response = client.get(f"/jobs/{pk}/?min_lohn=15&max_stunden=20")
-    assert titles(response) == ["Hybrid", "Remote"]
-    assert response.context["details_url"] == f"/jobs/{pk}/?min_lohn=15&max_stunden=20"
-    assert f'href="/jobs/{postings["hybrid"].pk}/?min_lohn=15&amp;max_stunden=20"' in response.content.decode()
+    response = client.get(f"/jobs/{pk}/?min_lohn=16&max_stunden=16")
+    assert titles(response) == ["Hybrid", "Nah", "Fern"]
+    assert response.context["details_url"] == f"/jobs/{pk}/?min_lohn=16&max_stunden=16"
+    assert f'href="/jobs/{postings["hybrid"].pk}/?min_lohn=16&amp;max_stunden=16"' in response.content.decode()
 
 
 def test_map_links_keep_filters(client, postings):
@@ -303,3 +314,18 @@ def test_query_count_does_not_grow_with_postings(client, postings, url):
         client.get(url)
 
     assert len(many) == len(few)
+
+
+def test_wage_slider_starts_at_legal_minimum(client, postings):
+    content = client.get("/jobs/").content.decode()
+    form = content.split('class="filter-form"')[1].split("</form>")[0]
+
+    assert "Stundenlohn ab" in form
+    assert "Mindestlohn (€ pro Stunde)" not in form
+    assert 'type="range" name="min_lohn" min="13.9" max="25" step="0.1" value="13.9"' in form
+
+
+def test_wage_slider_grows_for_higher_values(client, postings):
+    content = client.get("/jobs/?min_lohn=40").content.decode()
+
+    assert 'type="range" name="min_lohn" min="13.9" max="40" step="0.1" value="40"' in content
