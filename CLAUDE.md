@@ -26,6 +26,8 @@ Aus den Interviews: Zeitmangel und Planbarkeit sind das größte Problem. Viele 
 
 Die Oberfläche folgt der Designrichtung A „Wochenplan“ (`docs/design.md`).
 
+**Ideen und Hintergrund:** `docs/ideen.md` (Problem, Personas, Interview-Erkenntnisse, Ranking, Ideenspeicher mit Status jeder Idee). Lies es, bevor du ein Feature-Issue anlegst oder eine Produktentscheidung triffst. Neue Issues zu einer Idee trägst du dort im Ideenspeicher ein.
+
 ## Arbeitsweise
 
 - **Minimal**: Baue genau das, was die aktuelle Aufgabe verlangt. Fünf Studierende sollen jede Zeile verstehen können, deshalb lieber einfacher, expliziter Django-Code als neue Abstraktionen.
