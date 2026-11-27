@@ -4,6 +4,9 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
+from accounts.models import StudentProfile
+from timetable.fit import FLEXIBEL, PASST, posting_fit
+
 from .models import JobPosting
 
 # Filter-Chips der Stellenliste: GET-Parameter "filter", mehrere kombinierbar.
@@ -12,6 +15,11 @@ FILTER_CHIPS = {
     "kurzjob": "Kurzjob",
     "remote": "Remote",
 }
+
+# Chip „Passt in meinen Plan“: für Eingeloggte mit Profil standardmäßig an.
+# Ausschalten über ?plan=aus (ein eigener Parameter, weil „kein Filter“ sonst
+# nicht von „Chip aus“ zu unterscheiden wäre).
+PLAN_CHIP_LABEL = "Passt in meinen Plan"
 
 
 def with_query(path, params):
@@ -24,7 +32,11 @@ def filtered_postings(request):
     """Stellen und Filter-Chips für die linke Spalte, gesteuert über ?filter=... und ?q=..."""
     active = [f for f in request.GET.getlist("filter") if f in FILTER_CHIPS]
 
-    postings = JobPosting.objects.select_related("company").order_by("-hourly_wage", "title")
+    postings = (
+        JobPosting.objects.select_related("company")
+        .prefetch_related("shifts")
+        .order_by("-hourly_wage", "title")
+    )
 
     # Werkstudent und Kurzjob zusammen zeigen beides, Remote schränkt zusätzlich ein.
     kinds = []
@@ -45,17 +57,44 @@ def filtered_postings(request):
         ).distinct()
     search_params = [("q", q)] if q else []
 
+    # Passung: Stundenplan einmal laden, dann pro Stelle rechnen (ohne weitere Abfragen).
+    profile = None
+    if request.user.is_authenticated:
+        profile = StudentProfile.objects.filter(user=request.user).first()
+    plan_on = False
+    plan_params = []
+    if profile:
+        lectures = list(profile.lectures.all())
+        postings = list(postings)
+        for posting in postings:
+            posting.fit = posting_fit(posting, lectures)
+        plan_on = request.GET.get("plan") != "aus"
+        if plan_on:
+            postings = [p for p in postings if p.fit.status in (PASST, FLEXIBEL)]
+        else:
+            plan_params = [("plan", "aus")]
+
     # Chips bleiben auf der aktuellen Seite: im Stellendetail bleibt die Stelle offen.
     chips = []
+    if profile:
+        # Chip ist an: Klick schaltet mit ?plan=aus ab; ist er aus: Klick lässt den Parameter weg.
+        chips.append({
+            "label": PLAN_CHIP_LABEL,
+            "active": plan_on,
+            "url": with_query(
+                request.path,
+                [("filter", f) for f in active] + search_params + ([("plan", "aus")] if plan_on else []),
+            ),
+        })
     for key, label in FILTER_CHIPS.items():
         toggled = [f for f in active if f != key] if key in active else active + [key]
         chips.append({
             "label": label,
             "active": key in active,
-            "url": with_query(request.path, [("filter", f) for f in toggled] + search_params),
+            "url": with_query(request.path, [("filter", f) for f in toggled] + search_params + plan_params),
         })
 
-    filter_params = [("filter", f) for f in active] + search_params
+    filter_params = [("filter", f) for f in active] + search_params + plan_params
     return postings, chips, filter_params
 
 

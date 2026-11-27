@@ -341,6 +341,29 @@ a {
   color: var(--muted);
 }
 
+/* Passung: Punkt und Text unter der Zeile (Farbe heißt Zustand, docs/design.md) */
+.job-row-fit {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.fit-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.fit-passt { color: var(--ok-ink); }
+.fit-teilweise { color: var(--part-ink); }
+.fit-teilweise .fit-dot { background: var(--part-dot); }
+.fit-kollidiert { color: var(--conflict); }
+.fit-flexibel { color: var(--accent-ink); }
+
 .job-list-empty {
   padding: 24px 0;
   color: var(--muted);
