@@ -10,6 +10,7 @@ Stack: Python 3.12, uv, Django 5.2, PostgreSQL 17, Docker Compose (Services `bac
 - Windows: Repo innerhalb von WSL2 klonen und dort arbeiten (nicht unter `C:\`), sonst ist der Bind-Mount langsam.
 - Git
 - GitHub CLI (`gh`), danach einmal `gh auth login`. Damit arbeiten wir mit Issues und Pull Requests (siehe `CLAUDE.md`).
+- Node.js 18 oder neuer (nur für den Playwright-Server von Claude Code, siehe unten)
 - uv (nur für die Autovervollständigung im Editor): lokal `uv sync` ausführen, das erzeugt `.venv`. Dieses `.venv` im Editor als Interpreter auswählen.
 
 ## Erster Start
@@ -47,6 +48,13 @@ Stack: Python 3.12, uv, Django 5.2, PostgreSQL 17, Docker Compose (Services `bac
 Danach ist das Admin unter http://localhost:8000/admin erreichbar. Ein Frontend gibt es noch nicht.
 
 Jede Person hat ihre eigene lokale Datenbank. `seed` erzeugt bei allen dieselben Demo-Daten, den Admin-Benutzer legt jede Person selbst an.
+
+## Claude Code
+
+Das Repo bringt Werkzeuge für Claude Code mit, die nach `git pull` automatisch da sind:
+
+- **Design-Skills** in `.claude/skills/`: `/impeccable` (Design, Kritik, Feinschliff), `design-taste-frontend` (Taste) und Emil Kowalskis Skills zu Animation und UI (z. B. `/emil-design-eng`, `/review-animations`).
+- **Playwright** (`.mcp.json`): Claude kann damit die Seite im Browser öffnen, klicken und Screenshots machen. Beim ersten Start fragt Claude Code, ob es den Server aus `.mcp.json` verwenden darf; mit Ja bestätigen. Fehlt der Browser, einmal `npx playwright install chromium` ausführen.
 
 ## Häufige Probleme
 
