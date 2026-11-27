@@ -13,6 +13,14 @@ Geplante Bausteine, in etwa in dieser Reihenfolge: Frontend zum Durchsuchen der 
 - Konfiguration und Secrets kommen aus Umgebungsvariablen (`.env`, Vorlage `.env.example`).
 - Fasse nur die Dateien an, die zur Aufgabe gehören. Was dir darüber hinaus auffällt, meldest du zurück.
 
+## Git: Branches und Pull Requests
+
+`main` ändert sich nur durch gemergte Pull Requests.
+
+- Vor jeder Änderung einen eigenen Branch von aktuellem `main` anlegen: `git switch main && git pull && git switch -c <typ>/<kurzbeschreibung>` (z. B. `feature/stellen-liste`, `fix/seed-loehne`, `docs/readme`).
+- Commits und Pushes gehen auf diesen Branch, dann Pull Request in `main`.
+- Gemergt wird erst, wenn die Tests grün sind.
+
 ## Portabilität: fünf Rechner, ein Setup
 
 Fünf Leute arbeiten parallel auf macOS, Windows (WSL2) und Linux. Das Projekt muss auf jedem Rechner nur mit Docker und Git starten, und zwar mit genau den Schritten aus dem README.
