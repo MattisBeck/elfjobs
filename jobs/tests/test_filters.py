@@ -179,6 +179,29 @@ def test_parse_filters_returns_only_valid_values():
     assert parse_filters(get, MAP_FILTER_FIELDS)["max_km"] == Decimal("3")
 
 
+@pytest.mark.parametrize("query", ["min_lohn=-0", "min_lohn=1e-50", "min_lohn=0.001", "min_lohn=0", "min_stunden=-0"])
+def test_zero_and_tiny_minimums_are_no_filter(client, postings, query):
+    response = client.get(f"/jobs/?{query}")
+
+    assert titles(response) == ["Hybrid", "Remote", "Nah", "Fern"]
+    assert remove_chips(response) == {}
+
+
+@pytest.mark.parametrize("value", ["-0", "1e-50", "0.0000"])
+def test_zero_and_tiny_maximums_count_as_zero(client, postings, value):
+    response = client.get(f"/jobs/?max_anreise={value}")
+
+    assert titles(response) == ["Remote"]
+    assert list(remove_chips(response)) == ["max. 0 min Anreise"]
+
+
+def test_parse_filters_rounds_to_two_decimals():
+    get = QueryDict("min_lohn=15.499&max_anreise=-0&min_stunden=1e-50")
+
+    assert parse_filters(get) == {"min_lohn": Decimal("15.50"), "max_anreise": Decimal("0")}
+    assert str(parse_filters(get)["max_anreise"]) == "0.00"
+
+
 # Entfernen-Chips
 
 def test_remove_chips_drop_only_their_filter(client, postings):
@@ -280,6 +303,33 @@ def test_travel_sorting_keeps_filters(client, postings):
     assert titles(response, "nearby") == ["Nah"]
     urls = {chip["label"]: chip["url"] for chip in response.context["chips"]}
     assert urls["Kurzjob"] == f"/jobs/karte/?filter=kurzjob&max_km=5&{START}&sortierung=anreise"
+
+
+def test_max_commute_on_map_uses_travel_minutes_when_sorted_by_travel(client, postings):
+    # Nah: Firma sagt 10 min, ÖPNV 45 min. Fern: Firma sagt 45 min, ÖPNV 25 min.
+    # Hybrid hat keine ÖPNV-Minuten und bleibt bei der Firmenfahrzeit (25 min).
+    minutes = {postings["nah"].id: 45, postings["fern"].id: 25}
+    with patch("jobs.views.travel_times", return_value=minutes):
+        response = client.get(f"/jobs/karte/?{START}&sortierung=anreise&max_anreise=30")
+
+    assert titles(response, "nearby") == ["Fern", "Hybrid"]
+    assert titles(response, "remote") == ["Remote"]
+    assert [marker["title"] for marker in response.context["markers"]] == ["Fern", "Hybrid"]
+
+
+def test_max_commute_on_map_uses_company_time_without_travel_sorting(client, postings):
+    with patch("jobs.views.travel_times") as mock_travel_times:
+        response = client.get(f"/jobs/karte/?{START}&max_anreise=30")
+
+    assert mock_travel_times.call_count == 0
+    assert titles(response, "nearby") == ["Nah", "Hybrid"]
+
+
+def test_max_commute_help_text_on_map_only(client, postings):
+    hint = "Bei Sortierung nach Anreisedauer die ÖPNV-Zeit, sonst die Fahrzeit der Firma."
+
+    assert hint in client.get("/jobs/karte/").content.decode()
+    assert hint not in client.get("/jobs/").content.decode()
 
 
 def test_list_links_to_map_with_filters(client, postings):

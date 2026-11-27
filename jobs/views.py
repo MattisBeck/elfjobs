@@ -13,6 +13,7 @@ from .filters import (
     FILTER_FIELDS,
     MAP_FILTER_FIELDS,
     apply_filters,
+    commute_minutes,
     filter_labels,
     filter_number_params,
     parse_filters,
@@ -48,7 +49,7 @@ def student_skills(request):
     return skill_lookup(profile) if profile else None
 
 
-def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS):
+def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS, commute_filter=True):
     """Stellen und Filter-Chips für die linke Spalte, gesteuert über ?filter=..., ?q=...
     und die Suchfilter aus jobs/filters.py (?min_lohn=..., ?max_anreise=... usw.).
 
@@ -56,7 +57,8 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
     z. B. der Startpunkt lat/lon auf der Karte.
 
     fields sind die erlaubten Suchfilter; die Karte gibt zusätzlich max_km mit und
-    wendet die Entfernung selbst an.
+    wendet die Entfernung selbst an. Mit commute_filter=False bleibt max_anreise außen vor,
+    die Karte prüft sie dann selbst mit den ÖPNV-Minuten.
 
     Mit skills (aus student_skills) bekommt jede Stelle einen Hinweis wie
     „2 von 3 Anforderungen aus dem Studium“ (posting.skill_hint).
@@ -147,8 +149,9 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
 
     # Sortiert nach effektivem Stundenlohn (#12). Der wird in Python berechnet, nicht in der DB,
     # deshalb laufen auch die Suchfilter erst hier.
+    applied = filters if commute_filter else {k: v for k, v in filters.items() if k != "max_anreise"}
     postings = sorted(
-        apply_filters(postings, filters), key=lambda posting: (-posting.effective_wage, posting.title)
+        apply_filters(postings, applied), key=lambda posting: (-posting.effective_wage, posting.title)
     )
     if skills is not None:
         for posting in postings:
@@ -184,8 +187,10 @@ def job_detail(request, pk):
         pk=pk,
     )
     skills = student_skills(request)
-    postings, chips, filter_params, filter_form = filtered_postings(request, skills)
     view = "woche" if request.GET.get("ansicht") == "woche" else "details"
+    # Die Wochenansicht bleibt über Chips, Filterformular und Suche erhalten.
+    view_params = [("ansicht", "woche")] if view == "woche" else []
+    postings, chips, filter_params, filter_form = filtered_postings(request, skills, view_params)
 
     # Passung der geöffneten Stelle für den Punkt am Tab „In meiner Woche“.
     profile = StudentProfile.objects.filter(user=request.user).first() if request.user.is_authenticated else None
@@ -225,10 +230,13 @@ def job_map(request):
         start, start_params = BERLIN_MITTE, []
     by_travel = request.GET.get("sortierung") == "anreise"
     sort_params = [("sortierung", "anreise")] if by_travel else []
+    # Bei Sortierung nach Anreisedauer prüft die Karte max_anreise selbst (unten, mit ÖPNV-Minuten).
     postings, chips, filter_params, filter_form = filtered_postings(
-        request, student_skills(request), start_params + sort_params, MAP_FILTER_FIELDS
+        request, student_skills(request), start_params + sort_params, MAP_FILTER_FIELDS,
+        commute_filter=not by_travel,
     )
-    max_km = parse_filters(request.GET, MAP_FILTER_FIELDS).get("max_km")
+    filters = parse_filters(request.GET, MAP_FILTER_FIELDS)
+    max_km = filters.get("max_km")
 
     # Stellen mit Ort nach Entfernung, Stellen ohne Ort (remote) in einem eigenen Abschnitt.
     nearby = []
@@ -264,6 +272,14 @@ def job_map(request):
             travel_hint = "Anreisedauer gerade nicht verfügbar, sortiert nach Luftlinie."
         elif len(times) < asked:
             travel_hint = "Anreisedauer nicht für alle Stellen verfügbar, die übrigen nach Luftlinie."
+
+        # Maximale Anreise: ÖPNV-Minuten, wo es sie gibt, sonst die Fahrzeit der Firma.
+        if "max_anreise" in filters:
+            nearby = [
+                posting for posting in nearby
+                if (commute_minutes(posting) if posting.travel_minutes is None else posting.travel_minutes)
+                <= filters["max_anreise"]
+            ]
 
     # Umschalter für die Sortierung: Filter, Suche und Startpunkt bleiben erhalten.
     sort_links = [

@@ -15,7 +15,7 @@
     <label class="filter-field">
       <span>Maximale Anreise (min)</span>
       <input type="number" name="max_anreise" min="0" step="1" inputmode="numeric" value="{{ filter_form.values.max_anreise }}">
-      <small>Einfache Strecke, remote zählt als 0.</small>
+      <small>Einfache Strecke, remote zählt als 0.{% if filter_form.show_km %} Bei Sortierung nach Anreisedauer die ÖPNV-Zeit, sonst die Fahrzeit der Firma.{% endif %}</small>
     </label>
 
     {% if filter_form.show_km %}

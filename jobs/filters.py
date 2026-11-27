@@ -3,7 +3,8 @@
 Die Werte kommen als GET-Parameter, damit man eine Suche teilen kann:
 min_lohn (€ pro Stunde, effektiv), max_anreise (Minuten, einfach),
 min_stunden und max_stunden (pro Woche) und auf der Karte max_km (Luftlinie).
-Ungültige Werte (Text, negativ, zu groß) werden ignoriert.
+Ungültige Werte (Text, negativ, zu groß) werden ignoriert. Werte werden auf
+zwei Nachkommastellen gerundet; ein Minimum von 0 ist kein Filter.
 """
 
 from decimal import Decimal, InvalidOperation
@@ -16,16 +17,22 @@ MAP_FILTER_FIELDS = FILTER_FIELDS + ["max_km"]
 
 # Größere Zahlen ergeben keinen Sinn und werden ignoriert.
 MAX_VALUE = Decimal(10000)
+# Auf zwei Nachkommastellen runden, damit z. B. 1e-50 nicht als Chip mit 50 Stellen erscheint.
+CENT = Decimal("0.01")
 
 
 def parse_number(value):
-    """Zahl >= 0 aus einem GET-Wert ("15", "15,50", "15.5"), sonst None."""
+    """Zahl >= 0 mit zwei Nachkommastellen aus einem GET-Wert ("15", "15,50", "15.5"), sonst None."""
     try:
         number = Decimal(value.strip().replace(",", "."))
     except (AttributeError, InvalidOperation):
         return None
     if not number.is_finite() or number < 0 or number > MAX_VALUE:
         return None
+    number = number.quantize(CENT)
+    # "-0" wäre sonst ein Chip „max. -0 min“.
+    if number == 0:
+        return Decimal("0.00")
     return number
 
 
@@ -34,8 +41,10 @@ def parse_filters(get, fields=FILTER_FIELDS):
     filters = {}
     for name in fields:
         number = parse_number(get.get(name, ""))
-        if number is not None:
-            filters[name] = number
+        # "ab 0 €" schränkt nichts ein, also kein Filter. Bei max_* heißt 0 dagegen etwas (z. B. nur remote).
+        if number is None or (name.startswith("min_") and number == 0):
+            continue
+        filters[name] = number
     # "von 20 bis 10 Stunden" passt zu keiner Stelle, also beide ignorieren.
     if "min_stunden" in filters and "max_stunden" in filters:
         if filters["max_stunden"] < filters["min_stunden"]:
