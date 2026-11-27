@@ -381,8 +381,8 @@ def test_map_links_keep_filters(client, postings):
 
 
 def test_travel_sorting_keeps_filters(client, postings):
-    # Kein echtes Netz: travel_times liefert keine Minuten.
-    with patch("jobs.views.travel_times", return_value={}):
+    # Kein echtes Netz: Die Kartenseite fragt die API ohnehin nie (#74), urlopen würde scheitern.
+    with patch("jobs.travel.urlopen", side_effect=AssertionError("kein API-Aufruf erwartet")):
         response = client.get(f"/jobs/karte/?{START}&sortierung=anreise&max_km=5")
 
     assert titles(response, "nearby") == ["Nah"]

@@ -1,6 +1,7 @@
 from urllib.parse import urlencode
 
 from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
@@ -21,7 +22,7 @@ from .filters import (
 )
 from .geo import BERLIN_MITTE, haversine_km, parse_start
 from .models import JobPosting
-from .travel import MAX_TRAVEL_REQUESTS, travel_times
+from .travel import MAX_TRAVEL_REQUESTS, cached_travel_times, fetch_travel_times
 
 # Filter-Chips der Stellenliste: GET-Parameter "filter", mehrere kombinierbar.
 FILTER_CHIPS = {
@@ -259,24 +260,28 @@ def job_map(request):
             remote.append(posting)
     nearby.sort(key=lambda posting: (posting.distance_km, posting.title))
 
-    # Anreisedauer nur, wenn gewählt: die API fragt nur die nächsten Stellen nach Luftlinie.
+    # Anreisedauer nur, wenn gewählt, und nur aus der Datenbank: Die Seite fragt die API
+    # nie selbst, damit sie sofort da ist (#74). Fehlende Zeiten der nächsten Stellen
+    # holt die Seite per JavaScript über job_map_travel nach (travel_url).
     # Stellen mit Minuten zuerst (nach Minuten), dann alle übrigen nach Luftlinie.
     travel_hint = ""
+    travel_url = ""
     if by_travel:
-        times = travel_times(start, nearby)
+        times = cached_travel_times(start, nearby)
         for posting in nearby:
             posting.travel_minutes = times.get(posting.id)
+        missing = [posting.id for posting in nearby[:MAX_TRAVEL_REQUESTS] if posting.id not in times]
         nearby.sort(key=lambda posting: (
             posting.travel_minutes is None,
             posting.travel_minutes or 0,
             posting.distance_km,
             posting.title,
         ))
-        asked = min(len(nearby), MAX_TRAVEL_REQUESTS)
-        if asked and not times:
-            travel_hint = "Anreisedauer gerade nicht verfügbar, sortiert nach Luftlinie."
-        elif len(times) < asked:
-            travel_hint = "Anreisedauer nicht für alle Stellen verfügbar, die übrigen nach Luftlinie."
+        if missing:
+            travel_hint = "Anreisedauer fehlt noch für einige Stellen, diese nach Luftlinie."
+            travel_url = with_query(reverse("job_map_travel"), [
+                ("lat", start[0]), ("lon", start[1]), ("stellen", ",".join(str(id) for id in missing)),
+            ])
 
         # Maximale Anreise: ÖPNV-Minuten, wo es sie gibt, sonst die Fahrzeit der Firma.
         if "max_anreise" in filters:
@@ -318,9 +323,28 @@ def job_map(request):
         "sort_links": sort_links,
         "by_travel": by_travel,
         "travel_hint": travel_hint,
+        "travel_url": travel_url,
         "max_travel_requests": MAX_TRAVEL_REQUESTS,
         "filter_query": filter_query,
         "start": {"lat": start[0], "lon": start[1]},
         "has_start": bool(start_params),
         "markers": markers,
     })
+
+
+def job_map_travel(request):
+    """JSON für die Karte: Anreise vom Startpunkt (?lat=...&lon=...) zu den Stellen
+    ?stellen=1,2,3 (höchstens MAX_TRAVEL_REQUESTS), fehlende von der API (#74).
+
+    Antwort {"Stellen-ID": Minuten}, nur Stellen mit Verbindung. Hält das Zeitbudget
+    aus jobs/travel.py ein; was bis dahin fehlt, fehlt auch in der Antwort.
+    """
+    start = parse_start(request.GET.get("lat"), request.GET.get("lon"))
+    if start is None:
+        return JsonResponse({"fehler": "Startpunkt lat/lon fehlt oder ist ungültig."}, status=400)
+    ids = [part for part in request.GET.get("stellen", "").split(",") if part.isdigit()]
+    postings = JobPosting.objects.filter(
+        pk__in=ids[:MAX_TRAVEL_REQUESTS], latitude__isnull=False, longitude__isnull=False
+    )
+    times = fetch_travel_times(start, list(postings))
+    return JsonResponse({str(id): minutes for id, minutes in times.items() if minutes is not None})
