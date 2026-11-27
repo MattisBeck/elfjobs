@@ -21,6 +21,7 @@ from jobs.views import FILTER_CHIPS
 
 from .cv import accept_cv_skills, cv_path, cv_suggestions
 from .forms import CvSampleForm, CvUploadForm, NameForm, OnboardingSkillsForm, ProfileForm, SignupForm, set_profile_skills
+from .forms import normalize_email
 from .geocode import geocode
 from .models import ProfileSkill, StudentProfile
 
@@ -61,7 +62,7 @@ def confirm_pending(request):
     Sagt nie, ob es ein Konto zu einer Adresse gibt; gesendet wird nur an unbestätigte Konten.
     """
     if request.method == "POST":
-        email = request.POST.get("email", "").strip().lower()
+        email = normalize_email(request.POST.get("email", ""))
         user = User.objects.filter(username=email, is_active=False).first()
         if user:
             send_confirmation_mail(request, user)

@@ -38,9 +38,10 @@ def test_new_account_lands_in_onboarding_step_one(client, new_user):
 
 
 def test_existing_account_does_not_land_in_onboarding(client, itse):  # noqa: F811
-    User.objects.create_user("mia", email="mia@student.hpi.uni-potsdam.de", password="pw-12345678")
+    email = "mia@student.hpi.uni-potsdam.de"
+    User.objects.create_user(email, email=email, password="pw-12345678")
 
-    response = client.post("/anmelden/", {"username": "mia", "password": "pw-12345678"})
+    response = client.post("/anmelden/", {"username": email, "password": "pw-12345678"})
 
     assert response.status_code == 302
     assert "willkommen" not in response.url
