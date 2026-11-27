@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}{{ posting.title }} · elfjobs{% endblock %}
+
+{% block content %}
+<div class="split split-has-detail">
+  {% include "jobs/_job_list_column.html" %}
+
+  <article class="split-detail job-detail">
+    <a class="back-link" href="{% url 'job_list' %}{% if filter_query %}?{{ filter_query }}{% endif %}">← Alle Jobs</a>
+
+    <header class="job-detail-head">
+      <div>
+        <ul class="tags">
+          <li class="tag">{{ posting.get_kind_display }}</li>
+          <li class="tag">{{ posting.get_workplace_display }}</li>
+          <li class="tag">{{ posting.hours_per_week }} h pro Woche</li>
+        </ul>
+        <h1 class="job-title">{{ posting.title }}</h1>
+        <p class="job-company">{{ posting.company.name }} · {{ posting.company.industry }}</p>
+      </div>
+      {# Merken (#13) und Bewerben (#14) bekommen ihre Funktion mit eigenen Issues. #}
+      <div class="job-actions">
+        <button type="button" class="button">Merken</button>
+        <button type="button" class="button button-primary">Mit Profil bewerben</button>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="Ansicht">
+      <a href="{{ details_url }}"{% if view == "details" %} aria-current="page"{% endif %}>Details</a>
+      <a href="{{ week_url }}"{% if view == "woche" %} aria-current="page"{% endif %}><span class="tab-dot" aria-hidden="true"></span>In meiner Woche</a>
+    </nav>
+
+    {% if view == "woche" %}
+      {# Inhalt kommt mit #10. #}
+      <p class="muted">Die Wochenansicht ist noch in Arbeit.</p>
+    {% else %}
+      <div class="details-grid">
+        <div class="details-main">
+          <section>
+            <h2>Über die Stelle</h2>
+            <p>{{ posting.description|linebreaksbr }}</p>
+          </section>
+
+          {% if posting.tags.all %}
+            <section>
+              <h2>Das bringst du mit</h2>
+              <ul class="tags">
+                {% for tag in posting.tags.all %}
+                  <li class="tag">{{ tag.name }}</li>
+                {% endfor %}
+              </ul>
+            </section>
+          {% endif %}
+
+          {% if fairs %}
+            <p class="fair-box">Firma persönlich kennenlernen:
+              {% for fair in fairs %}<strong>{{ fair.name }}, {{ fair.date|date:"d.m.Y" }}</strong>{% if not forloop.last %} · {% endif %}{% endfor %}
+            </p>
+          {% endif %}
+        </div>
+
+        <aside class="details-side">
+          <section class="panel">
+            <h2>Auf einen Blick</h2>
+            <dl class="facts">
+              <dt>Art</dt><dd>{{ posting.get_kind_display }}</dd>
+              <dt>Arbeitsort</dt><dd>{{ posting.get_workplace_display }}</dd>
+              <dt>Stunden pro Woche</dt><dd>{{ posting.hours_per_week }} h</dd>
+              <dt>Arbeitszeiten</dt>
+              <dd>{% if posting.schedule == "flexible" %}Flexibel, du planst selbst{% else %}Feste Zeiten{% endif %}</dd>
+            </dl>
+          </section>
+
+          <section class="wage-calc" aria-label="Lohnrechnung">
+            <div class="wage-field">
+              <span class="wage-label">Bruttolohn pro Stunde</span>
+              <span class="wage-value">{{ posting.hourly_wage }} €</span>
+            </div>
+            <div class="wage-field">
+              <span class="wage-label">Fahrzeit pro Woche</span>
+              <span class="wage-value">{% if posting.trips_per_week %}{{ posting.commute_hours_per_week|floatformat:1 }} h{% else %}keine{% endif %}</span>
+              <span class="wage-note">{% if posting.trips_per_week %}{{ posting.trips_per_week }} × hin und zurück, je {{ posting.company.commute_minutes }} min{% else %}Remote{% endif %}</span>
+            </div>
+            <div class="wage-field wage-field-effective">
+              <span class="wage-label">Effektiver Stundenlohn</span>
+              <span class="wage-value">{{ posting.effective_wage }} €</span>
+            </div>
+            <div class="wage-field">
+              <span class="wage-label">Im Monat</span>
+              <span class="wage-value">≈ {{ posting.monthly_wage }} €</span>
+              <span class="wage-note">{% if posting.is_minijob %}unter{% else %}über{% endif %} der Minijob-Grenze (603 €)</span>
+            </div>
+          </section>
+        </aside>
+      </div>
+    {% endif %}
+  </article>
+</div>
+<script>
+  // Die geöffnete Stelle in der Liste links sichtbar machen (nur Desktop, dort scrollt die Liste selbst).
+  (function () {
+    var list = document.querySelector(".split-has-detail .job-list");
+    var row = list && list.querySelector(".job-row.is-selected");
+    if (row && list.scrollHeight > list.clientHeight) {
+      list.scrollTop = row.offsetTop - list.clientHeight / 3;
+    }
+  })();
+</script>
+{% endblock %}

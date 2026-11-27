@@ -1,0 +1,44 @@
+{% load static %}<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}elfjobs{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="wordmark" href="{% url 'job_list' %}">elf<span>jobs</span></a>
+
+    <nav class="main-nav" aria-label="Hauptnavigation">
+      <a href="{% url 'job_list' %}"{% if request.resolver_match.url_name == "job_list" or request.resolver_match.url_name == "job_detail" %} aria-current="page"{% endif %}>Jobs</a>
+      {# Gemerkt (#13) und Messen bekommen ihre Seiten mit eigenen Issues. #}
+      <span aria-disabled="true">Gemerkt</span>
+      <span aria-disabled="true">Messen</span>
+    </nav>
+
+    <form class="search" action="{% url 'job_list' %}" method="get" role="search">
+      <input type="search" name="q" value="{{ request.GET.q }}" placeholder="Titel, Firma oder Skill" aria-label="Suche">
+    </form>
+
+    {% if user.is_authenticated %}
+      <a class="profile-button" href="{% url 'profile' %}">
+        <span class="avatar" aria-hidden="true">{{ user.get_full_name|default:user.username|first|upper }}</span>
+        <span class="profile-text">
+          <span class="profile-name">{{ user.get_full_name|default:user.username }}</span>
+          {% if user.profile.summary %}<span class="profile-meta">{{ user.profile.summary }}</span>{% endif %}
+        </span>
+      </a>
+    {% else %}
+      <a class="login-link" href="{% url 'login' %}?next={{ request.path|urlencode }}">Anmelden</a>
+    {% endif %}
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

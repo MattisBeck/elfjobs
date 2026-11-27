@@ -1,9 +1,18 @@
+import math
+from decimal import ROUND_HALF_UP, Decimal
+
 from django.db import models
+
+
+# Minijob-Grenze 2026 in Euro pro Monat
+MINIJOB_LIMIT = 603
 
 
 class Company(models.Model):
     name = models.CharField("Name", max_length=200)
     industry = models.CharField("Branche", max_length=100)  # z. B. "Bank", "Tech"
+    # Einfache Fahrzeit für Studierende, im Prototyp eine Annahme (keine Routenberechnung).
+    commute_minutes = models.PositiveSmallIntegerField("Fahrzeit (min, einfach)", default=0)
     fairs = models.ManyToManyField(
         "Fair", related_name="companies", blank=True, verbose_name="Messen"
     )
@@ -81,3 +90,77 @@ class JobPosting(models.Model):
 
     def __str__(self):
         return self.title
+
+    # Effektiver Stundenlohn, Regeln aus docs/design.md. Für feste Stellen
+    # vorher prefetch_related("shifts") nutzen, sonst eine Abfrage pro Stelle.
+
+    @property
+    def trips_per_week(self):
+        """Wie oft man pro Woche hin- und zurückfährt."""
+        if self.workplace == self.Workplace.REMOTE:
+            return 0
+        if self.schedule == self.Schedule.FIXED:
+            trips = len(self.shifts.all())
+        else:
+            trips = math.ceil(self.hours_per_week / 4)
+        if self.workplace == self.Workplace.HYBRID:
+            trips = math.ceil(trips / 2)
+        return trips
+
+    @property
+    def commute_hours_per_week(self):
+        return Decimal(self.trips_per_week * 2 * self.company.commute_minutes) / 60
+
+    @property
+    def effective_wage(self):
+        """Bruttolohn pro Stunde, wenn man die Fahrzeit als Arbeitszeit mitzählt."""
+        hours = Decimal(self.hours_per_week)
+        if hours == 0:
+            # Im Admin sind 0 Stunden möglich; ohne Arbeitszeit gibt es nichts zu verteilen.
+            return self.hourly_wage
+        wage = self.hourly_wage * hours / (hours + self.commute_hours_per_week)
+        return wage.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    @property
+    def monthly_wage(self):
+        """Brutto im Monat (4,33 Wochen), auf ganze Euro."""
+        monthly = self.hourly_wage * self.hours_per_week * Decimal("4.33")
+        return monthly.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+
+    @property
+    def is_minijob(self):
+        return self.monthly_wage <= MINIJOB_LIMIT
+
+
+class Weekday(models.IntegerChoices):
+    MONDAY = 0, "Mo"
+    TUESDAY = 1, "Di"
+    WEDNESDAY = 2, "Mi"
+    THURSDAY = 3, "Do"
+    FRIDAY = 4, "Fr"
+
+
+class Shift(models.Model):
+    """Eine feste Schicht einer Stelle, jede Woche zur gleichen Zeit."""
+
+    posting = models.ForeignKey(
+        JobPosting, on_delete=models.CASCADE, related_name="shifts", verbose_name="Stelle"
+    )
+    weekday = models.PositiveSmallIntegerField("Wochentag", choices=Weekday.choices)
+    start = models.TimeField("Beginn")
+    end = models.TimeField("Ende")
+
+    class Meta:
+        ordering = ["weekday", "start"]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(end__gt=models.F("start")), name="shift_ends_after_start"),
+        ]
+        verbose_name = "Schicht"
+        verbose_name_plural = "Schichten"
+
+    def __str__(self):
+        return f"{self.get_weekday_display()} {self.start:%H:%M}–{self.end:%H:%M}"
+
+    @property
+    def hours(self):
+        return (self.end.hour * 60 + self.end.minute - self.start.hour * 60 - self.start.minute) / 60

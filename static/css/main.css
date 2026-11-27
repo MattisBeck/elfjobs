@@ -1,0 +1,718 @@
+/* Design-Tokens aus docs/design.md (Richtung A „Wochenplan“) */
+:root {
+  --bg: #FFFFFF;
+  --bg-subtle: #FAFBFC;
+  --surface-muted: #F1F3F6;
+  --line: #E6E8EC;
+  --line-strong: #E1E4E9;
+  --ink: #1B1E25;
+  --ink-2: #3B404B;
+  --muted: #646B78;
+  --faint: #8A909C;
+  --accent: #2F5BD8;
+  --accent-ink: #2A4FBF;
+  --accent-soft: #EAF0FD;
+  --accent-wash: #F3F6FE;
+  --lecture: #E9ECF1;
+  --lecture-ink: #454B57;
+  --shift: #1F7A50;
+  --ok-soft: #E3F3EA;
+  --ok-ink: #1F6E48;
+  --conflict: #C8402F;
+  --part-soft: #FCF0DE;
+  --part-ink: #8F4C0A;
+  --part-dot: #C77A1E;
+
+  --radius-chip: 6px;
+  --radius-control: 8px;
+  --radius-row: 10px;
+  --radius-panel: 12px;
+  --radius-pill: 16px;
+
+  /* Abstände im 4-px-Raster */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  --font: "Inter", system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+/* Kopfzeile */
+.site-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 60px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.wordmark {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.wordmark span {
+  color: var(--accent);
+}
+
+.main-nav {
+  display: flex;
+  gap: 4px;
+}
+
+.main-nav a,
+.main-nav span {
+  padding: 6px 12px;
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.main-nav span {
+  color: var(--faint);
+  cursor: default;
+}
+
+.main-nav a:hover {
+  background: var(--surface-muted);
+}
+
+.main-nav a[aria-current="page"] {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+.search {
+  flex: 1;
+  max-width: 360px;
+  margin-left: auto;
+}
+
+.search input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  font: inherit;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+.search input::placeholder {
+  color: var(--faint);
+}
+
+.profile-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.profile-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.profile-name {
+  font-weight: 600;
+}
+
+.profile-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.login-link {
+  margin-left: auto;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.search + .login-link {
+  margin-left: 0;
+}
+
+/* Handy: Wortmarke und Profil oben, Navigation darunter, Suche ausgeblendet */
+@media (max-width: 720px) {
+  .site-header {
+    flex-wrap: wrap;
+    height: auto;
+    gap: 8px 16px;
+    padding: 10px 16px;
+  }
+
+  .search,
+  .profile-text {
+    display: none;
+  }
+
+  /* Die Suche ist hier nur ausgeblendet, steht aber noch davor: deshalb auch .search + .login-link. */
+  .profile-button,
+  .login-link,
+  .search + .login-link {
+    margin-left: auto;
+  }
+
+  .main-nav {
+    order: 3;
+    width: 100%;
+  }
+
+  /* Klickflächen auf dem Handy mindestens 44 px hoch (docs/design.md) */
+  .main-nav a,
+  .wordmark,
+  .profile-button,
+  .login-link {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+/* Zweispaltiges Layout: Liste links, Detail rechts */
+.split {
+  display: grid;
+  grid-template-columns: minmax(380px, 440px) 1fr;
+  min-height: calc(100vh - 61px);
+}
+
+.split-detail {
+  min-width: 0;
+}
+
+.split-placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+
+  .split-placeholder {
+    display: none;
+  }
+}
+
+/* Stellenliste */
+.job-list {
+  padding: 24px 20px;
+  border-right: 1px solid var(--line);
+  background: var(--bg-subtle);
+}
+
+.job-list-heading {
+  margin: 0 0 16px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.chip:hover {
+  border-color: var(--faint);
+}
+
+.chip.is-active {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.job-list-meta {
+  display: flex;
+  justify-content: space-between;
+  margin: 20px 0 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.job-list-meta strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.job-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.job-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-row);
+  text-decoration: none;
+}
+
+.job-row:hover {
+  background: var(--bg);
+  border-color: var(--line);
+}
+
+.job-row.is-selected {
+  background: var(--bg);
+  border-color: var(--accent);
+}
+
+.job-row-title {
+  font-weight: 600;
+}
+
+.job-row-wage {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.job-row-meta,
+.job-row-gross {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.job-row-gross {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.job-list-empty {
+  padding: 24px 0;
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .job-list {
+    padding: 20px 16px;
+    border-right: 0;
+  }
+
+  .chip {
+    min-height: 44px;
+  }
+}
+
+/* Stellendetail */
+@media (max-width: 900px) {
+  .split-has-detail .job-list {
+    display: none;
+  }
+}
+
+/* Desktop: die Liste scrollt neben dem Detail für sich, damit die geöffnete Stelle sichtbar bleibt. */
+@media (min-width: 901px) {
+  .split-has-detail .job-list {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+  }
+}
+
+.job-detail {
+  padding: 28px 32px 48px;
+}
+
+.back-link {
+  display: none;
+  margin-bottom: 16px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.job-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  padding: 3px 8px;
+  border-radius: var(--radius-chip);
+  background: var(--surface-muted);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.job-title {
+  margin: 12px 0 4px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.job-company {
+  margin: 0;
+  color: var(--muted);
+}
+
+.job-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.button {
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  color: var(--ink-2);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.tabs {
+  display: inline-flex;
+  gap: 2px;
+  margin: 24px 0;
+  padding: 3px;
+  border-radius: 9px;
+  background: var(--surface-muted);
+}
+
+.tabs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 7px;
+  color: var(--muted);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.tabs a[aria-current="page"] {
+  background: var(--bg);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(27 30 37 / 0.08);
+}
+
+/* Farbe bekommt der Punkt mit der Passung (#9). */
+.tab-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 32px;
+}
+
+.details-main h2,
+.details-side h2 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.details-main section + section {
+  margin-top: 24px;
+}
+
+.details-main p {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.details-main .fair-box {
+  margin-top: 24px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+}
+
+.panel {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+  text-align: right;
+}
+
+/* Lohnrechnung: vier Felder, effektiver Lohn hellblau */
+.wage-calc {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin-top: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--line);
+}
+
+.wage-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--bg);
+}
+
+.wage-field-effective {
+  background: var(--accent-wash);
+}
+
+.wage-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.wage-field-effective .wage-label {
+  color: var(--accent-ink);
+}
+
+.wage-value {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.wage-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Neben der Liste wird die Detailspalte unter 1200 px zu schmal für zwei Spalten. */
+@media (max-width: 1200px) {
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .back-link {
+    display: inline-block;
+  }
+}
+
+@media (max-width: 720px) {
+  .job-detail {
+    padding: 16px 16px 40px;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-bottom: 4px;
+  }
+
+  .job-actions {
+    width: 100%;
+  }
+
+  .job-actions .button {
+    flex: 1;
+    min-height: 44px;
+  }
+
+  .tabs {
+    display: flex;
+  }
+
+  .tabs a {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+  }
+}
+
+/* Formulare: Anmelden, Registrieren, Profil */
+.form-page {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 40px 16px 64px;
+}
+
+.form-page h1 {
+  margin: 0 0 24px;
+  font-size: 20px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.form input[type="text"],
+.form input[type="password"],
+.form input[type="number"] {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  font: inherit;
+}
+
+.form .helptext,
+.form ul.errorlist {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.form ul.errorlist {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--conflict);
+}
+
+.form #id_skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.form #id_skills label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  font-weight: 400;
+}
+
+.form-page .button {
+  align-self: flex-start;
+}
+
+.notice {
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
+  background: var(--ok-soft);
+  color: var(--ok-ink);
+}
+
+.logout-form {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}

@@ -1,12 +1,16 @@
+import math
+import os
 import random
-from datetime import date
+from datetime import date, time
 from decimal import Decimal
 
-from django.core.management.base import BaseCommand
+from django.contrib.auth.models import User
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from faker import Faker
 
-from jobs.models import Company, Fair, JobPosting, Tag
+from accounts.models import StudentProfile
+from jobs.models import Company, Fair, JobPosting, Shift, Tag
 
 SEED = 42
 NUM_COMPANIES = 20
@@ -42,7 +46,7 @@ KINDS = {
     },
     JobPosting.Kind.SHORT_JOB: {
         "hours": (3, 12),
-        "wage": (13, 17),
+        "wage": (13, 17),  # wird auf MIN_WAGE angehoben, siehe unten
         "titles": [
             "Aushilfe Inventur", "Servicekraft Messecatering", "Promoter*in",
             "Aushilfe Lager", "Event-Helfer*in", "Kassenaushilfe",
@@ -51,10 +55,72 @@ KINDS = {
     },
 }
 
+# Kein Seed-Lohn liegt darunter (Mindestlohn 2026: 13,90 €).
+MIN_WAGE = Decimal("14.00")
+
+# Diese Jobs gehen nur vor Ort, alle anderen können auch hybrid oder remote sein.
+ONSITE_ONLY_TITLES = {
+    "Aushilfe Inventur", "Servicekraft Messecatering", "Aushilfe Lager",
+    "Event-Helfer*in", "Kassenaushilfe", "Flyer-Verteilung", "Promoter*in",
+}
+
+# Fahrzeiten der Firmen aus den Beispielen in docs/design.md, alle anderen zufällig 12–40 min.
+DESIGN_EXAMPLE_COMMUTES = {
+    "Weihmann GbR": 18,
+    "Bauer": 12,
+    "Holsten Förster AG & Co. OHG": 35,
+}
+
+# Schichten der Stellen mit festen Zeiten: höchstens 4 h pro Schicht, meist nachmittags.
+MAX_SHIFT_MINUTES = 4 * 60
+# Die Beispielstelle aus docs/design.md bekommt genau die Zeiten aus dem Design-Canvas.
+DESIGN_EXAMPLE_SHIFTS = {
+    ("Promoter*in", "Weihmann GbR", 7): [(1, time(15, 0), time(18, 30)), (2, time(16, 30), time(20, 0))],
+}
+
 
 def random_wage(low, high):
     """Zufälliger Stundenlohn, auf 0,50 € genau."""
     return Decimal(random.randint(low * 2, high * 2)) / 2
+
+
+def make_shifts(posting, rng):
+    """Schichten, die zusammen genau hours_per_week ergeben, an verschiedenen Wochentagen."""
+    key = (posting.title, posting.company.name, posting.hours_per_week)
+    if key in DESIGN_EXAMPLE_SHIFTS:
+        return DESIGN_EXAMPLE_SHIFTS[key]
+
+    total = posting.hours_per_week * 60
+    count = math.ceil(total / MAX_SHIFT_MINUTES)
+    # Gleichmäßig auf halbe Stunden verteilen, der Rest landet in der letzten Schicht.
+    length = round(total / count / 30) * 30
+    lengths = [length] * (count - 1) + [total - length * (count - 1)]
+
+    shifts = []
+    for weekday, minutes in zip(sorted(rng.sample(range(5), count)), lengths):
+        # Beginn zwischen 13:00 und so spät, dass die Schicht bis 20:00 endet.
+        latest_start = 20 * 60 - minutes
+        start = rng.randrange(13 * 60, latest_start + 1, 30)
+        end = start + minutes
+        shifts.append((weekday, time(start // 60, start % 60), time(end // 60, end % 60)))
+    return shifts
+
+
+DEMO_EMAIL = "mia@student.hpi.uni-potsdam.de"
+
+
+def create_demo_student(password):
+    """Demo-Studentin Mia aus docs/design.md, Login mit DEMO_EMAIL und DEMO_PASSWORD."""
+    user, _ = User.objects.get_or_create(username=DEMO_EMAIL)
+    user.email = DEMO_EMAIL
+    user.first_name = "Mia"
+    user.set_password(password)
+    user.save()
+    profile, _ = StudentProfile.objects.update_or_create(
+        user=user,
+        defaults={"study_program": "ITSE", "semester": 1, "home_town": "Potsdam"},
+    )
+    profile.skills.set(Tag.objects.filter(name__in=["Python", "Englisch", "Informatik"]))
 
 
 class Command(BaseCommand):
@@ -62,6 +128,10 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        demo_password = os.environ.get("DEMO_PASSWORD")
+        if not demo_password:
+            raise CommandError("DEMO_PASSWORD fehlt in .env (Vorlage: .env.example).")
+
         # Immer gleiche Zufallszahlen, damit alle im Team dieselben Daten sehen.
         random.seed(SEED)
         Faker.seed(SEED)
@@ -87,19 +157,45 @@ class Command(BaseCommand):
         for _ in range(NUM_POSTINGS):
             kind = random.choice(list(KINDS))
             rules = KINDS[kind]
+            # Reihenfolge der Zufallsaufrufe nicht ändern: docs/design.md und die
+            # Issues verweisen auf konkrete Seed-Stellen (z. B. Promoter*in, Weihmann GbR).
+            company = random.choice(companies)
+            title = random.choice(rules["titles"])
+            description = fake.paragraph(nb_sentences=3)
+            workplace = random.choice(JobPosting.Workplace.values)
+            if title in ONSITE_ONLY_TITLES:
+                workplace = JobPosting.Workplace.ONSITE
+            schedule = random.choice(JobPosting.Schedule.values)
+            hourly_wage = max(random_wage(*rules["wage"]), MIN_WAGE)
             posting = JobPosting.objects.create(
-                company=random.choice(companies),
-                title=random.choice(rules["titles"]),
-                description=fake.paragraph(nb_sentences=3),
+                company=company,
+                title=title,
+                description=description,
                 kind=kind,
-                workplace=random.choice(JobPosting.Workplace.values),
-                schedule=random.choice(JobPosting.Schedule.values),
-                hourly_wage=random_wage(*rules["wage"]),
+                workplace=workplace,
+                schedule=schedule,
+                hourly_wage=hourly_wage,
                 hours_per_week=random.randint(*rules["hours"]),
             )
             posting.tags.set(random.sample(tags, random.randint(0, 3)))
 
+        # Fahrzeiten und Schichten haben je einen eigenen Zufallsgenerator,
+        # damit neue Daten die Stellen oben nicht verändern.
+        commute_random = random.Random(SEED)
+        for company in Company.objects.order_by("id"):
+            company.commute_minutes = DESIGN_EXAMPLE_COMMUTES.get(
+                company.name, commute_random.randint(12, 40)
+            )
+            company.save()
+
+        shift_random = random.Random(SEED)
+        for posting in JobPosting.objects.filter(schedule=JobPosting.Schedule.FIXED).order_by("id"):
+            for weekday, start, end in make_shifts(posting, shift_random):
+                Shift.objects.create(posting=posting, weekday=weekday, start=start, end=end)
+
+        create_demo_student(demo_password)
+
         self.stdout.write(self.style.SUCCESS(
             f"{NUM_POSTINGS} Stellen von {NUM_COMPANIES} Firmen angelegt "
-            f"({len(fairs)} Messen, {len(tags)} Tags)."
+            f"({len(fairs)} Messen, {len(tags)} Tags), Demo-Login: {DEMO_EMAIL}."
         ))

@@ -2,9 +2,31 @@
 
 ## Vision
 
-elfjobs bringt Studierende und Arbeitgeber für Nebenjobs zusammen: Werkstudentenstellen und Kurzjobs. Studierende sollen schnell sehen, welche Stelle wirklich zu ihnen passt. Dafür zählen ihr Stundenplan, ihre Skills und ihr Studiengang und der effektive Stundenlohn, nicht nur der Bruttolohn. Firmen und Jobmessen verbinden Online-Suche und persönliches Kennenlernen.
+elfjobs ist die Jobbörse für **kurze Jobs neben dem Studium**: Werkstudentenstellen und Kurzjobs mit wenigen Stunden pro Woche. Beide Seiten wissen, woran sie sind: Firmen suchen Studierende, Studierende binden sich nicht für Jahre. Die Hürde, einen Job anzufangen, soll so niedrig sein wie bei Too Good To Go, nicht so förmlich wie bei LinkedIn oder Indeed.
 
-Geplante Bausteine, in etwa in dieser Reihenfolge: Frontend zum Durchsuchen der Stellen, Login und Studi-Profile, Stundenplan und Verfügbarkeiten, Bewerbungen, Matching, effektiver Stundenlohn.
+**Kern der Idee** (Ideen-Dashboard der Gruppe): *Stundenplan × Lehrplan = Job.* Das Problem ist der schwere Einstieg in einen Job. Der Stundenplan zeigt, ob jemand Zeit für eine Stelle hat. Der Lehrplan, also was im Studium unterrichtet wird, zeigt, ob jemand schon qualifiziert ist oder es bald sein wird. Beides fließt in die Sortierung der Jobs ein (#41, #42). Firmen erreichen so Studierende direkt aus ihrer Branche.
+
+**Für wen** (Personas aus den Interviews, siehe Protokoll vom Kick-off):
+
+- **Julia**, 18, Politikwissenschaft: finanziert ihr Studium selbst und hat wenig Zeit. Sie braucht Geld, aber auch Zeit zum Studieren, und Arbeitszeiten, die planbar in ihre Woche passen.
+- **Justus**, 19, BWL: wird von den Eltern finanziert und will Berufserfahrung sammeln. Er sucht einen einfachen Weg zu einem Job in seinem Bereich.
+
+Aus den Interviews: Zeitmangel und Planbarkeit sind das größte Problem. Viele kommen über Bekannte an Jobs und lernen Firmen lieber persönlich kennen als online. Lange Pendelzeit frisst den Lohn auf.
+
+**Priorität der Features** (Ranking der Gruppe nach Nutzen und Umsetzbarkeit):
+
+1. Sortieren nach Distanz, Stundenlohn inklusive Pendelzeit und Bewertung (#12, #22, #32)
+2. Lehrpläne und Closed Access ⭐: Registrieren nur mit Uni-Mail, zum Start nur HPI (#6, #31). Aus belegten Modulen folgen Skills (wer PT1 belegt hat, kann C-Grundlagen), damit sich Studierende mehr zutrauen und Arbeitgeber nach Skills suchen können (#30, #40, #41).
+3. Eventhub: Jobmessen und Events, Alerts für passende Jobs (#33, #34)
+4. Wiki zu Bürokratie und Bewerbung, von Studierenden geschrieben
+5. Stundenplan eintragen oder hochladen und Jobs finden, die hineinpassen ⭐ (#7, #9, #43)
+6. Karte: Wo sind Jobs in meiner Nähe? (#20, #21)
+
+⭐ = im Protokoll auf dem Whiteboard rot markiert.
+
+Die Oberfläche folgt der Designrichtung A „Wochenplan“ (`docs/design.md`).
+
+**Ideen und Hintergrund:** `docs/ideen.md` (Problem, Personas, Interview-Erkenntnisse, Ranking, Ideenspeicher mit Status jeder Idee). Lies es, bevor du ein Feature-Issue anlegst oder eine Produktentscheidung triffst. Neue Issues zu einer Idee trägst du dort im Ideenspeicher ein.
 
 ## Arbeitsweise
 
@@ -24,6 +46,8 @@ Fünf Leute arbeiten parallel. Die GitHub-Issues sind die einzige Liste dessen, 
 5. **Fertig**: Tests grün, Pull Request auf „Ready for review“, eine andere Person reviewt und merged.
 
 Ein Issue ist **klein**: in ein bis zwei Tagen fertig. Größere Features werden in mehrere Issues geteilt. Wenn du merkst, dass deine Arbeit ein fremdes Issue berührt, schreib einen Kommentar dort.
+
+**Gegenseitig pingen:** Menschen und ihre Claude-Agenten erwähnen sich mit `@login` in Issue- und PR-Kommentaren, zum Beispiel für ein Review, eine Frage zu einem fremden Issue oder eine Überschneidung. Im Team: `@MattisBeck`, `@Lille2008`, `@AuchHabicht`, `@ShadowAlyx`, `@Tobi-St`. Pingt auch zurück: Wer gepingt wird, antwortet im selben Thread mit `@login` der fragenden Person, damit die Antwort bei ihr ankommt. Wer etwas fertig hat, worauf jemand wartet (Review erledigt, PR gemergt, Frage geklärt), pingt diese Person an. Ein Ping ersetzt keine Zuweisung: An einem Issue, das jemand anderem gehört, arbeitest du erst nach Absprache.
 
 **Migrationen** kollidieren, wenn zwei Branches gleichzeitig Migrationen in derselben App anlegen. Hole vor `makemigrations` den aktuellen `main` in deinen Branch (`git pull origin main`). Kommt nach dem Merge trotzdem ein Konflikt: deine eigene Migration löschen und `makemigrations` neu ausführen.
 
