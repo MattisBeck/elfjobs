@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Karte · elfjobs{% endblock %}
+
+{% block head %}
+  {# Leaflet 1.9.4 von unpkg, feste Version mit SRI-Hash. Kacheln von OpenStreetMap, ohne API-Key. #}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+{% endblock %}
+
+{% block content %}
+<div class="split map-split">
+  <section class="job-list" aria-labelledby="job-list-heading">
+    <h1 id="job-list-heading" class="job-list-heading">Jobs in deiner Nähe</h1>
+
+    <div class="chips" role="group" aria-label="Filter">
+      {% for chip in chips %}
+        <a class="chip{% if chip.active %} is-active{% endif %}" href="{{ chip.url }}"{% if chip.active %} aria-current="true"{% endif %}>{{ chip.label }}</a>
+      {% endfor %}
+    </div>
+
+    <p class="map-hint">
+      {% if has_start %}Startpunkt aus der Karte.{% else %}Startpunkt: Berlin-Mitte.{% endif %}
+      Klick auf die Karte, um ihn zu ändern.
+    </p>
+
+    <p class="job-list-meta">
+      <strong>{{ nearby|length }} Stelle{{ nearby|length|pluralize:"n" }} mit Ort</strong>
+      <span>sortiert nach Luftlinie</span>
+    </p>
+
+    <ul class="job-rows">
+      {% for posting in nearby %}
+        <li>
+          <a class="job-row" href="{% url 'job_detail' posting.pk %}{% if filter_query %}?{{ filter_query }}{% endif %}">
+            <span class="job-row-title">{{ posting.title }}</span>
+            <span class="job-row-wage">{{ posting.distance_km|floatformat:1 }} km</span>
+            <span class="job-row-meta">{{ posting.company.name }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>
+            <span class="job-row-gross">{{ posting.effective_wage }} € effektiv</span>
+            {% if posting.skill_hint %}<span class="job-row-skills">{{ posting.skill_hint }}</span>{% endif %}
+          </a>
+        </li>
+      {% empty %}
+        <li class="job-list-empty">Keine Stellen mit Ort für diese Filter.</li>
+      {% endfor %}
+    </ul>
+
+    {% if remote %}
+      {# Stellen ohne Koordinaten: remote (oder ohne Adresse eingetragen), daher ohne Entfernung. #}
+      <h2 class="map-section-heading">Remote und ohne Adresse</h2>
+      <ul class="job-rows">
+        {% for posting in remote %}
+          <li>
+            <a class="job-row" href="{% url 'job_detail' posting.pk %}{% if filter_query %}?{{ filter_query }}{% endif %}">
+              <span class="job-row-title">{{ posting.title }}</span>
+              <span class="job-row-wage">{{ posting.effective_wage }} €</span>
+              <span class="job-row-meta">{{ posting.company.name }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>
+              <span class="job-row-gross">brutto {{ posting.hourly_wage }} €</span>
+              {% if posting.skill_hint %}<span class="job-row-skills">{{ posting.skill_hint }}</span>{% endif %}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </section>
+
+  <div class="map-column">
+    <div id="job-map" class="job-map" role="region" aria-label="Karte der Stellen"></div>
+  </div>
+</div>
+
+{{ markers|json_script:"map-markers" }}
+{{ start|json_script:"map-start" }}
+<script>
+  (function () {
+    var markers = JSON.parse(document.getElementById("map-markers").textContent);
+    var start = JSON.parse(document.getElementById("map-start").textContent);
+
+    var map = L.map("job-map").setView([start.lat, start.lon], 11);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
+    }).addTo(map);
+
+    // Startpunkt: dunkler, größerer Kreis.
+    L.circleMarker([start.lat, start.lon], {
+      radius: 9, color: "#fff", weight: 3, fillColor: "#1B1E25", fillOpacity: 1, bubblingMouseEvents: false,
+    }).addTo(map).bindTooltip("Startpunkt");
+
+    // Popup mit textContent statt HTML-String, damit Titel und Firma nichts einschleusen können.
+    markers.forEach(function (marker) {
+      var popup = document.createElement("div");
+      var title = document.createElement("strong");
+      title.textContent = marker.title;
+      var meta = document.createElement("div");
+      meta.textContent = marker.company + " · " + marker.wage + " effektiv";
+      var link = document.createElement("a");
+      link.href = marker.url;
+      link.textContent = "Zur Stelle";
+      popup.append(title, meta, link);
+
+      L.circleMarker([marker.lat, marker.lon], {
+        radius: 6, color: "#fff", weight: 2, fillColor: "#2F5BD8", fillOpacity: 0.9, bubblingMouseEvents: false,
+      }).addTo(map).bindPopup(popup);
+    });
+
+    // Klick auf die Karte setzt den Startpunkt: Seite neu laden, Filter und Suche bleiben.
+    map.on("click", function (event) {
+      var params = new URLSearchParams(window.location.search);
+      params.set("lat", event.latlng.lat.toFixed(5));
+      params.set("lon", event.latlng.wrap().lng.toFixed(5));
+      window.location.search = params.toString();
+    });
+  })();
+</script>
+{% endblock %}
