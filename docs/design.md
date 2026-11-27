@@ -1,10 +1,10 @@
 # Design: Richtung A „Wochenplan“
 
-Das ist die Designrichtung, nach der wir die Oberfläche von elfjobs bauen. Sie wurde am 27.11.2026 aus drei Richtungen ausgewählt.
+Das ist die Designrichtung, nach der wir die Oberfläche von elfjobs bauen. Sie wurde am 27.11.2026 aus drei Richtungen ausgewählt. **Maßgeblich ist dieses Dokument.** Der Canvas zeigt die Entwürfe zur Anschauung; wo beide voneinander abweichen, gilt der Text hier.
 
 - Design-Canvas mit allen Entwürfen: https://claude.ai/artifact/9Z7g6PU9QA4gdbFkgha7HM (Zugriff bei Felix anfragen). Richtung A sind die Artboards „A · Wochenplan – Web“ und „A · Wochenplan – Handy“. Beide sind klickbar: In der Web-Ansicht wechseln die Tabs „Details“ und „In meiner Woche“, bei flexiblen Stellen lassen sich eigene Schichten in freie Blöcke legen.
 - Issue zu diesem Dokument: #2
-- Screenshots kommen in einem späteren PR nach `docs/img/`. Bis dahin ist der Canvas die Referenz.
+- Screenshots kommen in einem späteren PR nach `docs/img/`.
 
 ## Die Idee
 
@@ -51,7 +51,7 @@ Als CSS-Variablen in einer statischen Datei anlegen (#3). Die Namen sind ein Vor
 | `--shift` | `#1F7A50` | passende Schicht (weißer Text) |
 | `--ok-soft` / `--ok-ink` | `#E3F3EA` / `#1F6E48` | Pille „Passt in deine Woche“ |
 | `--conflict` | `#C8402F` | kollidierende Schicht (weißer Text) |
-| `--part-soft` / `--part-ink` / `--part-dot` | `#FCF0DE` / `#8F4C0A` / `#C77A1E` | „1 von 5 Schichten kollidieren“ |
+| `--part-soft` / `--part-ink` / `--part-dot` | `#FCF0DE` / `#8F4C0A` / `#C77A1E` | „1 von 5 Schichten kollidiert“ |
 
 ## Schrift, Größen, Formen
 
@@ -84,7 +84,7 @@ Darunter die **Tab-Leiste** im Stil eines Segmented Control: „Details“ | „
 
 **Tab „Details“** (Standard):
 
-- Links „Über die Stelle“ (Beschreibung aus der Anzeige), „Das bringst du mit“ (Skills als Chips, eingeordnet nach dem Lehrplan, siehe Regel „Qualifikation“: gelernt blau mit ✓ und der Quelle, z. B. „✓ Python · Programmiertechnik I“ oder „✓ Englisch · aus deinem Profil“; kommt noch grau mit „ab 3. Semester“; nicht im Studium grau ohne Zusatz) und ein Kasten „Firma persönlich kennenlernen: Jobmesse Potsdam, 11.03.2027“ (ein Kasten für alle kommenden Messen der Firma, vergangene fallen weg).
+- Links „Über die Stelle“ (Beschreibung aus der Anzeige), „Das bringst du mit“ (Skills als Chips, eingeordnet nach dem Lehrplan, siehe Regel „Qualifikation“: gelernt blau mit ✓ und der Quelle, z. B. „✓ Python · Programmiertechnik I“ oder „✓ Englisch · aus deinem Profil“; kommt noch grau mit „ab 3. Semester“; nicht im Studium grau ohne Zusatz) und ein Kasten „Firma persönlich kennenlernen: Jobmesse Potsdam 2027, 11.03.2027“ (ein Kasten für alle kommenden Messen der Firma, vergangene fallen weg).
 - Rechts „Auf einen Blick“: Art, Arbeitsort, Stunden pro Woche, Arbeitszeiten („Di 15:00–18:30, Mi 16:30–20:00“ oder „Flexibel, du planst selbst“), Stundenplan (Passungstext als Link zum Wochen-Tab).
 - Darunter die **Lohnrechnung** in vier Feldern: Bruttolohn pro Stunde · Fahrzeit pro Woche („2 × hin und zurück, je 18 min“) · **Effektiver Stundenlohn** (hellblau hinterlegt) · „Im Monat ≈ 485 €“ mit „unter/über der Minijob-Grenze (603 €)“.
 
@@ -122,7 +122,7 @@ Eine Schicht kollidiert, wenn sie sich mit einer Vorlesung desselben Tages über
 | Zustand | Bedingung | Text | Farbe |
 |---|---|---|---|
 | passt | feste Zeiten, keine Schicht kollidiert | „Passt in deine Woche“ | Grün |
-| teilweise | einige, aber nicht alle Schichten kollidieren | „1 von 5 Schichten kollidieren“ | Orange |
+| teilweise | einige, aber nicht alle Schichten kollidieren | „1 von 5 Schichten kollidiert“, ab zwei „2 von 5 Schichten kollidieren“ | Orange |
 | kollidiert | alle Schichten kollidieren | „Kollidiert mit Vorlesungen“ | Rot |
 | flexibel | Stelle ohne feste Zeiten | „Flexible Zeiten, du wählst die Schichten“ | Blau |
 
@@ -218,7 +218,7 @@ Netto-Lohn, Konten für Firmen, Lehrpläne anderer Hochschulen, Noten und bestan
 | #5 | Stellendetail, Tab „Details“ | #3 |
 | #6 | Login und Studi-Profil | #3 |
 | #8 | Schichtzeiten an Stellen | – |
-| #12 | Effektiver Stundenlohn | #4, #5 |
+| #12 | Effektiver Stundenlohn | #4, #5, #8 |
 | #7 | Stundenplan erfassen | #6 |
 | #9 | Passung und Filter | #4, #7, #8 |
 | #10 | Tab „In meiner Woche“ | #5, #9 |
