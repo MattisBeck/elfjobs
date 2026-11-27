@@ -102,6 +102,8 @@ def shift_json(shift):
         "id": shift.pk,
         "title": shift.posting.title,
         "company": shift.posting.company.name,
+        "logo_url": shift.posting.company.logo_url,
+        "initials": shift.posting.company.initials,
         "weekday": shift.weekday,
         "start": shift.start.strftime("%H:%M"),
         "end": shift.end.strftime("%H:%M"),

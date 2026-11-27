@@ -70,7 +70,7 @@
   <section id="bewerbungen" class="my-applications">
     <h2>Meine Bewerbungen</h2>
     {% for application in my_applications %}
-      <p><a href="{% url 'job_detail' application.posting.pk %}">{{ application.posting.title }}</a> <span class="muted">· {{ application.posting.company.name }} · {{ application.applied_at|date:"d.m.Y" }} · {{ application.get_status_display }}{% if application.cv %} · <a href="{% url 'sent_cv' application.pk %}" target="_blank">mit Lebenslauf</a>{% endif %}</span></p>
+      <p><a href="{% url 'job_detail' application.posting.pk %}">{{ application.posting.title }}</a> <span class="muted">· {% include "jobs/_company_logo.html" with company=application.posting.company decorative=True %}{{ application.posting.company.name }} · {{ application.applied_at|date:"d.m.Y" }} · {{ application.get_status_display }}{% if application.cv %} · <a href="{% url 'sent_cv' application.pk %}" target="_blank">mit Lebenslauf</a>{% endif %}</span></p>
     {% empty %}
       <p class="muted">Noch keine. Im Stellendetail bewirbst du dich mit einem Klick: <a href="{% url 'job_list' %}">Jobs ansehen →</a></p>
     {% endfor %}

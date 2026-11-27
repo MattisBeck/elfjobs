@@ -2123,6 +2123,15 @@ a.button {
   cursor: pointer;
 }
 
+/* Firmenlogo (#149) im Schichtblock: inline vor dem Titel, kleiner als in Listen */
+.week-block .company-logo {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+  font-size: 8px;
+}
+
 .week-block.tt-job strong,
 .week-block.tt-job span {
   color: inherit;

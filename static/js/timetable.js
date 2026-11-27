@@ -29,7 +29,7 @@
     layout: data.layout, // Spalten pro Termin-ID, vom Server (#135)
   };
   var shifts = (data.shifts || []).map(function (item) {
-    return Object.assign(fromJson(item), { company: item.company, url: item.url, conflict: item.conflict });
+    return Object.assign(fromJson(item), { company: item.company, logoUrl: item.logo_url, initials: item.initials, url: item.url, conflict: item.conflict });
   });
   var urls = data.urls;
   var csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
@@ -205,6 +205,20 @@
     block.title = text;
     var title = document.createElement("strong");
     title.textContent = shift.title;
+    // Firmenlogo (#149) oder Initialen vor dem Titel, wie im Jobs-Listing
+    var logo;
+    if (shift.logoUrl) {
+      logo = document.createElement("img");
+      logo.className = "company-logo company-logo-small";
+      logo.src = shift.logoUrl;
+      logo.alt = "";
+    } else {
+      logo = document.createElement("span");
+      logo.className = "company-logo company-logo-small company-logo-initials";
+      logo.setAttribute("aria-hidden", "true");
+      logo.textContent = shift.initials;
+    }
+    title.insertBefore(logo, title.firstChild);
     var time = document.createElement("span");
     time.textContent = label(shift.start, shift.end);
     block.appendChild(title);

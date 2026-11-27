@@ -32,7 +32,7 @@
       <div class="fair-companies">
       {% for company in fair.companies.all %}
         <div class="fair-company">
-          <h3>{{ company.name }} <span class="muted">· {{ company.industry }}</span></h3>
+          <h3>{% include "jobs/_company_logo.html" with company=company decorative=True %}{{ company.name }} <span class="muted">· {{ company.industry }}</span></h3>
           {% if company.postings.all %}
             {# Höchstens 3 Stellen, damit die Liste auf dem Handy kurz bleibt (#102). #}
             <ul>
