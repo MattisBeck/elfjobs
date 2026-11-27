@@ -24,7 +24,7 @@ from .filters import (
 )
 from .geo import BERLIN_MITTE, haversine_km, parse_start
 from .models import Company, Fair, JobPosting
-from .travel import MAX_TRAVEL_REQUESTS, cached_travel_times, fetch_travel_times
+from .travel import MAX_TRAVEL_REQUESTS, apply_home_commutes, cached_travel_times, fetch_travel_times
 
 # Filter-Chips der Stellenliste: GET-Parameter "filter", mehrere kombinierbar.
 FILTER_CHIPS = {
@@ -132,6 +132,8 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
     if profile:
         lectures = list(profile.lectures.all())
         postings = list(postings)
+        # Fahrzeit vom Wohnort (#53) vor Passung, Lohn und Filtern setzen.
+        apply_home_commutes(profile, postings)
         for posting in postings:
             posting.fit = posting_fit(posting, lectures)
         plan_on = request.GET.get("plan") != "aus"
@@ -242,6 +244,7 @@ def job_detail(request, pk):
     # Passung der geöffneten Stelle für den Punkt am Tab „In meiner Woche“.
     profile = StudentProfile.objects.filter(user=request.user).first() if request.user.is_authenticated else None
     if profile:
+        apply_home_commutes(profile, [posting])
         posting.fit = posting_fit(posting, profile.lectures.all())
 
     # "Das bringst du mit": jede Anforderung eingeordnet (gelernt, kommt noch, nicht im Studium).

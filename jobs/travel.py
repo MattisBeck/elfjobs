@@ -7,6 +7,7 @@ nicht, fehlen die Einträge, und der Aufrufer bleibt bei der Luftlinie.
 """
 
 import json
+import math
 import logging
 from concurrent.futures import ThreadPoolExecutor, wait
 from datetime import datetime, timedelta
@@ -210,3 +211,52 @@ def fetch_travel_times(start, postings, budget=None):
         for posting_id in missing[destination]:
             times[posting_id] = minutes
     return times
+
+
+# Ohne gespeicherte ÖPNV-Zeit: Schätzung aus der Luftlinie (#53). Feste Minuten für Fußwege
+# und Warten, dazu Minuten pro km. Auf langen Strecken fährt man S-Bahn oder Regionalbahn,
+# deshalb kein fester Schnitt: 5 km ≈ 18 min, 26 km (Potsdam Hbf–Berlin-Mitte) ≈ 49 min.
+FALLBACK_BASE_MINUTES = 10
+FALLBACK_MINUTES_PER_KM = 1.5
+
+
+def home_commute_minutes(home, postings):
+    """Einfache Fahrzeit vom Wohnort zu jeder Stelle: {posting.id: Minuten}.
+
+    Erst die gespeicherte ÖPNV-Zeit (TravelTime, ohne API-Aufruf), sonst die Schätzung
+    aus der Luftlinie (FALLBACK_*). Remote-Stellen und Stellen ohne Ort fehlen im dict.
+    """
+    cached = cached_travel_times(home, postings)
+    minutes = {}
+    for posting in postings:
+        if posting.workplace == posting.Workplace.REMOTE or not posting.has_location:
+            continue
+        if cached.get(posting.id) is not None:
+            minutes[posting.id] = cached[posting.id]
+        else:
+            km = haversine_km(home[0], home[1], float(posting.latitude), float(posting.longitude))
+            minutes[posting.id] = math.ceil(FALLBACK_BASE_MINUTES + km * FALLBACK_MINUTES_PER_KM)
+    return minutes
+
+
+def apply_home_commutes(profile, postings):
+    """Setzt posting.home_commute_minutes für alle Stellen, wenn das Profil einen Wohnort hat.
+
+    JobPosting.one_way_commute_minutes (Lohn, Passung, Filter) nimmt dann diese Zeit.
+    """
+    if profile is None or profile.home is None:
+        return
+    minutes = home_commute_minutes(profile.home, postings)
+    for posting in postings:
+        if posting.id in minutes:
+            posting.home_commute_minutes = minutes[posting.id]
+
+
+def warm_home_commutes(profile, postings):
+    """Nach dem Speichern des Wohnorts: ÖPNV-Zeiten zu den nächsten Stellen holen (mit Zeitbudget)."""
+    home = profile.home
+    nearby = sorted(
+        (p for p in postings if p.has_location and p.workplace != p.Workplace.REMOTE),
+        key=lambda p: haversine_km(home[0], home[1], float(p.latitude), float(p.longitude)),
+    )
+    fetch_travel_times(home, nearby[:MAX_TRAVEL_REQUESTS])

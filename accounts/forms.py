@@ -103,6 +103,10 @@ class ProfileForm(forms.ModelForm):
         model = StudentProfile
         fields = ("study_program", "semester", "home_town", "courses")
         widgets = {"courses": forms.CheckboxSelectMultiple}
+        help_texts = {
+            "home_town": "Für die Fahrzeit zu den Stellen. Wir suchen den Ort bei OpenStreetMap (Nominatim), "
+            "z. B. „Potsdam-Babelsberg“ oder eine Straße.",
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -127,8 +127,22 @@ class JobPosting(models.Model):
         return trips
 
     @property
+    def one_way_commute_minutes(self):
+        """Einfache Fahrzeit in Minuten, remote 0.
+
+        Eingeloggt mit Wohnort setzt jobs/travel.py apply_home_commutes() die Fahrzeit vom
+        Wohnort (#53) als home_commute_minutes; sonst gilt die Annahme der Firma.
+        """
+        if self.workplace == self.Workplace.REMOTE:
+            return 0
+        home_minutes = getattr(self, "home_commute_minutes", None)
+        if home_minutes is not None:
+            return home_minutes
+        return self.company.commute_minutes
+
+    @property
     def commute_hours_per_week(self):
-        return Decimal(self.trips_per_week * 2 * self.company.commute_minutes) / 60
+        return Decimal(self.trips_per_week * 2 * self.one_way_commute_minutes) / 60
 
     @property
     def effective_wage(self):

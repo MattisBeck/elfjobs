@@ -110,12 +110,9 @@ def slider_settings(filters):
 def commute_minutes(posting):
     """Einfache Fahrzeit zur Stelle in Minuten, remote zählt als 0.
 
-    Vorerst die Annahme der Firma (Company.commute_minutes).
-    Wird mit #53 durch die Fahrzeit vom Wohnort ersetzt.
+    Vom Wohnort, wenn bekannt (#53), sonst die Annahme der Firma (JobPosting.one_way_commute_minutes).
     """
-    if posting.workplace == JobPosting.Workplace.REMOTE:
-        return 0
-    return posting.company.commute_minutes
+    return posting.one_way_commute_minutes
 
 
 def matches(posting, filters):
