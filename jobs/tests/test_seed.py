@@ -66,3 +66,20 @@ def test_seed_keeps_the_examples_from_the_design_spec():
     assert exists("Werkstudent*in Controlling", "Bauer", "onsite", "fixed", 10, "15.00")
     assert exists("Aushilfe Lager", "Holsten", "onsite", "flexible", 11, "14.00")
     assert exists("Werkstudent*in Softwareentwicklung", "Weihmann", "remote", "flexible", 11, "19.50")
+
+
+def test_every_seed_title_has_a_description():
+    from jobs.management.commands.seed import DESCRIPTIONS
+
+    titles = {title for rules in KINDS.values() for title in rules["titles"]}
+    assert titles == set(DESCRIPTIONS)
+
+
+@pytest.mark.django_db
+def test_seed_descriptions_match_the_posting():
+    """Beschreibungen (#154): Firmenname, Stunden und kein Fülltext."""
+    call_command("seed")
+
+    for posting in JobPosting.objects.select_related("company"):
+        assert posting.company.name in posting.description
+        assert f"{posting.hours_per_week} Stunden pro Woche" in posting.description

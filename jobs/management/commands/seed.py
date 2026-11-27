@@ -75,6 +75,106 @@ ONSITE_ONLY_TITLES = {
     "Event-Helfer*in", "Kassenaushilfe", "Flyer-Verteilung", "Promoter*in",
 }
 
+# Beschreibungen (#154): pro Titel ein passender Text, {company} wird eingesetzt.
+DESCRIPTIONS = {
+    "Werkstudent*in Data Analytics": (
+        "Bei {company} wertest du Verkaufs- und Nutzungsdaten aus und baust Dashboards, "
+        "mit denen das Team Entscheidungen trifft. Du schreibst SQL-Abfragen, bereitest "
+        "Daten in Python auf und stellst Ergebnisse kurz und verständlich vor. "
+        "Grundlagen in Statistik und erste Erfahrung mit Python oder SQL reichen für den Start."
+    ),
+    "Werkstudent*in Marketing": (
+        "Du unterstützt das Marketing von {company}: Social-Media-Beiträge planen, "
+        "Newsletter vorbereiten und auswerten, welche Kampagnen gut laufen. "
+        "Du schreibst gern, hast ein Gefühl für Bilder und bringst eigene Ideen ein."
+    ),
+    "Werkstudent*in Softwareentwicklung": (
+        "Im Entwicklungsteam von {company} arbeitest du an echten Features mit: "
+        "kleine Tickets umsetzen, Tests schreiben, im Code-Review lernen. "
+        "Du kennst eine Programmiersprache gut (z. B. Python, Java oder JavaScript) "
+        "und hast schon mit Git gearbeitet."
+    ),
+    "Werkstudent*in Controlling": (
+        "Du hilfst dem Controlling von {company} bei Monatsabschlüssen, Budgetplanung "
+        "und Berichten an die Geschäftsführung. Excel ist dein Werkzeug, Zahlen "
+        "prüfst du lieber zweimal. Ideal, wenn du BWL oder VWL studierst."
+    ),
+    "Werkstudent*in HR": (
+        "Bei {company} begleitest du Bewerbungsprozesse: Stellenanzeigen veröffentlichen, "
+        "Bewerbungen sichten, Gespräche koordinieren und neue Kolleg*innen beim Start "
+        "unterstützen. Du gehst offen auf Menschen zu und arbeitest sorgfältig mit "
+        "vertraulichen Daten."
+    ),
+    "Werkstudent*in IT-Support": (
+        "Du bist bei {company} erste Anlaufstelle, wenn Laptop, Drucker oder Passwort "
+        "streiken. Du richtest Geräte ein, beantwortest Tickets und erklärst Lösungen "
+        "geduldig. Technisches Interesse ist wichtiger als Erfahrung."
+    ),
+    "Werkstudent*in Vertrieb": (
+        "Im Vertrieb von {company} recherchierst du neue Kund*innen, pflegst das CRM "
+        "und bereitest Angebote und Termine vor. Du telefonierst gern und behältst "
+        "auch bei vielen Kontakten den Überblick."
+    ),
+    "Werkstudent*in Projektmanagement": (
+        "Du unterstützt die Projektleitung bei {company}: Zeitpläne pflegen, Meetings "
+        "vorbereiten und protokollieren, offene Punkte nachhalten. Du arbeitest "
+        "strukturiert und kommunizierst klar, auch mit mehreren Teams gleichzeitig."
+    ),
+    "Aushilfe Inventur": (
+        "{company} zählt den Bestand: Du erfasst Artikel mit dem Handscanner und "
+        "gleichst Mengen mit der Liste ab. Eine kurze Einweisung gibt es vor Ort, "
+        "Vorkenntnisse brauchst du keine. Gut, wenn du konzentriert und genau arbeitest."
+    ),
+    "Servicekraft Messecatering": (
+        "Auf Messen und Events von {company} gibst du Getränke und Snacks aus, "
+        "räumst Tische ab und hältst den Stand sauber. Freundliches Auftreten zählt "
+        "mehr als Erfahrung in der Gastro. Die Einsätze liegen oft am Wochenende."
+    ),
+    "Promoter*in": (
+        "Du stellst Produkte von {company} an Aktionsständen vor, sprichst Leute an "
+        "und verteilst Proben. Du gehst gern auf Fremde zu und bleibst auch nach dem "
+        "zehnten Nein freundlich. Eine kurze Schulung bekommst du vorher."
+    ),
+    "Aushilfe Lager": (
+        "Im Lager von {company} nimmst du Lieferungen an, kommissionierst Bestellungen "
+        "und packst Pakete für den Versand. Die Arbeit ist körperlich, dafür klar "
+        "planbar. Sicherheitsschuhe werden gestellt."
+    ),
+    "Event-Helfer*in": (
+        "Bei Veranstaltungen von {company} hilfst du beim Aufbau, am Einlass und an der "
+        "Garderobe und packst danach mit an. Du bist zuverlässig, behältst bei Trubel "
+        "die Ruhe und hast auch mal abends Zeit."
+    ),
+    "Kassenaushilfe": (
+        "Du sitzt an der Kasse von {company}, kassierst bar und mit Karte und hilfst "
+        "Kund*innen bei Fragen. Nach einer Einarbeitung arbeitest du selbstständig. "
+        "Wichtig sind Freundlichkeit und ein sicherer Umgang mit Geld."
+    ),
+    "Umfrage-Interviewer*in": (
+        "Für eine Studie von {company} führst du kurze Interviews, persönlich oder am "
+        "Telefon, und trägst die Antworten ins Tablet ein. Du sprichst klar, hörst gut "
+        "zu und hältst dich genau an den Fragebogen."
+    ),
+    "Flyer-Verteilung": (
+        "Du verteilst Flyer von {company} in einem festen Gebiet, in Briefkästen oder "
+        "an Passant*innen. Die Route bekommst du vorab, Zeit teilst du dir innerhalb "
+        "der Schicht selbst ein. Gut zu Fuß oder mit dem Rad solltest du sein."
+    ),
+}
+
+WORKPLACE_TEXT = {
+    JobPosting.Workplace.ONSITE: "vor Ort",
+    JobPosting.Workplace.HYBRID: "teils vor Ort, teils von zu Hause",
+    JobPosting.Workplace.REMOTE: "komplett von zu Hause",
+}
+
+
+def job_description(title, company, workplace, hours_per_week):
+    """Beschreibung einer Seed-Stelle (#154): Aufgaben zum Titel plus Umfang und Arbeitsort."""
+    text = DESCRIPTIONS[title].format(company=company.name)
+    return f"{text}\n\nUmfang: {hours_per_week} Stunden pro Woche, {WORKPLACE_TEXT[workplace]}."
+
+
 # Fahrzeiten der Firmen aus den Beispielen in docs/design.md, alle anderen zufällig 12–40 min.
 DESIGN_EXAMPLE_COMMUTES = {
     "Weihmann GbR": 18,
@@ -474,21 +574,21 @@ class Command(BaseCommand):
             # Issues verweisen auf konkrete Seed-Stellen (z. B. Promoter*in, Weihmann GbR).
             company = random.choice(companies)
             title = random.choice(rules["titles"])
-            description = fake.paragraph(nb_sentences=3)
             workplace = random.choice(JobPosting.Workplace.values)
             if title in ONSITE_ONLY_TITLES:
                 workplace = JobPosting.Workplace.ONSITE
             schedule = random.choice(JobPosting.Schedule.values)
             hourly_wage = max(random_wage(*rules["wage"]), MIN_WAGE)
+            hours_per_week = random.randint(*rules["hours"])
             posting = JobPosting.objects.create(
                 company=company,
                 title=title,
-                description=description,
+                description=job_description(title, company, workplace, hours_per_week),
                 kind=kind,
                 workplace=workplace,
                 schedule=schedule,
                 hourly_wage=hourly_wage,
-                hours_per_week=random.randint(*rules["hours"]),
+                hours_per_week=hours_per_week,
             )
             posting.tags.set(random.sample(tags, random.randint(0, 3)))
 
