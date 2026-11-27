@@ -32,11 +32,7 @@ def filtered_postings(request):
     """Stellen und Filter-Chips für die linke Spalte, gesteuert über ?filter=... und ?q=..."""
     active = [f for f in request.GET.getlist("filter") if f in FILTER_CHIPS]
 
-    postings = (
-        JobPosting.objects.select_related("company")
-        .prefetch_related("shifts")
-        .order_by("-hourly_wage", "title")
-    )
+    postings = JobPosting.objects.select_related("company").prefetch_related("shifts")
 
     # Werkstudent und Kurzjob zusammen zeigen beides, Remote schränkt zusätzlich ein.
     kinds = []
@@ -95,6 +91,8 @@ def filtered_postings(request):
         })
 
     filter_params = [("filter", f) for f in active] + search_params + plan_params
+    # Sortiert nach effektivem Stundenlohn (#12). Der wird in Python berechnet, nicht in der DB.
+    postings = sorted(postings, key=lambda posting: (-posting.effective_wage, posting.title))
     return postings, chips, filter_params
 
 

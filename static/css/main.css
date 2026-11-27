@@ -339,10 +339,15 @@ a {
   text-align: right;
 }
 
-.job-row-meta {
-  grid-column: 1 / -1;
+.job-row-meta,
+.job-row-gross {
   font-size: 13px;
   color: var(--muted);
+}
+
+.job-row-gross {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 /* Passung: Punkt und Text unter der Zeile (Farbe heißt Zustand, docs/design.md) */
@@ -560,25 +565,48 @@ a {
   text-align: right;
 }
 
-.wage-box {
+/* Lohnrechnung: vier Felder, effektiver Lohn hellblau */
+.wage-calc {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin-top: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--line);
+}
+
+.wage-field {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  margin-top: 16px;
-  padding: 16px;
-  border-radius: var(--radius-panel);
+  padding: 12px 14px;
+  background: var(--bg);
+}
+
+.wage-field-effective {
   background: var(--accent-wash);
 }
 
 .wage-label {
   font-size: 12px;
+  color: var(--muted);
+}
+
+.wage-field-effective .wage-label {
   color: var(--accent-ink);
 }
 
 .wage-value {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+.wage-note {
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .muted {

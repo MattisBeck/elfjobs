@@ -72,10 +72,25 @@
             </dl>
           </section>
 
-          {# Fahrzeit, effektiver Lohn und Monat kommen mit #12. #}
-          <section class="wage-box">
-            <span class="wage-label">Bruttolohn pro Stunde</span>
-            <span class="wage-value">{{ posting.hourly_wage }} €</span>
+          <section class="wage-calc" aria-label="Lohnrechnung">
+            <div class="wage-field">
+              <span class="wage-label">Bruttolohn pro Stunde</span>
+              <span class="wage-value">{{ posting.hourly_wage }} €</span>
+            </div>
+            <div class="wage-field">
+              <span class="wage-label">Fahrzeit pro Woche</span>
+              <span class="wage-value">{% if posting.trips_per_week %}{{ posting.commute_hours_per_week|floatformat:1 }} h{% else %}keine{% endif %}</span>
+              <span class="wage-note">{% if posting.trips_per_week %}{{ posting.trips_per_week }} × hin und zurück, je {{ posting.company.commute_minutes }} min{% else %}Remote{% endif %}</span>
+            </div>
+            <div class="wage-field wage-field-effective">
+              <span class="wage-label">Effektiver Stundenlohn</span>
+              <span class="wage-value">{{ posting.effective_wage }} €</span>
+            </div>
+            <div class="wage-field">
+              <span class="wage-label">Im Monat</span>
+              <span class="wage-value">≈ {{ posting.monthly_wage }} €</span>
+              <span class="wage-note">{% if posting.is_minijob %}unter{% else %}über{% endif %} der Minijob-Grenze (603 €)</span>
+            </div>
           </section>
         </aside>
       </div>
