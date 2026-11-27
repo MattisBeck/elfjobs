@@ -61,7 +61,7 @@ def test_seed_keeps_the_examples_from_the_design_spec():
             schedule=schedule, hours_per_week=hours, hourly_wage=Decimal(wage),
         ).exists()
 
-    assert exists("Promoter*in", "Weihmann", "hybrid", "fixed", 7, "16.00")
+    assert exists("Promoter*in", "Weihmann", "onsite", "fixed", 7, "16.00")
     assert exists("Werkstudent*in Controlling", "Bauer", "onsite", "fixed", 10, "15.00")
     assert exists("Aushilfe Lager", "Holsten", "onsite", "flexible", 11, "14.00")
     assert exists("Werkstudent*in Softwareentwicklung", "Weihmann", "remote", "flexible", 11, "19.50")

@@ -61,7 +61,7 @@ MIN_WAGE = Decimal("14.00")
 # Diese Jobs gehen nur vor Ort, alle anderen können auch hybrid oder remote sein.
 ONSITE_ONLY_TITLES = {
     "Aushilfe Inventur", "Servicekraft Messecatering", "Aushilfe Lager",
-    "Event-Helfer*in", "Kassenaushilfe", "Flyer-Verteilung",
+    "Event-Helfer*in", "Kassenaushilfe", "Flyer-Verteilung", "Promoter*in",
 }
 
 # Schichten der Stellen mit festen Zeiten: höchstens 4 h pro Schicht, meist nachmittags.
