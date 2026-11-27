@@ -394,7 +394,7 @@ def test_max_commute_on_map_uses_travel_minutes_when_sorted_by_travel(client, po
     # Nah: Firma sagt 10 min, ÖPNV 45 min. Fern: Firma sagt 45 min, ÖPNV 25 min.
     # Hybrid hat keine ÖPNV-Minuten und bleibt bei der Firmenfahrzeit (25 min).
     minutes = {postings["nah"].id: 45, postings["fern"].id: 25}
-    with patch("jobs.views.travel_times", return_value=minutes):
+    with patch("jobs.views.cached_travel_times", return_value=minutes):
         response = client.get(f"/jobs/karte/?{START}&sortierung=anreise&max_anreise=30")
 
     assert titles(response, "nearby") == ["Fern", "Hybrid"]
@@ -403,7 +403,7 @@ def test_max_commute_on_map_uses_travel_minutes_when_sorted_by_travel(client, po
 
 
 def test_max_commute_on_map_uses_company_time_without_travel_sorting(client, postings):
-    with patch("jobs.views.travel_times") as mock_travel_times:
+    with patch("jobs.views.cached_travel_times") as mock_travel_times:
         response = client.get(f"/jobs/karte/?{START}&max_anreise=30")
 
     assert mock_travel_times.call_count == 0
