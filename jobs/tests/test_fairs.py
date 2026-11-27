@@ -2,6 +2,7 @@ from datetime import date, timedelta
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.urls import reverse
 from django.utils import timezone
 
@@ -106,3 +107,11 @@ def test_header_links_to_fairs(client):
     content = client.get(reverse("job_list")).content.decode()
 
     assert f'href="{reverse("fair_list")}"' in content
+
+
+@pytest.mark.django_db
+def test_seed_lets_mia_attend_a_fair():
+    call_command("seed")
+
+    mia = get_user_model().objects.get(username="mia@student.hpi.uni-potsdam.de")
+    assert list(mia.fairs.values_list("name", flat=True)) == ["Jobmesse Potsdam 2027"]
