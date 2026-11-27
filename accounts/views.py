@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -12,13 +14,14 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.http import require_POST
 
-from jobs.models import JobPosting
+from jobs.models import JobPosting, Tag
 from jobs.travel import warm_home_commutes
+from jobs.views import FILTER_CHIPS
 
 from .cv import accept_cv_skills, cv_suggestions, sample_cv_path
+from .forms import CvSampleForm, NameForm, OnboardingSkillsForm, ProfileForm, SignupForm, set_profile_skills
 from .geocode import geocode
-from .forms import CvSampleForm, NameForm, ProfileForm, SignupForm
-from .models import StudentProfile
+from .models import ProfileSkill, StudentProfile
 
 
 def signup(request):
@@ -79,7 +82,9 @@ def confirm_email(request, uidb64, token):
     user.save(update_fields=["is_active"])
     login(request, user)
     messages.success(request, "Danke, deine Uni-Mail ist bestätigt. Willkommen bei elfjobs!")
-    return redirect("profile")
+    # Neue Konten gehen durchs Onboarding (#35). Die Kopfzeile zeigt den Weg zurück, bis es fertig ist.
+    request.session["onboarding"] = True
+    return redirect("onboarding_skills")
 
 
 @login_required
@@ -154,3 +159,46 @@ def cv_pdf(request):
     if path is None or not path.exists():
         raise Http404("Kein Lebenslauf gewählt.")
     return FileResponse(open(path, "rb"), content_type="application/pdf", filename="lebenslauf.pdf")
+
+
+# Onboarding nach der Registrierung (#35): drei Schritte, jeder überspringbar.
+
+
+@login_required
+def onboarding_skills(request):
+    """Schritt 1: Skills. Was aus den belegten Modulen kommt, steht schon fest."""
+    student, _ = StudentProfile.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        if "ueberspringen" in request.POST:
+            return redirect("onboarding_timetable")
+        form = OnboardingSkillsForm(request.POST)
+        if form.is_valid():
+            set_profile_skills(student, form.cleaned_data["skills"])
+            return redirect("onboarding_timetable")
+    else:
+        form = OnboardingSkillsForm(initial={
+            "skills": Tag.objects.filter(
+                profile_skills__profile=student, profile_skills__source=ProfileSkill.Source.PROFILE
+            )
+        })
+    return render(request, "accounts/onboarding_skills.html", {
+        "form": form,
+        "course_skills": Tag.objects.filter(courses__in=student.courses.all()).distinct().order_by("name"),
+    })
+
+
+@login_required
+def onboarding_timetable(request):
+    """Schritt 2: Stundenplan. Eingetragen wird auf der Stundenplan-Seite."""
+    return render(request, "accounts/onboarding_timetable.html")
+
+
+@login_required
+def onboarding_kinds(request):
+    """Schritt 3: Art des Jobs. Danach die Stellenliste mit diesen Filtern."""
+    if request.method == "POST":
+        request.session.pop("onboarding", None)
+        chosen = [] if "ueberspringen" in request.POST else request.POST.getlist("filter")
+        query = urlencode([("filter", key) for key in FILTER_CHIPS if key in chosen])
+        return redirect(reverse("job_list") + (f"?{query}" if query else ""))
+    return render(request, "accounts/onboarding_kinds.html", {"chips": FILTER_CHIPS})

@@ -53,7 +53,7 @@ def test_valid_link_activates_and_logs_in(client, signed_up, mailoutbox):
     response = client.get(confirm_path(mailoutbox[0]))
 
     assert response.status_code == 302
-    assert response.url == "/profil/"
+    assert response.url == "/willkommen/"  # Onboarding (#35)
     signed_up.refresh_from_db()
     assert signed_up.is_active
     assert client.get("/profil/").status_code == 200

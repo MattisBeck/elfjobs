@@ -50,6 +50,10 @@
   </header>
 
   <main>
+    {# Onboarding (#35): Wer zwischendurch den Stundenplan einträgt, findet hier zurück. #}
+    {% if request.session.onboarding and "onboarding" not in request.resolver_match.url_name %}
+      <p class="onboarding-hint"><a href="{% url 'onboarding_kinds' %}">Weiter mit dem Onboarding: Schritt 3 von 3 →</a></p>
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
 </body>
