@@ -427,6 +427,17 @@ a {
   color: var(--muted);
 }
 
+/* Umschalter „Passt am besten · Effektiver Lohn“ (#42). */
+.sort-links a {
+  color: var(--muted);
+}
+
+.sort-links a.is-active {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
 .job-list-meta strong {
   color: var(--ink);
   font-weight: 600;
