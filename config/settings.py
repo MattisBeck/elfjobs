@@ -6,6 +6,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Alle Einstellungen kommen aus Umgebungsvariablen (siehe .env).
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 DEBUG = os.environ.get("DJANGO_DEBUG", "0") == "1"
+# Demo-Login (#148): Anmelden ohne Passwort per Auswahl. Nur für Vorführungen, in Produktion aus (Standard: nur bei DEBUG an).
+DEMO_LOGIN = os.environ.get("DEMO_LOGIN", "1" if DEBUG else "0") == "1"
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 INSTALLED_APPS = [

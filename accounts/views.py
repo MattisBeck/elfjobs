@@ -7,18 +7,20 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
+from django.conf import settings
 from django.http import FileResponse, Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.http import url_has_allowed_host_and_scheme, urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.http import require_POST
 
 from jobs.models import JobPosting, Tag
 from jobs.travel import warm_home_commutes
 from jobs.views import FILTER_CHIPS
 
+from .demo import demo_users
 from .cv import accept_cv_skills, cv_path, cv_suggestions
 from .forms import CvSampleForm, CvUploadForm, NameForm, OnboardingSkillsForm, ProfileForm, SignupForm, set_profile_skills
 from .forms import normalize_email
@@ -235,3 +237,24 @@ def onboarding_kinds(request):
         query = urlencode([("filter", key) for key in FILTER_CHIPS if key in chosen])
         return redirect(reverse("job_list") + (f"?{query}" if query else ""))
     return render(request, "accounts/onboarding_kinds.html", {"chips": FILTER_CHIPS})
+
+
+@require_POST
+def demo_login(request):
+    """Anmelden ohne Passwort (#148), nur mit DEMO_LOGIN. kind trennt Studierende von Firmen."""
+    if not settings.DEMO_LOGIN:
+        raise Http404
+    kind = request.POST.get("kind")
+    user_id = request.POST.get("user_id", "")
+    if kind not in ("student", "company") or not user_id.isdigit():
+        raise Http404
+    user = next((u for u in demo_users(kind) if u.pk == int(user_id)), None)
+    if user is None:
+        raise Http404
+    login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+    if kind == "company":
+        return redirect("company_home")
+    next_url = request.POST.get("next", "")
+    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+        return redirect(next_url)
+    return redirect(settings.LOGIN_REDIRECT_URL)

@@ -1,0 +1,13 @@
+{% if enabled and options %}
+<form method="post" action="{% url 'demo_login' %}" class="form demo-login">
+  {% csrf_token %}
+  <h2>Demo-Login</h2>
+  <p class="muted">Nur für Vorführungen: ohne Passwort anmelden.</p>
+  <input type="hidden" name="kind" value="{{ kind }}">
+  <input type="hidden" name="next" value="{{ next }}">
+  <select name="user_id" aria-label="Demo-Konto">
+    {% for pk, label in options %}<option value="{{ pk }}">{{ label }}</option>{% endfor %}
+  </select>
+  <button type="submit" class="button">Als Demo-Konto anmelden</button>
+</form>
+{% endif %}
