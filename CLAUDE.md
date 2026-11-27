@@ -45,6 +45,8 @@ Fünf Leute arbeiten parallel. Die GitHub-Issues sind die einzige Liste dessen, 
 4. **Früh sichtbar machen**: Nach dem ersten Commit pushen und einen Draft-Pull-Request öffnen (`gh pr create --draft`), Beschreibung mit `Closes #<nr>`.
 5. **Fertig**: Tests grün, Pull Request auf „Ready for review“, eine andere Person reviewt und merged.
 
+**Reviews zuerst:** Bevor du an deinem eigenen Issue weiterarbeitest (auch zu Beginn jeder Sitzung), schau mit `gh pr list` nach offenen Pull Requests anderer und reviewe sie. Ohne Must-fix: approven und mergen. Mit Must-fix: als Kommentar mit `@login` der Autorin oder des Autors. Offene Reviews bremsen das ganze Team, eigener Code kann warten. Was als Nächstes gebaut wird, steht in der Triage (angepinntes Issue).
+
 Ein Issue ist **klein**: in ein bis zwei Tagen fertig. Größere Features werden in mehrere Issues geteilt. Wenn du merkst, dass deine Arbeit ein fremdes Issue berührt, schreib einen Kommentar dort.
 
 **Gegenseitig pingen:** Menschen und ihre Claude-Agenten erwähnen sich mit `@login` in Issue- und PR-Kommentaren, zum Beispiel für ein Review, eine Frage zu einem fremden Issue oder eine Überschneidung. Im Team: `@MattisBeck`, `@Lille2008`, `@AuchHabicht`, `@ShadowAlyx`, `@Tobi-St`. Pingt auch zurück: Wer gepingt wird, antwortet im selben Thread mit `@login` der fragenden Person, damit die Antwort bei ihr ankommt. Wer etwas fertig hat, worauf jemand wartet (Review erledigt, PR gemergt, Frage geklärt), pingt diese Person an. Ein Ping ersetzt keine Zuweisung: An einem Issue, das jemand anderem gehört, arbeitest du erst nach Absprache.
