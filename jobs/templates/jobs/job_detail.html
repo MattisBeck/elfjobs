@@ -23,9 +23,18 @@
           {% if verdict.detail %}<p class="fit-badge-detail">{{ verdict.detail }}</p>{% endif %}
         {% endif %}
       </div>
-      {# Merken (#13) und Bewerben (#14) bekommen ihre Funktion mit eigenen Issues. #}
+      {# Bewerben (#14) bekommt seine Funktion mit einem eigenen Issue. #}
       <div class="job-actions">
-        <button type="button" class="button">Merken</button>
+        {# Merken (#13): nur Studierende, anonym führt der Knopf zum Login. Erneuter Klick entfernt. #}
+        {% if can_save %}
+          <form class="save-form" method="post" action="{% url 'job_save' posting.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="button" aria-pressed="{% if is_saved %}true{% else %}false{% endif %}">{% if is_saved %}Gemerkt{% else %}Merken{% endif %}</button>
+          </form>
+        {% elif not user.is_authenticated %}
+          <a class="button" href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">Merken</a>
+        {% endif %}
         <button type="button" class="button button-primary">Mit Profil bewerben</button>
       </div>
     </header>
@@ -38,6 +47,9 @@
     {% if view == "woche" %}
       {# Tab „In meiner Woche“ (#10), Daten aus timetable/week.py #}
       <section class="panel week-panel">
+        {% for message in messages %}
+          <p class="notice">{{ message }}</p>
+        {% endfor %}
         <header class="week-head">
           {% if posting.fit %}
             <span class="fit-pill fit-{{ posting.fit.status }}"><span class="fit-dot" aria-hidden="true"></span>{{ posting.fit.text }}</span>
@@ -50,9 +62,13 @@
             <li><span class="legend-swatch legend-lecture" aria-hidden="true"></span>Vorlesung</li>
             <li><span class="legend-swatch legend-shift" aria-hidden="true"></span>Schicht</li>
             <li><span class="legend-swatch legend-conflict" aria-hidden="true"></span>Konflikt</li>
+            {% if planning %}
+              <li><span class="legend-swatch legend-own" aria-hidden="true"></span>Deine Schicht</li>
+              <li><span class="legend-swatch legend-free" aria-hidden="true"></span>frei</li>
+            {% endif %}
           </ul>
         </header>
-        {% if posting.schedule == "flexible" %}
+        {% if posting.schedule == "flexible" and not planning %}
           <p class="muted">Flexible Zeiten: Du legst die Schichten selbst in deine freien Blöcke.</p>
         {% endif %}
         <div class="week">
@@ -64,14 +80,47 @@
               <h3 class="week-day-label">{{ day.label }}</h3>
               <div class="week-track">
                 {% for block in day.blocks %}
-                  <div class="week-block week-{{ block.kind }}" style="top: {{ block.top }}%; height: {{ block.height }}%">
-                    <strong>{{ block.label }}</strong> <span>{{ block.time }}</span>
-                  </div>
+                  {% if block.kind == "free" %}
+                    <a class="week-block week-free" href="{{ week_url }}&amp;frei={{ block.key }}#schicht-planen" style="top: {{ block.top }}%; height: {{ block.height }}%" aria-label="Freier Block {{ day.label }} {{ block.time }}: Schicht anlegen">
+                      <strong>{{ block.label }}</strong> <span>{{ block.time }}</span>
+                    </a>
+                  {% elif block.kind == "own" %}
+                    <form class="week-block week-own" method="post" action="{% url 'planned_shift_delete' posting.pk block.id %}" style="top: {{ block.top }}%; height: {{ block.height }}%">
+                      {% csrf_token %}
+                      <button type="submit" aria-label="Deine Schicht {{ day.label }} {{ block.time }} entfernen">
+                        <strong>{{ block.label }}</strong> <span>{{ block.time }}</span>
+                      </button>
+                    </form>
+                  {% else %}
+                    <div class="week-block week-{{ block.kind }}" style="top: {{ block.top }}%; height: {{ block.height }}%">
+                      <strong>{{ block.label }}</strong> <span>{{ block.time }}</span>
+                    </div>
+                  {% endif %}
                 {% endfor %}
               </div>
             </section>
           {% endfor %}
         </div>
+        {% if planning %}
+          {# Eigene Schichten bei flexiblen Stellen (#11) #}
+          <div class="plan-hint">
+            <p>Flexible Zeiten: Tippe auf einen freien Block, dann legst du dort eine eigene Schicht an. Tippe auf deine Schicht, um sie wieder zu entfernen.</p>
+            <strong>{{ planning.hours|floatformat:"-1" }} von {{ posting.hours_per_week }} h verplant</strong>
+          </div>
+          {% if planning.form %}
+            <form id="schicht-planen" class="plan-form" method="post" action="{% url 'planned_shift_add' posting.pk %}">
+              {% csrf_token %}
+              <h3>Schicht im freien Block {{ planning.block }}</h3>
+              {{ planning.form.weekday }}
+              <label>{{ planning.form.start.label }} {{ planning.form.start }}</label>
+              <label>{{ planning.form.end.label }} {{ planning.form.end }}</label>
+              <button type="submit" class="button button-primary">Schicht anlegen</button>
+              <a href="{{ week_url }}">Abbrechen</a>
+            </form>
+          {% elif planning.block %}
+            <p class="muted">Alle {{ posting.hours_per_week }} h sind verplant. Entferne eine Schicht, um sie zu verschieben.</p>
+          {% endif %}
+        {% endif %}
       </section>
     {% else %}
       <div class="details-grid">
