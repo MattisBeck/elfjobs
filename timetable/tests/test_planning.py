@@ -213,19 +213,25 @@ def test_unknown_free_block_shows_no_form(client, posting, profile):
 
 
 @pytest.mark.django_db
-def test_seed_gives_mia_one_own_shift_that_fits_her_week():
+def test_seed_gives_mia_two_own_shifts_one_fits_and_one_collides():
     from django.core.management import call_command
 
     from jobs.management.commands.seed import DEMO_EMAIL
+    from timetable.conflicts import shift_conflicts
 
     call_command("seed")
     call_command("seed")
 
     mia = StudentProfile.objects.get(user__username=DEMO_EMAIL)
-    shift = mia.planned_shifts.get()
-    assert shift.posting.schedule == "flexible"
+    fits, collides = mia.planned_shifts.order_by("-weekday")  # Di 15–18, Mo 13–16
+    assert fits.posting.schedule == "flexible"
     lectures = list(mia.lectures.all())
     assert any(
-        block.weekday == shift.weekday and block.start <= shift.start and shift.end <= block.end
+        block.weekday == fits.weekday and block.start <= fits.start and fits.end <= block.end
         for block in free_blocks(lectures)
     )
+    # Die zweite Schicht zeigt in der Demo den Konflikt (#140).
+    shifts = list(mia.planned_shifts.select_related("posting__company"))
+    conflicts = shift_conflicts(shifts, lectures)
+    assert list(conflicts) == [collides.pk]
+    assert "kollidiert mit Programmiertechnik I" in conflicts[collides.pk]

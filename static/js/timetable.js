@@ -28,6 +28,9 @@
     free: data.free.map(fromJson),
     layout: data.layout, // Spalten pro Termin-ID, vom Server (#135)
   };
+  var shifts = (data.shifts || []).map(function (item) {
+    return Object.assign(fromJson(item), { company: item.company, url: item.url, conflict: item.conflict });
+  });
   var urls = data.urls;
   var csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
   var week = editor.querySelector(".tt-week");
@@ -124,6 +127,9 @@
       state.lectures.filter(byDay(weekday)).forEach(function (lecture) {
         track.appendChild(blockElement(lecture));
       });
+      shifts.filter(byDay(weekday)).forEach(function (shift) {
+        track.appendChild(shiftElement(shift));
+      });
       day.appendChild(track);
       week.appendChild(day);
     }
@@ -185,6 +191,30 @@
         block.setAttribute("aria-label", block.getAttribute("aria-label") + " " + hint + ".");
       }
     }
+    return block;
+  }
+
+  // Eigene Schicht (#140): Link zur Stelle, nicht ziehbar. Konflikte rot mit Text.
+  function shiftElement(shift) {
+    var block = document.createElement("a");
+    block.className = "week-block tt-job " + (shift.conflict ? "week-conflict tt-job-conflict" : "week-shift");
+    block.href = shift.url;
+    var text = shift.title + " (" + shift.company + "), " + DAY_NAMES[shift.weekday] + " " +
+      label(shift.start, shift.end) + (shift.conflict ? ", " + shift.conflict : "");
+    block.setAttribute("aria-label", text);
+    block.title = text;
+    var title = document.createElement("strong");
+    title.textContent = shift.title;
+    var time = document.createElement("span");
+    time.textContent = label(shift.start, shift.end);
+    block.appendChild(title);
+    block.appendChild(time);
+    if (shift.conflict) {
+      var conflict = document.createElement("span");
+      conflict.textContent = shift.conflict;
+      block.appendChild(conflict);
+    }
+    place(block, shift.start, shift.end);
     return block;
   }
 
@@ -397,6 +427,7 @@
 
   week.addEventListener("pointerdown", function (event) {
     if (event.button !== 0) return;
+    if (event.target.closest(".tt-job")) return; // Schicht: Link zur Stelle, kein neuer Termin
     var track = event.target.closest(".tt-track");
     if (!track) return;
     var block = event.target.closest(".tt-block");

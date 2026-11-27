@@ -87,6 +87,8 @@ a {
 .main-nav {
   display: flex;
   gap: 4px;
+  overflow-x: auto; /* fünf Einträge passen auf dem Handy nicht immer, dann scrollt nur die Navigation (#140) */
+  scrollbar-width: none;
 }
 
 .main-nav a,
@@ -2093,6 +2095,67 @@ a.button {
   border: 1.5px dashed var(--accent);
   background: var(--accent-soft);
   color: var(--accent-ink);
+}
+
+/* Eigene Schichten im Stundenplan (#140): Link zur Stelle, nicht ziehbar, bei Konflikt rot */
+.tt-job {
+  z-index: 1;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.week-block.tt-job strong,
+.week-block.tt-job span {
+  color: inherit;
+}
+
+/* Konfliktschicht rückt nach rechts, damit die Vorlesung links daneben sichtbar bleibt */
+.tt-job-conflict {
+  left: 28%;
+}
+
+.tt-job:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.shift-conflicts {
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  border: 1px solid var(--conflict);
+  border-radius: var(--radius-panel);
+}
+
+.shift-conflicts h2 {
+  margin: 0 0 var(--space-2);
+  font-size: 14px;
+  color: var(--conflict);
+}
+
+.shift-conflicts ul {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 13px;
+}
+
+.shift-row .lecture-title::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--shift);
+}
+
+.shift-row-conflict .lecture-title::before {
+  background: var(--conflict);
+}
+
+.shift-conflict-text {
+  display: block;
+  color: var(--conflict);
+  font-size: 13px;
 }
 
 /* Unterer Rand zum Verlängern */

@@ -284,6 +284,8 @@ def create_demo_student(password):
         schedule=JobPosting.Schedule.FLEXIBLE, workplace=JobPosting.Workplace.ONSITE, hours_per_week__gte=3
     ).order_by("id").first()
     PlannedShift.objects.create(profile=profile, posting=flexible, weekday=1, start=time(15), end=time(18))
+    # Eine zweite Schicht mit Konflikt (#140): Mo 13–16 Uhr überschneidet Programmiertechnik I (13:30–15 Uhr).
+    PlannedShift.objects.create(profile=profile, posting=flexible, weekday=0, start=time(13), end=time(16))
 
 # Demo-Studierende (#79): studi-001@… bis studi-500@…, alle mit DEMO_PASSWORD.
 STUDENT_EMAIL = "studi-{number:03d}@student.hpi.uni-potsdam.de"

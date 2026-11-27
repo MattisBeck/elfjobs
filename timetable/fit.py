@@ -20,21 +20,27 @@ class Fit:
     text: str
 
 
-def shift_collides(shift, lectures, buffer_minutes):
-    """Überschneidet die Schicht eine Vorlesung desselben Tages (Vorlesung um den Puffer verlängert)?
+def colliding_lectures(shift, lectures, buffer_minutes):
+    """Alle Vorlesungen desselben Tages, die die Schicht überschneiden (Vorlesung um den Puffer verlängert).
 
     Wer genau dann anfängt, wenn die verlängerte Vorlesung endet (oder genau dann
     aufhört, wenn sie beginnt), kollidiert nicht: dafür „<“ statt „<=“.
     """
     start, end = to_minutes(shift.start), to_minutes(shift.end)
+    found = []
     for lecture in lectures:
         if lecture.weekday != shift.weekday:
             continue
         lecture_start = to_minutes(lecture.start) - buffer_minutes
         lecture_end = to_minutes(lecture.end) + buffer_minutes
         if start < lecture_end and lecture_start < end:
-            return True
-    return False
+            found.append(lecture)
+    return found
+
+
+def shift_collides(shift, lectures, buffer_minutes):
+    """Überschneidet die Schicht eine Vorlesung desselben Tages (mit Puffer)?"""
+    return bool(colliding_lectures(shift, lectures, buffer_minutes))
 
 
 def posting_fit(posting, lectures):
