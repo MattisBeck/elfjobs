@@ -2109,11 +2109,6 @@ a.button {
   color: inherit;
 }
 
-/* Konfliktschicht rückt nach rechts, damit die Vorlesung links daneben sichtbar bleibt */
-.tt-job-conflict {
-  left: 28%;
-}
-
 .tt-job:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;

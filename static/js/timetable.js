@@ -27,6 +27,7 @@
     lectures: data.lectures.map(fromJson),
     free: data.free.map(fromJson),
     layout: data.layout, // Spalten pro Termin-ID, vom Server (#135)
+    shiftLayout: data.shift_layout, // Spalten pro Schicht-ID, eigenes Dict (#146)
   };
   var shifts = (data.shifts || []).map(function (item) {
     return Object.assign(fromJson(item), { company: item.company, url: item.url, conflict: item.conflict });
@@ -197,7 +198,7 @@
   // Eigene Schicht (#140): Link zur Stelle, nicht ziehbar. Konflikte rot mit Text.
   function shiftElement(shift) {
     var block = document.createElement("a");
-    block.className = "week-block tt-job " + (shift.conflict ? "week-conflict tt-job-conflict" : "week-shift");
+    block.className = "week-block tt-job " + (shift.conflict ? "week-conflict" : "week-shift");
     block.href = shift.url;
     var text = shift.title + " (" + shift.company + "), " + DAY_NAMES[shift.weekday] + " " +
       label(shift.start, shift.end) + (shift.conflict ? ", " + shift.conflict : "");
@@ -215,6 +216,12 @@
       block.appendChild(conflict);
     }
     place(block, shift.start, shift.end);
+    // Kollidiert die Schicht mit einer Vorlesung, steht sie daneben (#146), Spalten vom Server.
+    var layout = state.shiftLayout[shift.id];
+    if (layout) {
+      block.style.setProperty("--left", layout.left + "%");
+      block.style.setProperty("--width", layout.width + "%");
+    }
     return block;
   }
 
@@ -263,6 +270,7 @@
   function applyResponse(json) {
     state.free = json.free.map(fromJson);
     state.layout = json.layout;
+    state.shiftLayout = json.shift_layout;
     freeHours.textContent = json.free_hours.toLocaleString("de-DE", { maximumFractionDigits: 1 }) + " h";
   }
 
