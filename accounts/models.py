@@ -6,10 +6,24 @@ class StudentProfile(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile", verbose_name="Konto"
     )
-    study_program = models.CharField("Studiengang", max_length=100, blank=True)  # z. B. "ITSE"
+    study_program = models.ForeignKey(
+        "studies.StudyProgram",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="students",
+        verbose_name="Studiengang",
+    )
     semester = models.PositiveSmallIntegerField("Semester", null=True, blank=True)
     home_town = models.CharField("Wohnort", max_length=100, blank=True)
-    skills = models.ManyToManyField("jobs.Tag", related_name="students", blank=True, verbose_name="Skills")
+    # Selbst eingetragene Skills mit Herkunft (siehe ProfileSkill).
+    # Skills aus Modulen werden nicht gespeichert, sondern aus courses abgeleitet (studies/skills.py).
+    skills = models.ManyToManyField(
+        "jobs.Tag", through="ProfileSkill", related_name="students", blank=True, verbose_name="Skills"
+    )
+    courses = models.ManyToManyField(
+        "studies.Course", related_name="students", blank=True, verbose_name="Belegte Module"
+    )
 
     class Meta:
         verbose_name = "Studi-Profil"
@@ -21,7 +35,33 @@ class StudentProfile(models.Model):
     @property
     def summary(self):
         """Kurzzeile für den Profil-Knopf, z. B. „ITSE · 1. Semester“."""
-        parts = [self.study_program] if self.study_program else []
+        parts = [self.study_program.abbreviation] if self.study_program else []
         if self.semester:
             parts.append(f"{self.semester}. Semester")
         return " · ".join(parts)
+
+
+class ProfileSkill(models.Model):
+    """Ein Skill, den die Studentin selbst angegeben hat, mit Herkunft."""
+
+    class Source(models.TextChoices):
+        PROFILE = "profil", "aus deinem Profil"
+        CV = "lebenslauf", "aus deinem Lebenslauf"  # wird mit #50 befüllt
+
+    profile = models.ForeignKey(
+        StudentProfile, on_delete=models.CASCADE, related_name="profile_skills", verbose_name="Studi-Profil"
+    )
+    tag = models.ForeignKey(
+        "jobs.Tag", on_delete=models.CASCADE, related_name="profile_skills", verbose_name="Skill"
+    )
+    source = models.CharField("Quelle", max_length=20, choices=Source.choices, default=Source.PROFILE)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["profile", "tag"], name="unique_skill_per_profile"),
+        ]
+        verbose_name = "Skill im Profil"
+        verbose_name_plural = "Skills im Profil"
+
+    def __str__(self):
+        return f"{self.tag} ({self.get_source_display()})"

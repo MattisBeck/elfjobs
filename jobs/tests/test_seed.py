@@ -3,7 +3,7 @@ from decimal import Decimal
 import pytest
 from django.core.management import call_command
 
-from jobs.management.commands.seed import KINDS, ONSITE_ONLY_TITLES
+from jobs.management.commands.seed import KINDS, ONSITE_ONLY_TITLES, TAGS
 from jobs.models import Company, Fair, JobPosting, Tag
 
 
@@ -14,7 +14,8 @@ def test_seed_can_run_twice_and_creates_demo_data():
 
     assert Fair.objects.count() == 5
     assert Company.objects.count() == 20
-    assert Tag.objects.count() == 15
+    # Dazu kommen die Skills aus den Lehrplänen (#30).
+    assert Tag.objects.filter(name__in=TAGS).count() == 15
     assert JobPosting.objects.count() == 200
 
 
