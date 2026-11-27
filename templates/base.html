@@ -18,8 +18,13 @@
     <nav class="main-nav" aria-label="Hauptnavigation">
       <a href="{% url 'job_list' %}"{% if request.resolver_match.url_name == "job_list" or request.resolver_match.url_name == "job_detail" %} aria-current="page"{% endif %}>Jobs</a>
       <a href="{% url 'job_map' %}"{% if request.resolver_match.url_name == "job_map" %} aria-current="page"{% endif %}>Karte</a>
-      {# Gemerkt bekommt seine Seite mit #13. #}
-      <span aria-disabled="true">Gemerkt</span>
+      {# Gemerkte Stellen (#13): Link nur für eingeloggte Studierende (Zähler aus jobs/context_processors.py), #}
+      {# ohne Login ausgegraut, Firmenkonten merken nicht. #}
+      {% if saved_count is not None %}
+        <a href="{% url 'saved_list' %}"{% if request.resolver_match.url_name == "saved_list" %} aria-current="page"{% endif %}>Gemerkt{% if saved_count %} · {{ saved_count }}{% endif %}</a>
+      {% elif not user.is_authenticated %}
+        <span aria-disabled="true">Gemerkt</span>
+      {% endif %}
       <a href="{% url 'fair_list' %}"{% if request.resolver_match.url_name == "fair_list" %} aria-current="page"{% endif %}>Messen</a>
     </nav>
 

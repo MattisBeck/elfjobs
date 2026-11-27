@@ -691,6 +691,11 @@ a {
   gap: 8px;
 }
 
+/* Das Formular um „Merken“ (#13) soll das Flex-Layout der Knöpfe nicht stören. */
+.save-form {
+  display: contents;
+}
+
 .button {
   min-height: 38px;
   padding: 0 16px;
