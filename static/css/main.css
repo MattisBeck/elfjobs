@@ -794,6 +794,15 @@ a {
   color: var(--muted);
 }
 
+/* Umschalter Entfernung | Anreisedauer (#22) */
+.sort-chips {
+  margin-top: 12px;
+}
+
+.travel-hint {
+  color: var(--ink-2);
+}
+
 .map-section-heading {
   margin: 24px 0 8px;
   font-size: 14px;

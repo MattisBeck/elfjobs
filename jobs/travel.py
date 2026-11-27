@@ -66,30 +66,42 @@ def _journey_minutes(journey):
     return round(duration.total_seconds() / 60)
 
 
+def _lookup(start, destination, ask_api=True):
+    """Anreise in Minuten plus Angabe, ob die API geantwortet hat: (Minuten, ok).
+
+    ok ist False bei Timeout oder API-Fehler, nicht bei "keine Verbindung".
+    Mit ask_api=False wird nur im Cache nachgesehen.
+    """
+    key = _cache_key(start, destination)
+    cached = cache.get(key, NOT_CACHED)
+    if cached is not NOT_CACHED:
+        return cached, True
+    if not ask_api:
+        return None, False
+
+    try:
+        journeys = _fetch_journeys(start, destination)
+        if not journeys:
+            cache.set(key, None, NO_CONNECTION_CACHE_SECONDS)
+            return None, True
+        minutes = _journey_minutes(journeys[0])
+    except (URLError, OSError, ValueError, KeyError, IndexError, TypeError) as error:
+        # Timeout, HTTP-Fehler, kaputtes JSON oder unerwartetes Format.
+        # Nicht cachen, beim nächsten Mal noch einmal versuchen.
+        logger.warning("Anreise-API nicht erreichbar: %s", error)
+        return None, False
+
+    cache.set(key, minutes, CACHE_SECONDS)
+    return minutes, True
+
+
 def travel_minutes(start, destination):
     """Anreise in ganzen Minuten von start nach destination, je (lat, lon).
 
     Gibt None zurück, wenn es keine Verbindung gibt oder die API nicht
     antwortet. Wirft nie eine Exception.
     """
-    key = _cache_key(start, destination)
-    cached = cache.get(key, NOT_CACHED)
-    if cached is not NOT_CACHED:
-        return cached
-
-    try:
-        journeys = _fetch_journeys(start, destination)
-        if not journeys:
-            cache.set(key, None, NO_CONNECTION_CACHE_SECONDS)
-            return None
-        minutes = _journey_minutes(journeys[0])
-    except (URLError, OSError, ValueError, KeyError, IndexError, TypeError) as error:
-        # Timeout, HTTP-Fehler, kaputtes JSON oder unerwartetes Format.
-        # Nicht cachen, beim nächsten Mal noch einmal versuchen.
-        logger.warning("Anreise-API nicht erreichbar: %s", error)
-        return None
-
-    cache.set(key, minutes, CACHE_SECONDS)
+    minutes, _ok = _lookup(start, destination)
     return minutes
 
 
@@ -98,9 +110,14 @@ def travel_times(start, postings, limit=MAX_TRAVEL_REQUESTS):
 
     Der Aufrufer übergibt die Stellen nach Luftlinie sortiert. Ergebnis:
     {posting.id: Minuten}. Stellen ohne Ergebnis fehlen im dict.
+
+    Nach dem ersten Fehler oder Timeout wird die API nicht mehr gefragt,
+    damit die Seite bei hängender API nicht `limit` Timeouts lang wartet.
+    Ergebnisse aus dem Cache werden weiter genutzt.
     """
     times = {}
     asked = 0
+    api_ok = True
     for posting in postings:
         if asked >= limit:
             break
@@ -108,7 +125,9 @@ def travel_times(start, postings, limit=MAX_TRAVEL_REQUESTS):
             continue
         asked += 1
         destination = (float(posting.latitude), float(posting.longitude))
-        minutes = travel_minutes(start, destination)
+        minutes, ok = _lookup(start, destination, ask_api=api_ok)
+        if not ok:
+            api_ok = False
         if minutes is not None:
             times[posting.id] = minutes
     return times

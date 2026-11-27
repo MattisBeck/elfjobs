@@ -193,3 +193,36 @@ def test_travel_times_leaves_out_failed_postings(mock_urlopen):
     mock_urlopen.side_effect = URLError("no network")
 
     assert travel_times(HAUPTBAHNHOF, [located_posting(1)]) == {}
+
+
+@patch("jobs.travel.urlopen")
+def test_travel_times_stops_asking_after_first_error(mock_urlopen):
+    mock_urlopen.side_effect = TimeoutError("timed out")
+    postings = [located_posting(id) for id in range(1, 6)]
+
+    assert travel_times(HAUPTBAHNHOF, postings) == {}
+    # Nur ein Timeout, nicht fünf.
+    assert mock_urlopen.call_count == 1
+
+
+@patch("jobs.travel.urlopen")
+def test_travel_times_uses_cache_after_error(mock_urlopen):
+    api_answers(mock_urlopen, fixture_body())
+    travel_times(HAUPTBAHNHOF, [located_posting(3)])
+    mock_urlopen.reset_mock()
+    mock_urlopen.side_effect = URLError("no network")
+
+    times = travel_times(HAUPTBAHNHOF, [located_posting(1), located_posting(2), located_posting(3)])
+
+    # Stelle 1 scheitert, Stelle 2 wird nicht mehr gefragt, Stelle 3 kommt aus dem Cache.
+    assert times == {3: 35}
+    assert mock_urlopen.call_count == 1
+
+
+@patch("jobs.travel.urlopen")
+def test_no_connection_does_not_stop_asking(mock_urlopen):
+    api_answers(mock_urlopen, b'{"journeys": []}')
+
+    travel_times(HAUPTBAHNHOF, [located_posting(1), located_posting(2)])
+
+    assert mock_urlopen.call_count == 2

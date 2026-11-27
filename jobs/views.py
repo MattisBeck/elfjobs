@@ -10,6 +10,7 @@ from studies.qualification import classify, skill_lookup, summary
 
 from .geo import BERLIN_MITTE, haversine_km, parse_start
 from .models import JobPosting
+from .travel import MAX_TRAVEL_REQUESTS, travel_times
 
 # Filter-Chips der Stellenliste: GET-Parameter "filter", mehrere kombinierbar.
 FILTER_CHIPS = {
@@ -125,13 +126,20 @@ def job_detail(request, pk):
 
 
 def job_map(request):
-    """Karte mit allen Stellen und Liste nach Luftlinie zum Startpunkt (?lat=...&lon=...)."""
+    """Karte mit allen Stellen und Liste zum Startpunkt (?lat=...&lon=...).
+
+    Sortiert nach Luftlinie, mit ?sortierung=anreise nach Anreisedauer mit ÖPNV (#22).
+    """
     start = parse_start(request.GET.get("lat"), request.GET.get("lon"))
     if start:
         start_params = [("lat", request.GET["lat"]), ("lon", request.GET["lon"])]
     else:
         start, start_params = BERLIN_MITTE, []
-    postings, chips, filter_params = filtered_postings(request, student_skills(request), start_params)
+    by_travel = request.GET.get("sortierung") == "anreise"
+    sort_params = [("sortierung", "anreise")] if by_travel else []
+    postings, chips, filter_params = filtered_postings(
+        request, student_skills(request), start_params + sort_params
+    )
 
     # Stellen mit Ort nach Entfernung, Stellen ohne Ort (remote) in einem eigenen Abschnitt.
     nearby = []
@@ -141,22 +149,52 @@ def job_map(request):
             posting.distance_km = haversine_km(
                 start[0], start[1], float(posting.latitude), float(posting.longitude)
             )
+            posting.travel_minutes = None
             nearby.append(posting)
         else:
             remote.append(posting)
     nearby.sort(key=lambda posting: (posting.distance_km, posting.title))
+
+    # Anreisedauer nur, wenn gewählt: die API fragt nur die nächsten Stellen nach Luftlinie.
+    # Stellen mit Minuten zuerst (nach Minuten), dann alle übrigen nach Luftlinie.
+    travel_hint = ""
+    if by_travel:
+        times = travel_times(start, nearby)
+        for posting in nearby:
+            posting.travel_minutes = times.get(posting.id)
+        nearby.sort(key=lambda posting: (
+            posting.travel_minutes is None,
+            posting.travel_minutes or 0,
+            posting.distance_km,
+            posting.title,
+        ))
+        asked = min(len(nearby), MAX_TRAVEL_REQUESTS)
+        if asked and not times:
+            travel_hint = "Anreisedauer gerade nicht verfügbar, sortiert nach Luftlinie."
+        elif len(times) < asked:
+            travel_hint = "Anreisedauer nicht für alle Stellen verfügbar, die übrigen nach Luftlinie."
+
+    # Umschalter für die Sortierung: Filter, Suche und Startpunkt bleiben erhalten.
+    sort_links = [
+        {"label": "Entfernung", "active": not by_travel,
+         "url": with_query(request.path, filter_params + start_params)},
+        {"label": "Anreisedauer", "active": by_travel,
+         "url": with_query(request.path, filter_params + start_params + [("sortierung", "anreise")])},
+    ]
 
     filter_query = urlencode(filter_params)
     # Daten für die Marker, kommen per json_script ins Template (escaped).
     markers = []
     for posting in nearby:
         url = reverse("job_detail", args=[posting.pk])
+        minutes = posting.travel_minutes
         markers.append({
             "lat": float(posting.latitude),
             "lon": float(posting.longitude),
             "title": posting.title,
             "company": posting.company.name,
             "wage": f"{posting.effective_wage} €".replace(".", ","),
+            "travel": f"ca. {minutes} min mit ÖPNV" if minutes is not None else "",
             "url": f"{url}?{filter_query}" if filter_query else url,
         })
 
@@ -164,6 +202,10 @@ def job_map(request):
         "nearby": nearby,
         "remote": remote,
         "chips": chips,
+        "sort_links": sort_links,
+        "by_travel": by_travel,
+        "travel_hint": travel_hint,
+        "max_travel_requests": MAX_TRAVEL_REQUESTS,
         "filter_query": filter_query,
         "start": {"lat": start[0], "lon": start[1]},
         "has_start": bool(start_params),

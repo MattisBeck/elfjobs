@@ -65,7 +65,7 @@ Der Befehl braucht Internet: Er lädt die Modulliste aus PULS (Uni Potsdam, von 
 
 `jobs/travel.py` fragt die Anreise mit Bus und Bahn bei der [VBB-API von transport.rest](https://v6.vbb.transport.rest) ab (`/journeys`). Die API ist öffentlich und braucht keinen Key, kennt aber nur Berlin und Brandenburg. Pro Aufruf werden höchstens 20 Stellen abgefragt (`MAX_TRAVEL_REQUESTS`), die nächsten nach Luftlinie. Ergebnisse bleiben einen Tag in Djangos Cache (im Speicher, nach einem Neustart leer).
 
-Antwortet die API nicht innerhalb von 5 Sekunden oder mit einem Fehler, gilt für diese Stellen die Luftlinie. Adresse und Timeout stehen in `.env` (`TRAVEL_API_URL`, `TRAVEL_API_TIMEOUT`). Die Tests rufen die API nie wirklich auf.
+Auf der Karte (`/jobs/karte/`) schaltet „Anreisedauer“ die Sortierung um (`?sortierung=anreise`); nur dann wird die API gefragt. Antwortet sie nicht innerhalb von 5 Sekunden oder mit einem Fehler, fragt die Seite für die übrigen Stellen nicht weiter, sortiert sie nach Luftlinie und zeigt einen Hinweis. Adresse und Timeout stehen in `.env` (`TRAVEL_API_URL`, `TRAVEL_API_TIMEOUT`). Die Tests rufen die API nie wirklich auf.
 
 ## Claude Code
 
