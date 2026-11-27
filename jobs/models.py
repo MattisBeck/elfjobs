@@ -226,3 +226,25 @@ class TravelTime(models.Model):
 
     def __str__(self):
         return f"{self.start_lat},{self.start_lon} → {self.dest_lat},{self.dest_lon}: {self.minutes} min"
+
+
+class SavedPosting(models.Model):
+    """Gemerkte Stelle einer Studentin (#13), zu finden unter „Gemerkt“."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="saved_postings", verbose_name="Konto"
+    )
+    posting = models.ForeignKey(
+        JobPosting, on_delete=models.CASCADE, related_name="saved_by", verbose_name="Stelle"
+    )
+    created_at = models.DateTimeField("Gemerkt am", auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "posting"], name="unique_saved_posting"),
+        ]
+        verbose_name = "Gemerkte Stelle"
+        verbose_name_plural = "Gemerkte Stellen"
+
+    def __str__(self):
+        return f"{self.user.username}: {self.posting.title}"

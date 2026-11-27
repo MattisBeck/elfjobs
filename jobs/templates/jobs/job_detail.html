@@ -23,9 +23,18 @@
           {% if verdict.detail %}<p class="fit-badge-detail">{{ verdict.detail }}</p>{% endif %}
         {% endif %}
       </div>
-      {# Merken (#13) und Bewerben (#14) bekommen ihre Funktion mit eigenen Issues. #}
+      {# Bewerben (#14) bekommt seine Funktion mit einem eigenen Issue. #}
       <div class="job-actions">
-        <button type="button" class="button">Merken</button>
+        {# Merken (#13): nur Studierende, anonym führt der Knopf zum Login. Erneuter Klick entfernt. #}
+        {% if can_save %}
+          <form class="save-form" method="post" action="{% url 'job_save' posting.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="button" aria-pressed="{% if is_saved %}true{% else %}false{% endif %}">{% if is_saved %}Gemerkt{% else %}Merken{% endif %}</button>
+          </form>
+        {% elif not user.is_authenticated %}
+          <a class="button" href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">Merken</a>
+        {% endif %}
         <button type="button" class="button button-primary">Mit Profil bewerben</button>
       </div>
     </header>

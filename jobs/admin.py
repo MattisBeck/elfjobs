@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Company, Fair, JobPosting, Shift, Tag
+from .models import Company, Fair, JobPosting, SavedPosting, Shift, Tag
 
 
 @admin.register(Company)
@@ -35,3 +35,8 @@ class JobPostingAdmin(admin.ModelAdmin):
         ]}),
         ("Ort", {"fields": ["address", ("latitude", "longitude")]}),
     ]
+
+
+@admin.register(SavedPosting)
+class SavedPostingAdmin(admin.ModelAdmin):
+    list_display = ("user", "posting", "created_at")
