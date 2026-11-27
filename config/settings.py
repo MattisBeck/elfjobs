@@ -96,6 +96,10 @@ LOGOUT_REDIRECT_URL = "job_list"
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
+# Hochgeladene Lebensläufe (#38). Der Ordner ist nicht öffentlich: Es gibt absichtlich keine
+# MEDIA_URL und keine Route unter /media/. Ausgeliefert wird nur über Views mit Rechteprüfung.
+MEDIA_ROOT = BASE_DIR / "media"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Anreisedauer mit ÖPNV: VBB-API von transport.rest, ohne Key.
