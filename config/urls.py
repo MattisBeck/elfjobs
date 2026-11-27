@@ -11,6 +11,7 @@ urlpatterns = [
     path("", RedirectView.as_view(pattern_name="job_list"), name="home"),
     path("jobs/", include("jobs.urls")),
     path("", include("applications.urls")),
+    path("", include("reviews.urls")),
     path("firma/", include("companies.urls")),
     # Hochgeladenes Firmenlogo (#73), öffentlich, aber nur genau diese eine Datei.
     path("firmen/<int:pk>/logo", jobs_views.company_logo, name="company_logo"),

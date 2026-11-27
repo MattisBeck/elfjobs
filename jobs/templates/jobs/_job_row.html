@@ -2,7 +2,7 @@
 <a class="job-row{% if posting.pk == selected_pk %} is-selected{% endif %}" href="{% url 'job_detail' posting.pk %}{% if filter_query %}?{{ filter_query }}{% endif %}">
   <span class="job-row-title">{{ posting.title }}</span>
   <span class="job-row-wage">{{ posting.effective_wage }} €</span>
-  <span class="job-row-meta">{% include "jobs/_company_logo.html" with company=posting.company decorative=True %}{{ posting.company.name }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>
+  <span class="job-row-meta">{% include "jobs/_company_logo.html" with company=posting.company decorative=True %}{{ posting.company.name }}{% if posting.rating %} · {% include "reviews/_stars.html" with average=posting.rating.average count=posting.rating.count %}{% endif %} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>
   <span class="job-row-gross">brutto {{ posting.hourly_wage }} €</span>
   {% if posting.fit %}
     <span class="job-row-fit fit-{{ posting.fit.status }}"><span class="fit-dot" aria-hidden="true"></span>{{ posting.fit.text }}</span>

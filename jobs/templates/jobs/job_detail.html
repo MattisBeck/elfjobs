@@ -35,7 +35,7 @@
           <li class="tag">{{ posting.hours_per_week }} h pro Woche</li>
         </ul>
         <h1 class="job-title">{{ posting.title }}</h1>
-        <p class="job-company">{% include "jobs/_company_logo.html" with company=posting.company size="large" decorative=True %}<span>{{ posting.company.name }} · {{ posting.company.industry }}</span></p>
+        <p class="job-company">{% include "jobs/_company_logo.html" with company=posting.company size="large" decorative=True %}<span>{{ posting.company.name }} · {{ posting.company.industry }}{% if review.count %} · <a href="#bewertungen">{% include "reviews/_stars.html" with average=review.average count=review.count %}</a>{% endif %}</span></p>
         {% if verdict %}
           <p class="fit-badge fit-badge-{{ verdict.level }}">{{ verdict.label }}</p>
           {% if verdict.detail %}<p class="fit-badge-detail">{{ verdict.detail }}</p>{% endif %}
@@ -179,6 +179,8 @@
               {% for fair in fairs %}<strong>{{ fair.name }}, {{ fair.date|date:"d.m.Y" }}</strong>{% if not forloop.last %} · {% endif %}{% endfor %}
             </p>
           {% endif %}
+
+          {% include "reviews/_company_reviews.html" %}
         </div>
 
         <aside class="details-side">

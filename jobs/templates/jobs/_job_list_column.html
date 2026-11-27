@@ -20,15 +20,11 @@
 
   <p class="job-list-meta">
     <strong>{{ postings|length }} Stelle{{ postings|length|pluralize:"n" }}</strong>
-    {% if filter_form.sort_links %}
-      <span class="sort-links">sortiert nach
-        {% for link in filter_form.sort_links %}
-          <a href="{{ link.url }}"{% if link.active %} aria-current="true" class="is-active"{% endif %}>{{ link.label }}</a>{% if not forloop.last %} ·{% endif %}
-        {% endfor %}
-      </span>
-    {% else %}
-      <span>sortiert nach effektivem Stundenlohn</span>
-    {% endif %}
+    <span class="sort-links">sortiert nach
+      {% for link in filter_form.sort_links %}
+        <a href="{{ link.url }}"{% if link.active %} aria-current="true" class="is-active"{% endif %}>{{ link.label }}</a>{% if not forloop.last %} ·{% endif %}
+      {% endfor %}
+    </span>
   </p>
   {% if not selected_pk %}
     <p class="map-link"><a href="{% url 'job_map' %}{% if filter_query %}?{{ filter_query }}{% endif %}">Auf der Karte ansehen</a></p>

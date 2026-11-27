@@ -90,6 +90,7 @@ def test_sort_links_keep_filters(client, student):
     assert links == {
         "Passt am besten": ("/jobs/?filter=kurzjob&plan=aus", True),
         "Effektiver Lohn": ("/jobs/?filter=kurzjob&plan=aus&reihenfolge=lohn", False),
+        "Bewertung": ("/jobs/?filter=kurzjob&plan=aus&reihenfolge=bewertung", False),
     }
     # Gewählter Lohn bleibt in den Links zu den Stellen erhalten.
     content = client.get("/jobs/?reihenfolge=lohn").content.decode()
@@ -106,11 +107,12 @@ def test_tie_is_broken_by_title(client, student):
     assert titles(response)[:3] == ["A gleich", "B gleich", "Flexibel ohne Anforderungen"]
 
 
-def test_logged_out_sorts_by_wage_without_choice(client, student):
+def test_logged_out_sorts_by_wage_without_best_fit(client, student):
     response = client.get("/jobs/?reihenfolge=passt")
 
     assert titles(response) == [
         "Kollidiert", "Teilweise", "Halb gelernt", "Flexibel ohne Anforderungen", "Gelernt",
     ]
-    assert response.context["filter_form"]["sort_links"] == []
-    assert "sortiert nach effektivem Stundenlohn" in response.content.decode()
+    # Ohne Lehrplan kein „Passt am besten“, aber Lohn und Bewertung (#32).
+    labels = [link["label"] for link in response.context["filter_form"]["sort_links"]]
+    assert labels == ["Effektiver Lohn", "Bewertung"]
