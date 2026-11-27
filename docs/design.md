@@ -77,9 +77,9 @@ Darunter die **Tab-Leiste** im Stil eines Segmented Control: „Details“ | „
 
 **Tab „Details“** (Standard):
 
-- Links „Über die Stelle“ (Beschreibung aus der Anzeige), „Das bringst du mit“ (Skills als Chips; Treffer aus dem Profil blau mit ✓, darunter „Häkchen: steht so in deinem Profil.“) und ein Kasten „Firma persönlich kennenlernen: Jobmesse Potsdam, 11.03.2027“.
+- Links „Über die Stelle“ (Beschreibung aus der Anzeige), „Das bringst du mit“ (Skills als Chips; Treffer aus dem Profil blau mit ✓, darunter „Häkchen: steht so in deinem Profil.“) und ein Kasten „Firma persönlich kennenlernen: Jobmesse Potsdam, 11.03.2027“ (ein Kasten für alle kommenden Messen der Firma, vergangene fallen weg).
 - Rechts „Auf einen Blick“: Art, Arbeitsort, Stunden pro Woche, Arbeitszeiten („Di 15:00–18:30, Mi 16:30–20:00“ oder „Flexibel, du planst selbst“), Stundenplan (Passungstext als Link zum Wochen-Tab).
-- Darunter die **Lohnrechnung** in vier Feldern: Bruttolohn pro Stunde · Fahrzeit pro Woche („1 × hin und zurück, je 18 min“) · **Effektiver Stundenlohn** (hellblau hinterlegt) · „Im Monat ≈ 485 €“ mit „unter/über der Minijob-Grenze (603 €)“.
+- Darunter die **Lohnrechnung** in vier Feldern: Bruttolohn pro Stunde · Fahrzeit pro Woche („2 × hin und zurück, je 18 min“) · **Effektiver Stundenlohn** (hellblau hinterlegt) · „Im Monat ≈ 485 €“ mit „unter/über der Minijob-Grenze (603 €)“.
 
 ### Tab „In meiner Woche“ (#10)
 
@@ -139,7 +139,7 @@ Beispiele aus den Seed-Daten (Fahrzeiten sind Annahmen):
 
 | Stelle | Brutto | Std./Woche | Fahrten × einfache Fahrzeit | Fahrzeit | Effektiv |
 |---|---|---|---|---|---|
-| Promoter*in, Weihmann GbR (Hybrid, 2 Schichten) | 16,00 € | 7 | 1 × 18 min | 0,6 h | 14,74 € |
+| Promoter*in, Weihmann GbR (vor Ort, 2 Schichten) | 16,00 € | 7 | 2 × 18 min | 1,2 h | 13,66 € |
 | Werkstudent*in Controlling, Bauer (vor Ort, 3 Schichten) | 15,00 € | 10 | 3 × 12 min | 1,2 h | 13,39 € |
 | Aushilfe Lager, Holsten Förster (vor Ort, flexibel) | 14,00 € | 11 | 3 × 35 min | 3,5 h | 10,62 € |
 | Werkstudent*in Softwareentwicklung, Weihmann (remote) | 19,50 € | 11 | 0 | 0 h | 19,50 € |
