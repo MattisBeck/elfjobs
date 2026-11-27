@@ -179,14 +179,14 @@ class Command(BaseCommand):
             )
             posting.tags.set(random.sample(tags, random.randint(0, 3)))
 
-        # Eigener Zufallsgenerator, damit neue Daten die Stellen oben nicht verändern.
+        # Fahrzeiten und Schichten haben je einen eigenen Zufallsgenerator,
+        # damit neue Daten die Stellen oben nicht verändern.
         commute_random = random.Random(SEED)
         for company in Company.objects.order_by("id"):
             company.commute_minutes = DESIGN_EXAMPLE_COMMUTES.get(
                 company.name, commute_random.randint(12, 40)
             )
             company.save()
-
 
         shift_random = random.Random(SEED)
         for posting in JobPosting.objects.filter(schedule=JobPosting.Schedule.FIXED).order_by("id"):
