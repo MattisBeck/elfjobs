@@ -1,6 +1,8 @@
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
+from django.core.cache import cache
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 
@@ -171,3 +173,114 @@ def test_query_count_does_not_grow_with_postings(client, postings):
         client.get("/jobs/karte/")
 
     assert len(many) == len(few)
+
+
+# Anreisedauer (#22): urlopen bzw. _lookup gemockt, kein echtes Netz.
+
+@pytest.fixture
+def empty_cache():
+    cache.clear()
+    yield
+    cache.clear()
+
+
+def fake_lookup(minutes_by_title, postings):
+    """Ersatz für jobs.travel._lookup: Minuten je Titel, gefunden über die Koordinaten."""
+    by_place = {
+        (float(posting.latitude), float(posting.longitude)): minutes_by_title.get(posting.title)
+        for posting in postings.values()
+        if posting.has_location
+    }
+
+    def lookup(start, destination, ask_api=True):
+        return by_place.get(destination), True
+
+    return lookup
+
+
+def test_distance_sorting_does_not_ask_api(client, postings, empty_cache):
+    with patch("jobs.travel.urlopen") as mock_urlopen:
+        response = client.get("/jobs/karte/")
+
+    assert mock_urlopen.call_count == 0
+    assert response.context["travel_hint"] == ""
+    content = response.content.decode()
+    assert "min mit ÖPNV" not in content
+    assert "Anreisedauer nur für" not in content
+
+
+def test_sorted_by_travel_minutes(client, postings, empty_cache):
+    lookup = fake_lookup({"Alexanderplatz": 40, "Spandau": 25, "Potsdam": 30}, postings)
+    with patch("jobs.travel._lookup", side_effect=lookup):
+        response = client.get("/jobs/karte/?sortierung=anreise")
+
+    assert titles(response.context["nearby"]) == ["Spandau", "Potsdam", "Alexanderplatz"]
+    assert response.context["travel_hint"] == ""
+    content = response.content.decode()
+    assert "ca. 25 min mit ÖPNV" in content
+    assert "sortiert nach Anreisedauer" in content
+    assert "Anreisedauer nur für die 20 nächsten Stellen" in content
+    spandau = next(marker for marker in response.context["markers"] if marker["title"] == "Spandau")
+    assert spandau["travel"] == "ca. 25 min mit ÖPNV"
+
+
+def test_equal_minutes_sorted_by_distance(client, postings, empty_cache):
+    lookup = fake_lookup({"Alexanderplatz": 30, "Spandau": 30, "Potsdam": 30}, postings)
+    with patch("jobs.travel._lookup", side_effect=lookup):
+        response = client.get("/jobs/karte/?sortierung=anreise")
+
+    assert titles(response.context["nearby"]) == ["Alexanderplatz", "Spandau", "Potsdam"]
+
+
+def test_postings_without_minutes_come_last_by_distance(client, postings, empty_cache):
+    make_posting("Wedding", at=(52.55, 13.36))
+    lookup = fake_lookup({"Potsdam": 30}, postings)
+    with patch("jobs.travel._lookup", side_effect=lookup):
+        response = client.get("/jobs/karte/?sortierung=anreise")
+
+    # Potsdam mit Minuten zuerst, die übrigen nach Luftlinie ab Berlin-Mitte.
+    assert titles(response.context["nearby"]) == ["Potsdam", "Alexanderplatz", "Wedding", "Spandau"]
+    assert response.context["travel_hint"] == (
+        "Anreisedauer nicht für alle Stellen verfügbar, die übrigen nach Luftlinie."
+    )
+
+
+def test_at_most_20_postings_are_asked(client, db, empty_cache):
+    for number in range(25):
+        make_posting(f"Stelle {number:02}", at=(52.40 + number / 100, 13.4))
+    with patch("jobs.travel.urlopen") as mock_urlopen:
+        mock_urlopen.return_value.__enter__.return_value.read.return_value = b'{"journeys": []}'
+        client.get("/jobs/karte/?sortierung=anreise")
+
+    assert mock_urlopen.call_count == 20
+
+
+def test_api_error_falls_back_to_distance_with_hint(client, postings, empty_cache):
+    with patch("jobs.travel.urlopen", side_effect=TimeoutError("timed out")) as mock_urlopen:
+        response = client.get("/jobs/karte/?sortierung=anreise")
+
+    # Nach dem ersten Timeout keine weiteren Anfragen.
+    assert mock_urlopen.call_count == 1
+    assert titles(response.context["nearby"]) == ["Alexanderplatz", "Spandau", "Potsdam"]
+    content = response.content.decode()
+    assert "Anreisedauer gerade nicht verfügbar, sortiert nach Luftlinie." in content
+    assert "min mit ÖPNV" not in content
+    assert "0,6 km" in content
+
+
+def test_sort_links_keep_start_and_filters(client, postings, empty_cache):
+    with patch("jobs.travel.urlopen", side_effect=TimeoutError("timed out")):
+        response = client.get("/jobs/karte/?filter=kurzjob&q=a&lat=52.39&lon=13.07&sortierung=anreise")
+
+    links = {link["label"]: link for link in response.context["sort_links"]}
+    assert links["Entfernung"]["url"] == "/jobs/karte/?filter=kurzjob&q=a&lat=52.39&lon=13.07"
+    assert links["Anreisedauer"]["url"] == (
+        "/jobs/karte/?filter=kurzjob&q=a&lat=52.39&lon=13.07&sortierung=anreise"
+    )
+    assert links["Anreisedauer"]["active"]
+    assert not links["Entfernung"]["active"]
+    # Filter-Chips behalten die Sortierung.
+    urls = {chip["label"]: chip["url"] for chip in response.context["chips"]}
+    assert urls["Remote"] == (
+        "/jobs/karte/?filter=kurzjob&filter=remote&q=a&lat=52.39&lon=13.07&sortierung=anreise"
+    )

@@ -9,8 +9,17 @@ from accounts.models import StudentProfile
 from studies.qualification import classify, skill_lookup, summary
 from timetable.fit import FLEXIBEL, PASST, posting_fit
 
+from .filters import (
+    FILTER_FIELDS,
+    MAP_FILTER_FIELDS,
+    apply_filters,
+    filter_labels,
+    filter_number_params,
+    parse_filters,
+)
 from .geo import BERLIN_MITTE, haversine_km, parse_start
 from .models import JobPosting
+from .travel import MAX_TRAVEL_REQUESTS, travel_times
 
 # Filter-Chips der Stellenliste: GET-Parameter "filter", mehrere kombinierbar.
 FILTER_CHIPS = {
@@ -39,16 +48,26 @@ def student_skills(request):
     return skill_lookup(profile) if profile else None
 
 
-def filtered_postings(request, skills=None, keep_params=()):
-    """Stellen und Filter-Chips für die linke Spalte, gesteuert über ?filter=... und ?q=...
+def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS):
+    """Stellen und Filter-Chips für die linke Spalte, gesteuert über ?filter=..., ?q=...
+    und die Suchfilter aus jobs/filters.py (?min_lohn=..., ?max_anreise=... usw.).
 
     keep_params sind weitere (Name, Wert)-Paare, die in den Chip-Links erhalten bleiben,
     z. B. der Startpunkt lat/lon auf der Karte.
 
+    fields sind die erlaubten Suchfilter; die Karte gibt zusätzlich max_km mit und
+    wendet die Entfernung selbst an.
+
     Mit skills (aus student_skills) bekommt jede Stelle einen Hinweis wie
     „2 von 3 Anforderungen aus dem Studium“ (posting.skill_hint).
+
+    Gibt (postings, chips, filter_params, filter_form) zurück. filter_params sind alle
+    aktiven Filter als (Name, Wert)-Paare für Links, filter_form die Daten für das
+    Filter-Formular und die versteckten Felder der Suche in der Kopfzeile.
     """
     active = [f for f in request.GET.getlist("filter") if f in FILTER_CHIPS]
+    filters = parse_filters(request.GET, fields)
+    number_params = filter_number_params(filters)
 
     postings = JobPosting.objects.select_related("company").prefetch_related("shifts", "tags")
 
@@ -98,7 +117,7 @@ def filtered_postings(request, skills=None, keep_params=()):
             "url": with_query(
                 request.path,
                 [("filter", f) for f in active] + search_params + ([("plan", "aus")] if plan_on else [])
-                + list(keep_params),
+                + number_params + list(keep_params),
             ),
         })
     for key, label in FILTER_CHIPS.items():
@@ -108,24 +127,53 @@ def filtered_postings(request, skills=None, keep_params=()):
             "active": key in active,
             "url": with_query(
                 request.path,
-                [("filter", f) for f in toggled] + search_params + plan_params + list(keep_params),
+                [("filter", f) for f in toggled] + search_params + plan_params + number_params + list(keep_params),
             ),
         })
 
-    filter_params = [("filter", f) for f in active] + search_params + plan_params
-    # Sortiert nach effektivem Stundenlohn (#12). Der wird in Python berechnet, nicht in der DB.
-    postings = sorted(postings, key=lambda posting: (-posting.effective_wage, posting.title))
+    filter_params = [("filter", f) for f in active] + search_params + plan_params + number_params
+
+    # Aktive Suchfilter als Chips mit ✕: der Link lässt nur diesen Filter weg.
+    for label, names in filter_labels(filters):
+        chips.append({
+            "label": label,
+            "active": True,
+            "remove": True,
+            "url": with_query(
+                request.path,
+                [(name, value) for name, value in filter_params + list(keep_params) if name not in names],
+            ),
+        })
+
+    # Sortiert nach effektivem Stundenlohn (#12). Der wird in Python berechnet, nicht in der DB,
+    # deshalb laufen auch die Suchfilter erst hier.
+    postings = sorted(
+        apply_filters(postings, filters), key=lambda posting: (-posting.effective_wage, posting.title)
+    )
     if skills is not None:
         for posting in postings:
             posting.skill_hint = summary(classify(skills, posting.tags.all()))
-    return postings, chips, filter_params
+
+    # Formular „Filter“: Zahlenfelder plus versteckt alles andere, damit nichts verloren geht.
+    # Die Suche in der Kopfzeile behält alles außer q (das ist ihr eigenes Feld).
+    other_params = [("filter", f) for f in active] + plan_params + list(keep_params)
+    filter_form = {
+        "action": request.path,
+        "values": dict(number_params),
+        "hidden": other_params + search_params,
+        "search_hidden": other_params + number_params,
+        "show_km": "max_km" in fields,
+        "open": bool(filters),
+    }
+    return postings, chips, filter_params, filter_form
 
 
 def job_list(request):
-    postings, chips, filter_params = filtered_postings(request, student_skills(request))
+    postings, chips, filter_params, filter_form = filtered_postings(request, student_skills(request))
     return render(request, "jobs/job_list.html", {
         "postings": postings,
         "chips": chips,
+        "filter_form": filter_form,
         "filter_query": urlencode(filter_params),
     })
 
@@ -136,7 +184,7 @@ def job_detail(request, pk):
         pk=pk,
     )
     skills = student_skills(request)
-    postings, chips, filter_params = filtered_postings(request, skills)
+    postings, chips, filter_params, filter_form = filtered_postings(request, skills)
     view = "woche" if request.GET.get("ansicht") == "woche" else "details"
 
     # Passung der geöffneten Stelle für den Punkt am Tab „In meiner Woche“.
@@ -159,19 +207,28 @@ def job_detail(request, pk):
         "week_url": with_query(request.path, filter_params + [("ansicht", "woche")]),
         "postings": postings,
         "chips": chips,
+        "filter_form": filter_form,
         "filter_query": urlencode(filter_params),
         "selected_pk": posting.pk,
     })
 
 
 def job_map(request):
-    """Karte mit allen Stellen und Liste nach Luftlinie zum Startpunkt (?lat=...&lon=...)."""
+    """Karte mit allen Stellen und Liste zum Startpunkt (?lat=...&lon=...).
+
+    Sortiert nach Luftlinie, mit ?sortierung=anreise nach Anreisedauer mit ÖPNV (#22).
+    """
     start = parse_start(request.GET.get("lat"), request.GET.get("lon"))
     if start:
         start_params = [("lat", request.GET["lat"]), ("lon", request.GET["lon"])]
     else:
         start, start_params = BERLIN_MITTE, []
-    postings, chips, filter_params = filtered_postings(request, student_skills(request), start_params)
+    by_travel = request.GET.get("sortierung") == "anreise"
+    sort_params = [("sortierung", "anreise")] if by_travel else []
+    postings, chips, filter_params, filter_form = filtered_postings(
+        request, student_skills(request), start_params + sort_params, MAP_FILTER_FIELDS
+    )
+    max_km = parse_filters(request.GET, MAP_FILTER_FIELDS).get("max_km")
 
     # Stellen mit Ort nach Entfernung, Stellen ohne Ort (remote) in einem eigenen Abschnitt.
     nearby = []
@@ -181,22 +238,54 @@ def job_map(request):
             posting.distance_km = haversine_km(
                 start[0], start[1], float(posting.latitude), float(posting.longitude)
             )
-            nearby.append(posting)
+            posting.travel_minutes = None
+            # Maximale Entfernung (Luftlinie). Remote-Stellen bleiben im eigenen Abschnitt.
+            if max_km is None or posting.distance_km <= max_km:
+                nearby.append(posting)
         else:
             remote.append(posting)
     nearby.sort(key=lambda posting: (posting.distance_km, posting.title))
+
+    # Anreisedauer nur, wenn gewählt: die API fragt nur die nächsten Stellen nach Luftlinie.
+    # Stellen mit Minuten zuerst (nach Minuten), dann alle übrigen nach Luftlinie.
+    travel_hint = ""
+    if by_travel:
+        times = travel_times(start, nearby)
+        for posting in nearby:
+            posting.travel_minutes = times.get(posting.id)
+        nearby.sort(key=lambda posting: (
+            posting.travel_minutes is None,
+            posting.travel_minutes or 0,
+            posting.distance_km,
+            posting.title,
+        ))
+        asked = min(len(nearby), MAX_TRAVEL_REQUESTS)
+        if asked and not times:
+            travel_hint = "Anreisedauer gerade nicht verfügbar, sortiert nach Luftlinie."
+        elif len(times) < asked:
+            travel_hint = "Anreisedauer nicht für alle Stellen verfügbar, die übrigen nach Luftlinie."
+
+    # Umschalter für die Sortierung: Filter, Suche und Startpunkt bleiben erhalten.
+    sort_links = [
+        {"label": "Entfernung", "active": not by_travel,
+         "url": with_query(request.path, filter_params + start_params)},
+        {"label": "Anreisedauer", "active": by_travel,
+         "url": with_query(request.path, filter_params + start_params + [("sortierung", "anreise")])},
+    ]
 
     filter_query = urlencode(filter_params)
     # Daten für die Marker, kommen per json_script ins Template (escaped).
     markers = []
     for posting in nearby:
         url = reverse("job_detail", args=[posting.pk])
+        minutes = posting.travel_minutes
         markers.append({
             "lat": float(posting.latitude),
             "lon": float(posting.longitude),
             "title": posting.title,
             "company": posting.company.name,
             "wage": f"{posting.effective_wage} €".replace(".", ","),
+            "travel": f"ca. {minutes} min mit ÖPNV" if minutes is not None else "",
             "url": f"{url}?{filter_query}" if filter_query else url,
         })
 
@@ -204,6 +293,11 @@ def job_map(request):
         "nearby": nearby,
         "remote": remote,
         "chips": chips,
+        "filter_form": filter_form,
+        "sort_links": sort_links,
+        "by_travel": by_travel,
+        "travel_hint": travel_hint,
+        "max_travel_requests": MAX_TRAVEL_REQUESTS,
         "filter_query": filter_query,
         "start": {"lat": start[0], "lon": start[1]},
         "has_start": bool(start_params),

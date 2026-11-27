@@ -1,0 +1,70 @@
+{
+  "journeys": [
+    {
+      "type": "journey",
+      "legs": [
+        {
+          "origin": {
+            "type": "location",
+            "id": null,
+            "latitude": 52.525,
+            "longitude": 13.369,
+            "address": "Start"
+          },
+          "destination": {
+            "type": "stop",
+            "id": "900003201",
+            "name": "S+U Berlin Hauptbahnhof"
+          },
+          "departure": "2026-11-27T13:26:00+01:00",
+          "plannedDeparture": "2026-11-27T13:26:00+01:00",
+          "arrival": "2026-11-27T13:27:00+01:00",
+          "plannedArrival": "2026-11-27T13:27:00+01:00",
+          "walking": true,
+          "distance": 101
+        },
+        {
+          "origin": {
+            "type": "stop",
+            "id": "900003201",
+            "name": "S+U Berlin Hauptbahnhof"
+          },
+          "destination": {
+            "type": "stop",
+            "id": "900230003",
+            "name": "S Griebnitzsee Bhf"
+          },
+          "departure": "2026-11-27T13:27:00+01:00",
+          "plannedDeparture": "2026-11-27T13:27:00+01:00",
+          "arrival": "2026-11-27T13:57:00+01:00",
+          "plannedArrival": "2026-11-27T13:57:00+01:00",
+          "line": {
+            "type": "line",
+            "name": "S7",
+            "product": "suburban"
+          }
+        },
+        {
+          "origin": {
+            "type": "stop",
+            "id": "900230003",
+            "name": "S Griebnitzsee Bhf"
+          },
+          "destination": {
+            "type": "location",
+            "id": null,
+            "latitude": 52.394,
+            "longitude": 13.133,
+            "address": "Ziel"
+          },
+          "departure": "2026-11-27T13:57:00+01:00",
+          "plannedDeparture": "2026-11-27T13:57:00+01:00",
+          "arrival": "2026-11-27T14:01:00+01:00",
+          "plannedArrival": "2026-11-27T14:01:00+01:00",
+          "walking": true,
+          "distance": 287
+        }
+      ]
+    }
+  ]
+}

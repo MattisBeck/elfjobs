@@ -217,6 +217,22 @@ def test_plan_chip_combines_with_other_filters(client, mia, four_postings):
     assert titles(response) == ["Remote Flexibel"]
 
 
+def test_plan_chip_and_search_filters_keep_each_other(client, mia, four_postings):
+    # Suchfilter aus #71 und „Passt in meinen Plan“ gehen bei keinem Klick verloren.
+    client.force_login(mia)
+
+    on = client.get("/jobs/?max_stunden=40")
+    assert on.context["chips"][0]["url"] == "/jobs/?plan=aus&max_stunden=40"
+
+    off = client.get("/jobs/?plan=aus&max_stunden=40")
+    by_label = {chip["label"]: chip for chip in off.context["chips"]}
+    assert by_label["Passt in meinen Plan"]["url"] == "/jobs/?max_stunden=40"
+    assert by_label["Kurzjob"]["url"] == "/jobs/?filter=kurzjob&plan=aus&max_stunden=40"
+    assert by_label["bis 40 h/Woche"]["url"] == "/jobs/?plan=aus"
+    assert ("plan", "aus") in off.context["filter_form"]["hidden"]
+    assert ("plan", "aus") in off.context["filter_form"]["search_hidden"]
+
+
 def test_logged_out_has_no_chip_no_fit_and_full_list(client, four_postings):
     response = client.get("/jobs/")
 

@@ -17,18 +17,32 @@
 
     <div class="chips" role="group" aria-label="Filter">
       {% for chip in chips %}
-        <a class="chip{% if chip.active %} is-active{% endif %}" href="{{ chip.url }}"{% if chip.active %} aria-current="true"{% endif %}>{{ chip.label }}</a>
+        {% if chip.remove %}
+          <a class="chip is-active" href="{{ chip.url }}" aria-label="Filter {{ chip.label }} entfernen">{{ chip.label }} <span aria-hidden="true">✕</span></a>
+        {% else %}
+          <a class="chip{% if chip.active %} is-active{% endif %}" href="{{ chip.url }}"{% if chip.active %} aria-current="true"{% endif %}>{{ chip.label }}</a>
+        {% endif %}
       {% endfor %}
     </div>
+
+    {% include "jobs/_filter_form.html" %}
 
     <p class="map-hint">
       {% if has_start %}Startpunkt aus der Karte.{% else %}Startpunkt: Berlin-Mitte.{% endif %}
       Klick auf die Karte, um ihn zu ändern.
     </p>
 
+    <div class="chips sort-chips" role="group" aria-label="Sortierung">
+      {% for link in sort_links %}
+        <a class="chip{% if link.active %} is-active{% endif %}" href="{{ link.url }}"{% if link.active %} aria-current="true"{% endif %}>{{ link.label }}</a>
+      {% endfor %}
+    </div>
+
+    {% if travel_hint %}<p class="map-hint travel-hint" role="status">{{ travel_hint }}</p>{% endif %}
+
     <p class="job-list-meta">
       <strong>{{ nearby|length }} Stelle{{ nearby|length|pluralize:"n" }} mit Ort</strong>
-      <span>sortiert nach Luftlinie</span>
+      <span>{% if by_travel %}sortiert nach Anreisedauer{% else %}sortiert nach Luftlinie{% endif %}</span>
     </p>
 
     <ul class="job-rows">
@@ -36,9 +50,13 @@
         <li>
           <a class="job-row" href="{% url 'job_detail' posting.pk %}{% if filter_query %}?{{ filter_query }}{% endif %}">
             <span class="job-row-title">{{ posting.title }}</span>
-            <span class="job-row-wage">{{ posting.distance_km|floatformat:1 }} km</span>
+            {% if posting.travel_minutes is not None %}
+              <span class="job-row-wage">ca. {{ posting.travel_minutes }} min mit ÖPNV</span>
+            {% else %}
+              <span class="job-row-wage">{{ posting.distance_km|floatformat:1 }} km</span>
+            {% endif %}
             <span class="job-row-meta">{{ posting.company.name }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>
-            <span class="job-row-gross">{{ posting.effective_wage }} € effektiv</span>
+            <span class="job-row-gross">{% if posting.travel_minutes is not None %}{{ posting.distance_km|floatformat:1 }} km · {% endif %}{{ posting.effective_wage }} € effektiv</span>
             {% if posting.skill_hint %}<span class="job-row-skills">{{ posting.skill_hint }}</span>{% endif %}
           </a>
         </li>
@@ -46,6 +64,10 @@
         <li class="job-list-empty">Keine Stellen mit Ort für diese Filter.</li>
       {% endfor %}
     </ul>
+
+    {% if by_travel %}
+      <p class="map-hint">Anreisedauer nur für die {{ max_travel_requests }} nächsten Stellen nach Luftlinie, Daten vom VBB.</p>
+    {% endif %}
 
     {% if remote %}
       {# Stellen ohne Koordinaten: remote (oder ohne Adresse eingetragen), daher ohne Entfernung. #}
@@ -96,10 +118,16 @@
       title.textContent = marker.title;
       var meta = document.createElement("div");
       meta.textContent = marker.company + " · " + marker.wage + " effektiv";
+      popup.append(title, meta);
+      if (marker.travel) {
+        var travel = document.createElement("div");
+        travel.textContent = marker.travel;
+        popup.append(travel);
+      }
       var link = document.createElement("a");
       link.href = marker.url;
       link.textContent = "Zur Stelle";
-      popup.append(title, meta, link);
+      popup.append(link);
 
       L.circleMarker([marker.lat, marker.lon], {
         radius: 6, color: "#fff", weight: 2, fillColor: "#2F5BD8", fillOpacity: 0.9, bubblingMouseEvents: false,
