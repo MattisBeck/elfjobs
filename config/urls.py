@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
 
+from jobs import views as jobs_views
+
 admin.site.site_header = "elfjobs"
 admin.site.site_title = "elfjobs"
 
@@ -10,6 +12,8 @@ urlpatterns = [
     path("jobs/", include("jobs.urls")),
     path("", include("applications.urls")),
     path("firma/", include("companies.urls")),
+    # Hochgeladenes Firmenlogo (#73), öffentlich, aber nur genau diese eine Datei.
+    path("firmen/<int:pk>/logo", jobs_views.company_logo, name="company_logo"),
     path("alerts/", include("alerts.urls")),
     path("", include("accounts.urls")),
     path("", include("timetable.urls")),

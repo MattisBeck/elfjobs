@@ -747,8 +747,55 @@ a {
 }
 
 .job-company {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin: 0;
   color: var(--muted);
+}
+
+/* Firmenlogo (#73): Bild oder Initialen in der Akzentfarbe. Klein in der Listenzeile, groß im Stellendetail. */
+.company-logo {
+  flex: none;
+  border-radius: var(--radius-chip);
+  object-fit: contain;
+  vertical-align: middle;
+}
+
+.company-logo-small {
+  width: 20px;
+  height: 20px;
+  margin-right: 6px;
+}
+
+.company-logo-large {
+  width: 48px;
+  height: 48px;
+}
+
+.company-logo-initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.company-logo-small.company-logo-initials {
+  font-size: 10px;
+}
+
+.company-logo-large.company-logo-initials {
+  font-size: 18px;
+}
+
+/* Karten-Popup: Logo links neben Titel und Firma. */
+.map-popup-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .job-actions {
