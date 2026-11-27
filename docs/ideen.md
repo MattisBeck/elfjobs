@@ -33,9 +33,9 @@ Beides fließt in die Sortierung der Stellen ein („Passt am besten“, #42).
 |---|---|---|
 | Alter, Studium | 18, Politikwissenschaft | 19, BWL |
 | Finanzierung | muss ihr Studium selbst finanzieren, erste Studierende in der Familie | wird von den Eltern finanziert, Eltern sind Akademiker\*innen |
-| Braucht | Geld zum Leben, aber auch Zeit zum Studieren. Wenig Zeit, sonst leidet das Studium. | Berufserfahrung (Employability), Geld für Urlaub mit Freunden |
+| Braucht | Geld zum Leben, aber auch Zeit zum Studieren. Wenig Zeit, sonst leidet das Studium. | Berufserfahrung (Employability), Geld für Urlaub mit Freunden. Kann es sich leisten, für Erfahrung zu arbeiten. |
 | Paradox | mehr arbeiten heißt weniger Zeit für die Uni, die Uni ist ihr aber wichtig | ohne Berufserfahrung kein Job, ohne Job keine Berufserfahrung |
-| Wir helfen durch | Planbarkeit: Arbeitszeiten, die genau in die Freizeit passen | einen einfachen Weg zu einem Job in seinem Bereich |
+| Wir helfen durch | Planbarkeit: Arbeitszeiten, die genau in die Freizeit passen | einen einfachen Weg zu einem Job in seinem Bereich, Lernen und Job in einem |
 
 ## Erkenntnisse aus den Interviews
 
@@ -81,7 +81,7 @@ Alle Ideen aus der Ideenschmiede und vom Ranking-Board. Status: **Issue** = wird
 | Skills aus dem Lebenslauf | Issue #50 |
 | Matching / „Jobfindealgorithmus“ | Issue #42 |
 | Closed Access, Account-Verifikation per Uni-Mail | Issue #6, #31 |
-| Bewertungen für Arbeitnehmer und Arbeitgeber | Issue #32 |
+| Bewertungen für Arbeitnehmer und Arbeitgeber (nur positiv); dazu echte anonyme Bewertungen (nur wenn man sicher da gearbeitet hat) | Issue #32 |
 | Eventhub („Online-Schwarzes-Brett“), Jobmessen | Issue #33 |
 | Alerts, wenn passende Jobs erscheinen | Issue #34 |
 | Onboarding: Was machst du, wann hast du Zeit, Erfahrungen, Interessen | Issue #35 |
@@ -100,12 +100,23 @@ Alle Ideen aus der Ideenschmiede und vom Ranking-Board. Status: **Issue** = wird
 | „Wege zu uns und weiter zum Job“ | offen, Bedeutung unklar |
 | Werbung für die Plattform: Banner bei Events | offen (Marketing, kein Feature) |
 | Anzeigen schalten als Einnahmequelle | offen, wenig Nutzen für Studierende |
-| Gamification, Streaks, Roadmap „Trophäenpfad“ | zurückgestellt: schwer umsetzbar, wenig Nutzen |
+| Gamification, Streaks, Roadmap „Trophäenpfad“, Achievements (erste Bewerbung, erster Job, erstes Zertifikat) | zurückgestellt: schwer umsetzbar, wenig Nutzen |
 | ELO-Rating für Studierende | verworfen 👎 |
+| Bürokratie abbauen (Ideenschmiede) | offen, hängt mit dem Wiki zusammen (Platz 4) |
+| Finanzierungs-Checks: Plattform prüft automatisch BAföG, Stipendien und Wohngeld | offen (schwer machbar, hoher Nutzen) |
+| Jobs an der Uni als Praktikum anrechnen | offen (schwer machbar, hoher Nutzen) |
+| Karriereplanung: Traumjob angeben, Plattform stellt Portfolio vor und schlägt Jobs vor, die darauf vorbereiten | offen (schwer machbar) |
+| Auswirkungen auf Steuern und Versicherungen transparent angeben | offen (hoher Nutzen) |
+| Studiengänge einer Uni/Stadt im Profil festlegen, als Filter für Jobs | offen |
+| Klausurphasen-Modus: „In dieser Zeit keine Jobs“ | offen |
+| Nur nach unbefristeten Stellen filtern | offen |
 
 ## Go-to-Market
 
 - **Unfair Advantage:** Partnerschaften mit bestimmten Hochschulen. Zum Start nur das HPI (Closed Access, #6). Ob es schon Partnerschaften gibt oder ob sie ein Ziel sind, ist offen.
+- **Unfair Advantage, zweiter Punkt:** Arbeitgeber können sich sicher sein, dass die Studierenden einen Job in dieser Branche wollen und es um Erfahrung geht, nicht primär ums Geld.
+- **Start lokal:** Bei Unternehmens-Messen: „Schaut euch unsere Seite an und stellt eure Jobs dort ein.“ An Universitäten: Studierenden sagen, dass sie bei uns Jobs finden können.
+- **USP:** Unternehmen wollen vielleicht nur Studierende ausgewählter Top-Unis und können sich so auf deren Qualität verlassen.
 - Firmen erreichen über uns Studierende direkt aus ihrer Branche und mit passenden Skills.
 
 ## Offene Fragen
