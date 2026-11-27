@@ -207,8 +207,11 @@ class Command(BaseCommand):
     def download(self, url):
         try:
             with urllib.request.urlopen(url, timeout=TIMEOUT_SECONDS) as response:
-                return response.read().decode("utf-8", errors="replace")
+                charset = response.headers.get_content_charset() or "utf-8"
+                return response.read().decode(charset, errors="replace")
         except (urllib.error.URLError, TimeoutError) as error:
             raise CommandError(
                 f"Der Modulkatalog ist nicht erreichbar ({error}). Besteht eine Internetverbindung?"
             )
+        except OSError as error:
+            raise CommandError(f"Der Modulkatalog ließ sich nicht vollständig laden ({error}).")
