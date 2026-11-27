@@ -7,7 +7,8 @@ from django.contrib.auth.models import User
 from django.core.management import call_command
 
 from accounts.models import StudentProfile
-from jobs.management.commands.seed import DEMO_EMAIL, NUM_STUDENTS
+from jobs.management.commands.seed import DEMO_EMAIL, MAX_COURSES_PER_SEMESTER, NUM_STUDENTS
+from studies.models import Course, StudyProgram
 from timetable.models import LectureSlot
 
 STUDI_SUFFIX = "@student.hpi.uni-potsdam.de"
@@ -66,6 +67,25 @@ def test_all_students_of_a_course_have_it_at_the_same_time():
     assert times_by_title
     # Jedes Modul hat zwei feste Termine, egal wer es belegt.
     assert all(len(times) <= 2 for times in times_by_title.values())
+
+
+@pytest.mark.django_db
+def test_many_imported_modules_do_not_fill_the_whole_week():
+    """Nach import_lehrplan hat ITSE im 2. Semester viele Wahlpflichtmodule."""
+    itse = StudyProgram.objects.create(
+        name="IT-Systems Engineering", abbreviation="ITSE", university="HPI", standard_semesters=6
+    )
+    for number in range(20):
+        Course.objects.create(program=itse, name=f"Wahlpflichtmodul {number}", semester=2)
+
+    call_command("seed")
+
+    second_semester = StudentProfile.objects.filter(
+        user__in=demo_students(), study_program=itse, semester=2
+    )
+    assert second_semester.exists()
+    for profile in second_semester:
+        assert profile.lectures.count() <= MAX_COURSES_PER_SEMESTER * 2
 
 
 @pytest.mark.django_db

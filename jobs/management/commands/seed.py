@@ -249,6 +249,9 @@ SLOTS_PER_COURSE = 2  # Vorlesung + Übung
 ELECTIVE_TITLES = ["Wahlpflichtmodul", "Seminar", "Sprachkurs Englisch", "Projektseminar"]
 MIN_LECTURES, MAX_LECTURES = 4, 9
 TAKES_COURSE_CHANCE = 0.9
+# Nach `import_lehrplan` hat ein Semester viele Wahlpflichtmodule. Mehr als so viele
+# belegt niemand, sonst wäre die Woche voll.
+MAX_COURSES_PER_SEMESTER = 5
 
 
 def assign_course_cells(courses, rng):
@@ -333,6 +336,7 @@ def create_demo_students(password):
         for tag in rng.sample(tags, rng.randint(0, 3)):
             skills.append(ProfileSkill(profile=profile, tag=tag, source=ProfileSkill.Source.PROFILE))
         current = [c for c in done if c.semester == semester]
+        current = rng.sample(current, min(len(current), MAX_COURSES_PER_SEMESTER))
         for weekday, block, title in make_student_lectures(current, cells_by_course, rng):
             start, end = TIME_GRID[block]
             lecture_slots.append(LectureSlot(profile=profile, weekday=weekday, start=start, end=end, title=title))
