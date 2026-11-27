@@ -1789,3 +1789,143 @@ a.button {
     display: none;
   }
 }
+
+/* Stundenplan wie im Kalender (#87): dasselbe Raster wie „In meiner Woche“, zum Ziehen */
+.tt-editor {
+  position: relative;
+  margin-top: var(--space-4);
+}
+
+.tt-help {
+  margin: 0 0 var(--space-2);
+  font-size: 13px;
+}
+
+.tt-help-touch {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .tt-help-mouse {
+    display: none;
+  }
+
+  .tt-help-touch {
+    display: inline;
+  }
+}
+
+.tt-status {
+  min-height: 1.4em;
+  margin: 0 0 var(--space-2);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.tt-track {
+  cursor: crosshair;
+}
+
+.tt-free {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  padding: 2px 4px;
+  border: 1.5px dashed var(--accent);
+  border-radius: var(--radius-chip);
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.tt-block {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tt-block:focus-visible {
+  z-index: 2;
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.tt-block.tt-dragging {
+  z-index: 3;
+  cursor: grabbing;
+  opacity: 0.9;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tt-block.tt-new {
+  z-index: 3;
+  border: 1.5px dashed var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+/* Unterer Rand zum Verlängern */
+.week-block .tt-resize {
+  display: block;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 10px;
+  cursor: ns-resize;
+}
+
+.tt-popover {
+  position: absolute;
+  z-index: 10;
+  width: min(300px, calc(100% - 16px));
+  padding: var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-panel);
+  background: var(--bg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.tt-popover .form {
+  gap: var(--space-2);
+}
+
+.tt-popover p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.tt-popover-error {
+  color: var(--conflict);
+}
+
+.tt-popover-error:empty {
+  display: none;
+}
+
+.tt-popover-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 720px) {
+  /* Zum Ziehen etwas höher als die Wochenansicht im Stellendetail */
+  .week-panel.tt-editor {
+    --hour: 40px;
+  }
+
+  .week-block .tt-resize {
+    display: block;
+    height: 14px;
+  }
+}
+
+/* Lange Titel im Raster umbrechen statt abschneiden („Mathe-matik“) */
+.tt-block strong {
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
