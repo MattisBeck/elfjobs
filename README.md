@@ -51,6 +51,8 @@ Demo-Login für die Seite: `mia@student.hpi.uni-potsdam.de` mit dem Passwort `DE
 
 Nach dem Registrieren ist das Konto erst aktiv, wenn der Link aus der Bestätigungsmail geklickt wurde. Lokal wird keine echte Mail verschickt: Sie steht im Log des Containers (`docker compose logs backend`), den Link von dort im Browser öffnen. Gesteuert über `EMAIL_BACKEND` in `.env`.
 
+Firmen melden sich unter http://localhost:8000/firma/anmelden/ an und pflegen dort ihre Stellen. Demo-Firmenkonto: `weihmann@firma.elfjobs.local` (Weihmann GbR) mit demselben Passwort wie Mia.
+
 Jede Person hat ihre eigene lokale Datenbank. `seed` erzeugt bei allen dieselben Demo-Daten, den Admin-Benutzer legt jede Person selbst an.
 
 ## Lehrplan importieren (optional)

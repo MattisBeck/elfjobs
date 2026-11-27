@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     "studies",
     "accounts",
     "timetable",
+    "companies",
     "alerts",
 ]
 

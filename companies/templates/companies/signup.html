@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Firmenkonto anlegen · elfjobs{% endblock %}
+
+{% block content %}
+<section class="form-page">
+  <img class="form-logo" src="{% static 'img/elfjobs-logo.svg' %}" alt="elfjobs">
+  <h1>Firmenkonto anlegen</h1>
+  <p class="muted">Stellen für Studierende selbst anlegen und pflegen.</p>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.as_div }}
+    <button type="submit" class="button button-primary">Konto anlegen</button>
+  </form>
+  <p class="muted">Schon ein Firmenkonto? <a href="{% url 'company_login' %}">Anmelden</a></p>
+</section>
+{% endblock %}
