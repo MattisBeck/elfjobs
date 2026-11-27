@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "jobs",
+    "accounts",
 ]
 
 MIDDLEWARE = [
@@ -69,6 +70,16 @@ LANGUAGE_CODE = "de-de"
 TIME_ZONE = "Europe/Berlin"
 USE_I18N = True
 USE_TZ = True
+
+LOGIN_URL = "login"
+# Closed Access: Registrieren nur mit Mail dieser Hochschulen (Domain oder Subdomain,
+# z. B. student.hpi.uni-potsdam.de). Zum Start nur das HPI, weitere Unis hier ergänzen.
+UNI_EMAIL_DOMAINS = [
+    "hpi.de",
+    "hpi.uni-potsdam.de",
+]
+LOGIN_REDIRECT_URL = "job_list"
+LOGOUT_REDIRECT_URL = "job_list"
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]

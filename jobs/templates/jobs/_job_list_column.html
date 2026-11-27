@@ -1,5 +1,10 @@
 <section class="job-list" aria-labelledby="job-list-heading">
-  <h1 id="job-list-heading" class="job-list-heading">Jobs für deine Woche</h1>
+  {# Auf der Detailseite ist der Stellentitel die h1, die Liste daneben nur h2. #}
+  {% if selected_pk %}
+    <h2 id="job-list-heading" class="job-list-heading">Jobs für deine Woche</h2>
+  {% else %}
+    <h1 id="job-list-heading" class="job-list-heading">Jobs für deine Woche</h1>
+  {% endif %}
 
   <div class="chips" role="group" aria-label="Filter">
     {% for chip in chips %}
@@ -15,7 +20,7 @@
   <ul class="job-rows">
     {% for posting in postings %}
       <li>
-        <a class="job-row{% if posting.pk == selected_pk %} is-selected{% endif %}" href="{% url 'job_detail' posting.pk %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}">
+        <a class="job-row{% if posting.pk == selected_pk %} is-selected{% endif %}" href="{% url 'job_detail' posting.pk %}{% if filter_query %}?{{ filter_query }}{% endif %}">
           <span class="job-row-title">{{ posting.title }}</span>
           <span class="job-row-wage">{{ posting.hourly_wage }} €</span>
           <span class="job-row-meta">{{ posting.company.name }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>

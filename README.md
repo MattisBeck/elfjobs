@@ -47,6 +47,8 @@ Stack: Python 3.12, uv, Django 5.2, PostgreSQL 17, Docker Compose (Services `bac
 
 Danach ist das Admin unter http://localhost:8000/admin erreichbar. Ein Frontend gibt es noch nicht.
 
+Demo-Login für die Seite: `mia@student.hpi.uni-potsdam.de` mit dem Passwort `DEMO_PASSWORD` aus `.env`. Registrieren geht zum Start nur mit HPI-Mail (`UNI_EMAIL_DOMAINS` in `config/settings.py`).
+
 Jede Person hat ihre eigene lokale Datenbank. `seed` erzeugt bei allen dieselben Demo-Daten, den Admin-Benutzer legt jede Person selbst an.
 
 ## Claude Code
@@ -61,6 +63,7 @@ Das Repo bringt Werkzeuge für Claude Code mit, die nach `git pull` automatisch 
 
 ## Häufige Probleme
 
+- `seed` meldet `DEMO_PASSWORD fehlt`: Die Zeile `DEMO_PASSWORD=…` aus `.env.example` in deine `.env` kopieren, dann `docker compose up -d` (lädt die `.env` neu).
 - `docker-credential-desktop: executable file not found`: In `~/.docker/config.json` die Zeile `"credsStore": "desktop"` löschen (Überbleibsel einer alten Docker-Desktop-Installation).
 - Colima, Backend stoppt mit `can't open file '/app/manage.py'`: Das Repo muss unter deinem Home-Verzeichnis liegen, Colima gibt nur das an Docker weiter.
 - Port 8000 belegt: Das andere Programm beenden, das auf Port 8000 läuft.

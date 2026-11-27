@@ -29,6 +29,14 @@
   --radius-panel: 12px;
   --radius-pill: 16px;
 
+  /* Abstände im 4-px-Raster */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
   --font: "Inter", system-ui, sans-serif;
 }
 
@@ -79,12 +87,18 @@ a {
   gap: 4px;
 }
 
-.main-nav a {
+.main-nav a,
+.main-nav span {
   padding: 6px 12px;
   border-radius: var(--radius-control);
   color: var(--ink-2);
   font-weight: 500;
   text-decoration: none;
+}
+
+.main-nav span {
+  color: var(--faint);
+  cursor: default;
 }
 
 .main-nav a:hover {
@@ -345,4 +359,332 @@ a {
   .chip {
     min-height: 44px;
   }
+}
+
+/* Stellendetail */
+@media (max-width: 900px) {
+  .split-has-detail .job-list {
+    display: none;
+  }
+}
+
+/* Desktop: die Liste scrollt neben dem Detail für sich, damit die geöffnete Stelle sichtbar bleibt. */
+@media (min-width: 901px) {
+  .split-has-detail .job-list {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+  }
+}
+
+.job-detail {
+  padding: 28px 32px 48px;
+}
+
+.back-link {
+  display: none;
+  margin-bottom: 16px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.job-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  padding: 3px 8px;
+  border-radius: var(--radius-chip);
+  background: var(--surface-muted);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.job-title {
+  margin: 12px 0 4px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.job-company {
+  margin: 0;
+  color: var(--muted);
+}
+
+.job-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.button {
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  color: var(--ink-2);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.tabs {
+  display: inline-flex;
+  gap: 2px;
+  margin: 24px 0;
+  padding: 3px;
+  border-radius: 9px;
+  background: var(--surface-muted);
+}
+
+.tabs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 7px;
+  color: var(--muted);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.tabs a[aria-current="page"] {
+  background: var(--bg);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(27 30 37 / 0.08);
+}
+
+/* Farbe bekommt der Punkt mit der Passung (#9). */
+.tab-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 32px;
+}
+
+.details-main h2,
+.details-side h2 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.details-main section + section {
+  margin-top: 24px;
+}
+
+.details-main p {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.details-main .fair-box {
+  margin-top: 24px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+}
+
+.panel {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+  text-align: right;
+}
+
+.wage-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: var(--radius-panel);
+  background: var(--accent-wash);
+}
+
+.wage-label {
+  font-size: 12px;
+  color: var(--accent-ink);
+}
+
+.wage-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Neben der Liste wird die Detailspalte unter 1200 px zu schmal für zwei Spalten. */
+@media (max-width: 1200px) {
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .back-link {
+    display: inline-block;
+  }
+}
+
+@media (max-width: 720px) {
+  .job-detail {
+    padding: 16px 16px 40px;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-bottom: 4px;
+  }
+
+  .job-actions {
+    width: 100%;
+  }
+
+  .job-actions .button {
+    flex: 1;
+    min-height: 44px;
+  }
+
+  .tabs {
+    display: flex;
+  }
+
+  .tabs a {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+  }
+}
+
+/* Formulare: Anmelden, Registrieren, Profil */
+.form-page {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 40px 16px 64px;
+}
+
+.form-page h1 {
+  margin: 0 0 24px;
+  font-size: 20px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.form input[type="text"],
+.form input[type="password"],
+.form input[type="number"] {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  font: inherit;
+}
+
+.form .helptext,
+.form ul.errorlist {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.form ul.errorlist {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--conflict);
+}
+
+.form #id_skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.form #id_skills label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  font-weight: 400;
+}
+
+.form-page .button {
+  align-self: flex-start;
+}
+
+.notice {
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
+  background: var(--ok-soft);
+  color: var(--ok-ink);
+}
+
+.logout-form {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
 }

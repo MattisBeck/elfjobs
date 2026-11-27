@@ -81,3 +81,37 @@ class JobPosting(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Weekday(models.IntegerChoices):
+    MONDAY = 0, "Mo"
+    TUESDAY = 1, "Di"
+    WEDNESDAY = 2, "Mi"
+    THURSDAY = 3, "Do"
+    FRIDAY = 4, "Fr"
+
+
+class Shift(models.Model):
+    """Eine feste Schicht einer Stelle, jede Woche zur gleichen Zeit."""
+
+    posting = models.ForeignKey(
+        JobPosting, on_delete=models.CASCADE, related_name="shifts", verbose_name="Stelle"
+    )
+    weekday = models.PositiveSmallIntegerField("Wochentag", choices=Weekday.choices)
+    start = models.TimeField("Beginn")
+    end = models.TimeField("Ende")
+
+    class Meta:
+        ordering = ["weekday", "start"]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(end__gt=models.F("start")), name="shift_ends_after_start"),
+        ]
+        verbose_name = "Schicht"
+        verbose_name_plural = "Schichten"
+
+    def __str__(self):
+        return f"{self.get_weekday_display()} {self.start:%H:%M}–{self.end:%H:%M}"
+
+    @property
+    def hours(self):
+        return (self.end.hour * 60 + self.end.minute - self.start.hour * 60 - self.start.minute) / 60
