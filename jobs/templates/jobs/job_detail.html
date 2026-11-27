@@ -53,9 +53,11 @@
             </section>
           {% endif %}
 
-          {% for fair in fairs %}
-            <p class="fair-box">Firma persönlich kennenlernen: <strong>{{ fair.name }}, {{ fair.date|date:"d.m.Y" }}</strong></p>
-          {% endfor %}
+          {% if fairs %}
+            <p class="fair-box">Firma persönlich kennenlernen:
+              {% for fair in fairs %}<strong>{{ fair.name }}, {{ fair.date|date:"d.m.Y" }}</strong>{% if not forloop.last %} · {% endif %}{% endfor %}
+            </p>
+          {% endif %}
         </div>
 
         <aside class="details-side">
@@ -80,4 +82,14 @@
     {% endif %}
   </article>
 </div>
+<script>
+  // Die geöffnete Stelle in der Liste links sichtbar machen (nur Desktop, dort scrollt die Liste selbst).
+  (function () {
+    var list = document.querySelector(".split-has-detail .job-list");
+    var row = list && list.querySelector(".job-row.is-selected");
+    if (row && list.scrollHeight > list.clientHeight) {
+      list.scrollTop = row.offsetTop - list.clientHeight / 3;
+    }
+  })();
+</script>
 {% endblock %}

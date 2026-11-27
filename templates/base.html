@@ -14,7 +14,7 @@
     <a class="wordmark" href="{% url 'job_list' %}">elf<span>jobs</span></a>
 
     <nav class="main-nav" aria-label="Hauptnavigation">
-      <a href="{% url 'job_list' %}"{% if request.resolver_match.url_name == "job_list" %} aria-current="page"{% endif %}>Jobs</a>
+      <a href="{% url 'job_list' %}"{% if request.resolver_match.url_name == "job_list" or request.resolver_match.url_name == "job_detail" %} aria-current="page"{% endif %}>Jobs</a>
       {# Gemerkt (#13) und Messen bekommen ihre Seiten mit eigenen Issues. #}
       <a>Gemerkt</a>
       <a>Messen</a>

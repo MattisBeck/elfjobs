@@ -9,7 +9,7 @@ from jobs.models import Company, Fair, JobPosting, Tag
 
 @pytest.fixture
 def posting(db):
-    fair = Fair.objects.create(name="Jobmesse Potsdam", date=date(2027, 3, 11), location="Potsdam")
+    fair = Fair.objects.create(name="Jobmesse Potsdam", date=date(2099, 3, 11), location="Potsdam")
     company = Company.objects.create(name="Weihmann GbR", industry="Handel")
     company.fairs.add(fair)
     posting = JobPosting.objects.create(
@@ -35,7 +35,7 @@ def test_details_tab_shows_posting(client, posting):
     for text in [
         "Promoter*in", "Weihmann GbR · Handel", "Kurzjob", "Hybrid", "7 h pro Woche",
         "Du sprichst Leute an.", "Englisch", "Flexibel, du planst selbst",
-        "Jobmesse Potsdam, 11.03.2027", "16,00 €", "Merken", "Mit Profil bewerben",
+        "Jobmesse Potsdam, 11.03.2099", "16,00 €", "Merken", "Mit Profil bewerben",
     ]:
         assert text in content
 
@@ -70,3 +70,23 @@ def test_every_seed_posting_has_a_detail_page(client, db):
 
 def test_unknown_posting_is_404(client, db):
     assert client.get("/jobs/999999/").status_code == 404
+
+
+def test_fairs_in_one_box_and_only_upcoming(client, posting):
+    company = posting.company
+    company.fairs.add(Fair.objects.create(name="Karrieretag Berlin", date=date(2099, 4, 22), location="Berlin"))
+    company.fairs.add(Fair.objects.create(name="Alte Messe", date=date(2020, 1, 1), location="Berlin"))
+
+    content = client.get(f"/jobs/{posting.pk}/").content.decode()
+
+    assert content.count('class="fair-box"') == 1
+    assert "Karrieretag Berlin, 22.04.2099" in content
+    assert "Alte Messe" not in content
+
+
+def test_chips_on_detail_page_keep_the_posting_open(client, posting):
+    response = client.get(f"/jobs/{posting.pk}/?q=promoter")
+
+    by_label = {chip["label"]: chip for chip in response.context["chips"]}
+    assert by_label["Kurzjob"]["url"] == f"/jobs/{posting.pk}/?filter=kurzjob&q=promoter"
+    assert response.context["week_url"] == f"/jobs/{posting.pk}/?q=promoter&ansicht=woche"

@@ -179,8 +179,10 @@ a {
     display: none;
   }
 
+  /* Die Suche ist hier nur ausgeblendet, steht aber noch davor: deshalb auch .search + .login-link. */
   .profile-button,
-  .login-link {
+  .login-link,
+  .search + .login-link {
     margin-left: auto;
   }
 
@@ -345,6 +347,17 @@ a {
 @media (max-width: 900px) {
   .split-has-detail .job-list {
     display: none;
+  }
+}
+
+/* Desktop: die Liste scrollt neben dem Detail für sich, damit die geöffnete Stelle sichtbar bleibt. */
+@media (min-width: 901px) {
+  .split-has-detail .job-list {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
   }
 }
 
@@ -531,13 +544,16 @@ a {
   color: var(--muted);
 }
 
+/* Neben der Liste wird die Detailspalte unter 1200 px zu schmal für zwei Spalten. */
+@media (max-width: 1200px) {
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 900px) {
   .back-link {
     display: inline-block;
-  }
-
-  .details-grid {
-    grid-template-columns: 1fr;
   }
 }
 
@@ -569,6 +585,6 @@ a {
   .tabs a {
     flex: 1;
     justify-content: center;
-    min-height: 40px;
+    min-height: 44px;
   }
 }
