@@ -14,7 +14,7 @@
 
   <p class="job-list-meta">
     <strong>{{ postings|length }} Stelle{{ postings|length|pluralize:"n" }}</strong>
-    <span>sortiert nach Bruttolohn</span>
+    <span>sortiert nach effektivem Stundenlohn</span>
   </p>
 
   <ul class="job-rows">
@@ -22,8 +22,9 @@
       <li>
         <a class="job-row{% if posting.pk == selected_pk %} is-selected{% endif %}" href="{% url 'job_detail' posting.pk %}{% if filter_query %}?{{ filter_query }}{% endif %}">
           <span class="job-row-title">{{ posting.title }}</span>
-          <span class="job-row-wage">{{ posting.hourly_wage }} €</span>
+          <span class="job-row-wage">{{ posting.effective_wage }} €</span>
           <span class="job-row-meta">{{ posting.company.name }} · {{ posting.get_workplace_display }} · {{ posting.hours_per_week }} h/Woche</span>
+          <span class="job-row-gross">brutto {{ posting.hourly_wage }} €</span>
         </a>
       </li>
     {% empty %}
