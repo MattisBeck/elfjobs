@@ -1,0 +1,40 @@
+{# Suchfilter (#71): GET-Formular, damit man Suchen teilen kann. Chips, Suche und Startpunkt bleiben als versteckte Felder erhalten. #}
+<details class="filter-panel"{% if filter_form.open %} open{% endif %}>
+  <summary>Filter</summary>
+  <form class="filter-form" action="{{ filter_form.action }}" method="get">
+    {% for name, value in filter_form.hidden %}
+      <input type="hidden" name="{{ name }}" value="{{ value }}">
+    {% endfor %}
+
+    <label class="filter-field">
+      <span>Mindestlohn (€ pro Stunde)</span>
+      <input type="number" name="min_lohn" min="0" step="0.01" inputmode="decimal" value="{{ filter_form.values.min_lohn }}">
+      <small>Effektiv, die Fahrzeit ist eingerechnet.</small>
+    </label>
+
+    <label class="filter-field">
+      <span>Maximale Anreise (min)</span>
+      <input type="number" name="max_anreise" min="0" step="1" inputmode="numeric" value="{{ filter_form.values.max_anreise }}">
+      <small>Einfache Strecke, remote zählt als 0.</small>
+    </label>
+
+    {% if filter_form.show_km %}
+      <label class="filter-field">
+        <span>Maximale Entfernung (km)</span>
+        <input type="number" name="max_km" min="0" step="0.1" inputmode="decimal" value="{{ filter_form.values.max_km }}">
+        <small>Luftlinie zum Startpunkt.</small>
+      </label>
+    {% endif %}
+
+    <fieldset class="filter-field filter-range">
+      <legend>Stunden pro Woche</legend>
+      <div class="filter-range-inputs">
+        <input type="number" name="min_stunden" min="0" step="1" inputmode="numeric" placeholder="von" aria-label="Stunden pro Woche von" value="{{ filter_form.values.min_stunden }}">
+        <span aria-hidden="true">–</span>
+        <input type="number" name="max_stunden" min="0" step="1" inputmode="numeric" placeholder="bis" aria-label="Stunden pro Woche bis" value="{{ filter_form.values.max_stunden }}">
+      </div>
+    </fieldset>
+
+    <button type="submit" class="button button-primary">Anwenden</button>
+  </form>
+</details>
