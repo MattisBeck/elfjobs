@@ -130,17 +130,24 @@ def lecture_json(lecture):
     }
 
 
-def calendar_layout(lectures):
-    """Wo jeder Termin im Raster steht (#135): {ID: {"left", "width", "overlaps"}}.
+def calendar_layout(lectures, shifts):
+    """Wo jeder Termin und jede eigene Schicht im Raster steht (#135, #146).
 
-    Was sich überschneidet, steht nebeneinander (gleiche Regel wie „In meiner Woche“).
-    "overlaps" sind die Titel der Termine, mit denen er sich überschneidet.
+    Ergebnis: zwei Dicts, weil Vorlesungen und Schichten eigene IDs haben, die gleich sein können.
+    - layout: {Vorlesungs-ID: {"left", "width", "overlaps"}}, "overlaps" sind die Titel der
+      Vorlesungen, mit denen sie sich überschneidet.
+    - shift_layout: {Schicht-ID: {"left", "width"}}. Den Konflikttext hat die Schicht schon (#140).
+    Was sich überschneidet, steht nebeneinander, auch eine Schicht neben einer Vorlesung
+    (gleiche Regel wie „In meiner Woche“).
     """
     layout = {}
+    shift_layout = {}
     for weekday in Weekday.values:
         day = [lecture for lecture in lectures if lecture.weekday == weekday and in_grid(lecture)]
-        spans = [(to_minutes(lecture.start), to_minutes(lecture.end)) for lecture in day]
-        for lecture, span, position in zip(day, spans, side_by_side(spans)):
+        day_shifts = [shift for shift in shifts if shift.weekday == weekday]
+        spans = [(to_minutes(item.start), to_minutes(item.end)) for item in day + day_shifts]
+        positions = side_by_side(spans)
+        for lecture, span, position in zip(day, spans, positions):
             layout[str(lecture.pk)] = {
                 **position,
                 "overlaps": [
@@ -148,18 +155,23 @@ def calendar_layout(lectures):
                     if other is not lecture and overlaps(span, other_span)
                 ],
             }
-    return layout
+        for shift, position in zip(day_shifts, positions[len(day):]):
+            shift_layout[str(shift.pk)] = position
+    return layout, shift_layout
 
 
 def calendar_state(lectures, shifts):
     """Freie Blöcke, Stunden und Spalten nach einer Änderung, damit das Raster sie neu zeichnen kann.
 
-    Eigene Schichten (#140) belegen Zeit wie Vorlesungen.
+    Eigene Schichten (#140) belegen Zeit wie Vorlesungen und stehen in denselben Spalten (#146).
     """
     lectures = list(lectures)
-    blocks = free_blocks(lectures + list(shifts))
+    shifts = list(shifts)
+    blocks = free_blocks(lectures + shifts)
+    layout, shift_layout = calendar_layout(lectures, shifts)
     return {
-        "layout": calendar_layout(lectures),
+        "layout": layout,
+        "shift_layout": shift_layout,
         "free": [
             {"weekday": b.weekday, "start": b.start.strftime("%H:%M"), "end": b.end.strftime("%H:%M")}
             for b in blocks

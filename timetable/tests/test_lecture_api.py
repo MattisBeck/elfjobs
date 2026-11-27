@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 
 from accounts.models import StudentProfile
 from jobs.models import Company, JobPosting, Shift
-from timetable.models import LectureSlot
+from timetable.models import LectureSlot, PlannedShift
 
 
 @pytest.fixture
@@ -233,3 +233,48 @@ def test_timetable_page_sends_layout_to_the_grid(client, mia, lecture):
 
     assert calendar["layout"][str(lecture.pk)]["width"] == "50.0000"
     assert calendar["layout"][str(lecture.pk)]["overlaps"] == ["Tutorium"]
+
+
+# Eigene Schichten im selben Spaltenlayout wie Vorlesungen (#146)
+
+
+def plan_shift(mia, weekday, start, end):
+    company = Company.objects.create(name="Holsten Förster", industry="Logistik", commute_minutes=0)
+    posting = JobPosting.objects.create(
+        company=company, title="Aushilfe Lager", kind=JobPosting.Kind.SHORT_JOB,
+        workplace=JobPosting.Workplace.ONSITE, hours_per_week=6, hourly_wage=14,
+        schedule=JobPosting.Schedule.FLEXIBLE,
+    )
+    return PlannedShift.objects.create(profile=mia.profile, posting=posting, weekday=weekday, start=start, end=end)
+
+
+def test_colliding_shift_stands_next_to_the_lecture(client, mia, lecture):
+    """#146: Eine Schicht, die eine Vorlesung überlappt, bekommt eine eigene Spalte daneben."""
+    shift = plan_shift(mia, 0, time(12, 0), time(15, 0))
+    client.force_login(mia)
+
+    body = client.post(f"/stundenplan/termine/{lecture.pk}/", data(title="Mathematik I", start="09:15", end="12:30")).json()
+
+    assert body["layout"][str(lecture.pk)] == {"left": "0.0000", "width": "50.0000", "overlaps": []}
+    assert body["shift_layout"] == {str(shift.pk): {"left": "50.0000", "width": "50.0000"}}
+
+
+def test_shift_alone_keeps_full_width(client, mia, lecture):
+    shift = plan_shift(mia, 1, time(12, 0), time(15, 0))
+    client.force_login(mia)
+
+    body = client.post(f"/stundenplan/termine/{lecture.pk}/loeschen/").json()
+
+    assert body["shift_layout"] == {str(shift.pk): {"left": "0.0000", "width": "100.0000"}}
+
+
+def test_shift_and_lecture_with_the_same_id_keep_their_own_layout(client, mia, lecture):
+    """Schichten stehen in einem eigenen Dict, eine gleiche ID überschreibt nichts."""
+    shift = plan_shift(mia, 0, time(12, 0), time(15, 0))
+    PlannedShift.objects.filter(pk=shift.pk).update(id=lecture.pk)
+    client.force_login(mia)
+
+    calendar = client.get("/stundenplan/").context["calendar"]
+
+    assert calendar["layout"][str(lecture.pk)]["left"] == "0.0000"
+    assert calendar["shift_layout"][str(lecture.pk)]["left"] == "50.0000"
