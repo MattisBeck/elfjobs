@@ -183,6 +183,33 @@ class OnboardingSkillsForm(forms.Form):
         self.fields["skills"].queryset = Tag.objects.exclude(pk__in=course_skills).order_by("name")
 
 
+CV_MAX_SIZE = 5 * 1024 * 1024  # 5 MB
+
+
+class CvUploadForm(forms.ModelForm):
+    """Eigenen Lebenslauf hochladen (#38): nur PDF, höchstens 5 MB."""
+
+    class Meta:
+        model = StudentProfile
+        fields = ("cv_file",)
+        widgets = {"cv_file": forms.FileInput(attrs={"accept": "application/pdf,.pdf"})}
+        error_messages = {"cv_file": {"invalid_extension": "Bitte lade eine PDF-Datei hoch."}}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["cv_file"].required = True
+
+    def clean_cv_file(self):
+        file = self.cleaned_data["cv_file"]
+        if file.size > CV_MAX_SIZE:
+            raise ValidationError("Der Lebenslauf darf höchstens 5 MB groß sein.")
+        # Die Endung allein reicht nicht: Jede PDF-Datei beginnt mit „%PDF-“.
+        if file.read(5) != b"%PDF-":
+            raise ValidationError("Bitte lade eine PDF-Datei hoch.")
+        file.seek(0)
+        return file
+
+
 class CvSampleForm(forms.ModelForm):
     """Auswahl eines Beispiel-Lebenslaufs (#50), bis der echte Upload (#38) da ist."""
 

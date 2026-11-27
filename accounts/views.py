@@ -1,3 +1,4 @@
+import os
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -18,8 +19,8 @@ from jobs.models import JobPosting, Tag
 from jobs.travel import warm_home_commutes
 from jobs.views import FILTER_CHIPS
 
-from .cv import accept_cv_skills, cv_suggestions, sample_cv_path
-from .forms import CvSampleForm, NameForm, OnboardingSkillsForm, ProfileForm, SignupForm, set_profile_skills
+from .cv import accept_cv_skills, cv_path, cv_suggestions
+from .forms import CvSampleForm, CvUploadForm, NameForm, OnboardingSkillsForm, ProfileForm, SignupForm, set_profile_skills
 from .forms import normalize_email
 from .geocode import geocode
 from .models import ProfileSkill, StudentProfile
@@ -109,6 +110,8 @@ def profile(request):
         "name_form": name_form,
         "profile_form": profile_form,
         "cv_form": CvSampleForm(instance=student),
+        "cv_upload_form": CvUploadForm(instance=student),
+        "has_cv": cv_path(student) is not None,
         "cv_new_skills": new_skills,
         "cv_existing_skills": existing_skills,
         "my_fairs": request.user.fairs.filter(date__gte=timezone.localdate()).order_by("date"),
@@ -145,6 +148,35 @@ def cv_select(request):
 
 @login_required
 @require_POST
+def cv_upload(request):
+    """Eigenen Lebenslauf hochladen oder ersetzen (#38). Der alte wird dabei gelöscht."""
+    student, _ = StudentProfile.objects.get_or_create(user=request.user)
+    old_file = student.cv_file.name
+    form = CvUploadForm(request.POST, request.FILES, instance=student)
+    if form.is_valid():
+        form.save()
+        if old_file:
+            student.cv_file.storage.delete(old_file)
+        messages.success(request, "Lebenslauf gespeichert.")
+    else:
+        for error in form.errors["cv_file"]:
+            messages.error(request, error)
+    return redirect(reverse("profile") + "#lebenslauf")
+
+
+@login_required
+@require_POST
+def cv_delete(request):
+    """Eigenen Lebenslauf löschen (#38). Schon gesendete Bewerbungen behalten ihre Kopie."""
+    student, _ = StudentProfile.objects.get_or_create(user=request.user)
+    if student.cv_file:
+        student.cv_file.delete()
+        messages.success(request, "Lebenslauf gelöscht.")
+    return redirect(reverse("profile") + "#lebenslauf")
+
+
+@login_required
+@require_POST
 def cv_accept(request):
     """Angehakte Vorschläge aus dem Lebenslauf als Skills übernehmen."""
     student, _ = StudentProfile.objects.get_or_create(user=request.user)
@@ -158,8 +190,8 @@ def cv_accept(request):
 def cv_pdf(request):
     """Liefert den eigenen Lebenslauf aus. Fremde Lebensläufe sind über diese URL nicht erreichbar."""
     student, _ = StudentProfile.objects.get_or_create(user=request.user)
-    path = sample_cv_path(student)
-    if path is None or not path.exists():
+    path = cv_path(student)
+    if path is None or not os.path.exists(path):
         raise Http404("Kein Lebenslauf gewählt.")
     return FileResponse(open(path, "rb"), content_type="application/pdf", filename="lebenslauf.pdf")
 

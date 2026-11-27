@@ -1,0 +1,18 @@
+{# Linke Spalte „Gemerkt“ (#13), auch im Stellendetail aus „Gemerkt“ (#127). #}
+<section class="job-list" aria-labelledby="saved-heading">
+  {% if selected_pk %}
+    <h2 id="saved-heading" class="job-list-heading">Gemerkt</h2>
+  {% else %}
+    <h1 id="saved-heading" class="job-list-heading">Gemerkt</h1>
+  {% endif %}
+  <p class="job-list-meta"><strong>{{ postings|length }} Stelle{{ postings|length|pluralize:"n" }}</strong></p>
+  <ul class="job-rows">
+    {% for posting in postings %}
+      <li>
+        {% include "jobs/_job_row.html" %}
+      </li>
+    {% empty %}
+      <li class="job-list-empty">Noch nichts gemerkt. Öffne eine Stelle und klicke auf „Merken“, dann findest du sie hier wieder. <a href="{% url 'job_list' %}">Zur Stellenliste</a></li>
+    {% endfor %}
+  </ul>
+</section>

@@ -24,6 +24,25 @@
     </p>
     <p class="tt-status" role="status" aria-live="polite"></p>
     <div class="week tt-week"></div>
+    {# Termine, die nicht ganz zwischen 8 und 20 Uhr liegen, zeigt das Raster nicht (#123). #}
+    {% if outside %}
+      <section class="tt-outside">
+        <h2>Außerhalb von 8–20 Uhr</h2>
+        {% for lecture in outside %}
+          <div class="lecture-row">
+            <span class="lecture-time">{{ lecture.get_weekday_display }} {{ lecture.start|time:"G:i" }}–{{ lecture.end|time:"G:i" }}</span>
+            <span class="lecture-title">{{ lecture.title }}</span>
+            <span class="lecture-actions">
+              <a href="{% url 'lecture_edit' lecture.pk %}">Ändern</a>
+              <form method="post" action="{% url 'lecture_delete' lecture.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="link-button" aria-label="{{ lecture.title }} am {{ lecture.get_weekday_display }} löschen">Löschen</button>
+              </form>
+            </span>
+          </div>
+        {% endfor %}
+      </section>
+    {% endif %}
   </section>
   {{ calendar|json_script:"timetable-data" }}
 

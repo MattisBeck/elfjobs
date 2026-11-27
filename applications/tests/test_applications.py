@@ -2,6 +2,7 @@ from decimal import Decimal
 
 import pytest
 from django.contrib.auth.models import User
+from django.core.files.base import ContentFile
 from django.core.management import call_command
 
 from accounts.models import StudentProfile
@@ -136,3 +137,96 @@ def test_seed_gives_mia_two_applications():
     applications = Application.objects.filter(profile__user__username=DEMO_EMAIL)
     assert applications.count() == 2
     assert all(a.posting.kind == JobPosting.Kind.WORKING_STUDENT for a in applications)
+
+
+# Lebenslauf mitschicken (#38)
+
+CV = b"%PDF-1.4\n% Mias Lebenslauf\n%%EOF\n"
+
+
+def give_cv(profile, content=CV):
+    profile.cv_file.save("lebenslauf.pdf", ContentFile(content))
+
+
+def cv_url(application):
+    return f"/bewerbungen/{application.pk}/lebenslauf.pdf"
+
+
+def test_apply_sends_copy_of_cv(student_client, student, posting):
+    give_cv(student)
+
+    student_client.post(apply_url(posting))
+
+    application = Application.objects.get()
+    assert application.cv.read() == CV
+    # Eine Kopie: Ersetzt Mia ihren Lebenslauf später, bleibt der gesendete erhalten.
+    assert application.cv.name != student.cv_file.name
+    give_cv(student, CV + b"neu")
+    application.cv.open()
+    assert application.cv.read() == CV
+
+
+def test_apply_without_cv_sends_none(student_client, posting):
+    student_client.post(apply_url(posting))
+
+    assert not Application.objects.get().cv
+
+
+def test_applicant_and_admin_can_open_sent_cv(student_client, student, posting, client, admin_user):
+    give_cv(student)
+    student_client.post(apply_url(posting))
+    application = Application.objects.get()
+
+    response = student_client.get(cv_url(application))
+    assert response.status_code == 200
+    assert b"".join(response.streaming_content) == CV
+
+    client.force_login(admin_user)
+    assert client.get(cv_url(application)).status_code == 200
+
+
+def test_others_cannot_open_sent_cv(student_client, student, posting, client):
+    give_cv(student)
+    student_client.post(apply_url(posting))
+    application = Application.objects.get()
+
+    tom = User.objects.create_user("tom@student.hpi.uni-potsdam.de")
+    client.force_login(tom)
+    assert client.get(cv_url(application)).status_code == 404
+
+    company_user = User.objects.create_user("jobs@weihmann.example")
+    CompanyMember.objects.create(user=company_user, company=posting.company)
+    client.force_login(company_user)
+    assert client.get(cv_url(application)).status_code == 404
+
+    client.logout()
+    assert client.get(cv_url(application)).status_code == 302
+
+
+def test_admin_shows_cv_link_on_application(student_client, student, posting, client, admin_user):
+    give_cv(student)
+    student_client.post(apply_url(posting))
+    application = Application.objects.get()
+    client.force_login(admin_user)
+
+    content = client.get(f"/admin/applications/application/{application.pk}/change/").content.decode()
+
+    assert cv_url(application) in content
+    assert "/media/" not in content
+
+
+def test_profile_links_sent_cv(student_client, student, posting):
+    give_cv(student)
+    student_client.post(apply_url(posting))
+    application = Application.objects.get()
+
+    assert cv_url(application) in student_client.get("/profil/").content.decode()
+
+
+@pytest.mark.django_db
+def test_seed_attaches_cv_to_mias_applications():
+    call_command("seed")
+    call_command("seed")
+
+    applications = Application.objects.filter(profile__user__username=DEMO_EMAIL)
+    assert all(a.cv and a.cv.read().startswith(b"%PDF-") for a in applications)

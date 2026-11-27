@@ -40,3 +40,16 @@ def test_buttons_are_44px_on_phones():
 
 def test_email_field_looks_like_the_other_fields():
     assert '.form input[type="email"]' in css()
+
+
+def test_heatmap_and_fair_links_are_44px_on_phones():
+    # Nachtrag zu #110 und #112: Skill-Auswahl und Messen-Links am Handy mindestens 44 px (#115).
+    blocks = mobile_blocks()
+
+    for selector in [".skill-picker summary", ".availability-form #id_skills label", ".fair-company ul a", ".fair-more a"]:
+        rule = re.search(re.escape(selector) + r"[^{]*\{([^}]*)\}", blocks)
+        assert rule, selector
+        assert "min-height: 44px" in rule.group(1), selector
+
+    links = re.search(r"\.fair-company ul a,\s*\.fair-more a \{([^}]*)\}", blocks)
+    assert "display: inline-flex" in links.group(1)
