@@ -197,7 +197,11 @@ def test_mia_sees_sql_from_third_semester(client):
 def test_verdict_all_learned(profile):
     requirements = classify(skill_lookup(profile), [Tag.objects.get(name="Git")])
 
-    assert verdict(requirements) == {"level": "kannst", "label": "✓ Du bist qualifiziert", "detail": ""}
+    assert verdict(requirements) == {
+        "level": "kannst",
+        "label": "✓ Du bist qualifiziert",
+        "detail": "Du bringst mit: Git aus PT1.",
+    }
 
 
 def test_verdict_rest_comes_in_studies(profile):
@@ -206,8 +210,14 @@ def test_verdict_rest_comes_in_studies(profile):
     assert verdict(requirements) == {
         "level": "bald",
         "label": "✓ Passt zu deinem Studium",
-        "detail": "Den Rest lernst du noch: SQL ab 3. Semester.",
+        "detail": "Du bringst mit: Git aus PT1. Kommt noch im Studium: SQL ab 3. Semester.",
     }
+
+
+def test_verdict_when_everything_comes_later(profile):
+    requirements = classify(skill_lookup(profile), [Tag.objects.get(name="SQL")])
+
+    assert verdict(requirements)["detail"] == "Kommt noch im Studium: SQL ab 3. Semester."
 
 
 def test_verdict_none_when_something_is_not_in_studies(profile):
@@ -217,7 +227,12 @@ def test_verdict_none_when_something_is_not_in_studies(profile):
 
 
 def test_verdict_without_requirements(profile):
-    assert verdict([]) == {"level": "kannst", "label": "✓ Keine Vorkenntnisse nötig", "detail": ""}
+    # #98: auch ohne Anforderungen „Du bist qualifiziert“, nicht „Keine Vorkenntnisse nötig“
+    assert verdict([]) == {
+        "level": "kannst",
+        "label": "✓ Du bist qualifiziert",
+        "detail": "Vorkenntnisse braucht es hier nicht.",
+    }
 
 
 def test_profile_skill_counts_for_verdict(profile):
@@ -253,7 +268,7 @@ def test_detail_explains_what_comes_later(client, profile):
 
     content = client.get(f"/jobs/{posting.pk}/").content.decode()
 
-    assert "Den Rest lernst du noch: SQL ab 3. Semester." in content
+    assert "Du bringst mit: Git aus PT1. Kommt noch im Studium: SQL ab 3. Semester." in content
 
 
 def test_no_verdict_without_login_or_profile(client, profile):
