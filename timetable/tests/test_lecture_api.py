@@ -172,3 +172,31 @@ def test_fit_uses_lectures_from_the_calendar(client, mia):
     assert status() == "passt"
     client.post("/stundenplan/termine/", data(title="Mathe", start="09:00", end="12:00"))
     assert status() == "kollidiert"
+
+
+def test_lectures_outside_the_grid_stay_reachable(client, mia, lecture):
+    # Must-fix aus dem Review von #120 (#123): Das Raster zeigt 8–20 Uhr. Termine, die nicht ganz
+    # hineinpassen, würden dort verschwinden oder still auf 8 Uhr geklemmt. Sie stehen deshalb
+    # unter dem Raster mit Ändern und Löschen und landen nicht in den Daten fürs Raster.
+    late = LectureSlot.objects.create(profile=mia.profile, weekday=0, start=time(20, 30), end=time(21, 30), title="Abendkurs")
+    early = LectureSlot.objects.create(profile=mia.profile, weekday=2, start=time(7, 0), end=time(9, 0), title="Frühsport")
+    client.force_login(mia)
+
+    content = client.get("/stundenplan/").content.decode()
+
+    data_json = json.loads(content.split('id="timetable-data" type="application/json">')[1].split("</script>")[0])
+    assert [item["title"] for item in data_json["lectures"]] == ["Mathematik I"]
+    outside = content[content.index('class="tt-outside"'):content.index('id="timetable-data"')]
+    assert "Außerhalb von 8–20 Uhr" in outside
+    assert "Mo 20:30–21:30" in outside and "Abendkurs" in outside
+    assert "Mi 7:00–9:00" in outside and "Frühsport" in outside
+    for item in (late, early):
+        assert f'href="/stundenplan/{item.pk}/"' in outside
+        assert f'action="/stundenplan/{item.pk}/loeschen/"' in outside
+    assert "Mathematik I" not in outside
+
+
+def test_no_outside_list_when_everything_fits(client, mia, lecture):
+    client.force_login(mia)
+
+    assert 'class="tt-outside"' not in client.get("/stundenplan/").content.decode()

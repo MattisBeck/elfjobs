@@ -2002,3 +2002,13 @@ a.button {
   overflow-wrap: anywhere;
   hyphens: auto;
 }
+
+/* Termine außerhalb von 8–20 Uhr unter dem Raster (#123) */
+.tt-outside {
+  margin-top: var(--space-4);
+}
+
+.tt-outside h2 {
+  margin: 0 0 var(--space-2);
+  font-size: 14px;
+}
