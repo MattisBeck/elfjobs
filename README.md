@@ -10,7 +10,7 @@ Stack: Python 3.12, uv, Django 5.2, PostgreSQL 17, Docker Compose (Services `bac
 - Windows: Repo innerhalb von WSL2 klonen und dort arbeiten (nicht unter `C:\`), sonst ist der Bind-Mount langsam.
 - Git
 - GitHub CLI (`gh`), danach einmal `gh auth login`. Damit arbeiten wir mit Issues und Pull Requests (siehe `CLAUDE.md`).
-- Node.js 18 oder neuer (nur für den Playwright-Server von Claude Code, siehe unten)
+- Optional, nur für die Claude-Code-Werkzeuge (siehe unten): Node.js 20 oder neuer (Taste: 22) und Google Chrome. Für das Projekt selbst reichen Docker und Git.
 - uv (nur für die Autovervollständigung im Editor): lokal `uv sync` ausführen, das erzeugt `.venv`. Dieses `.venv` im Editor als Interpreter auswählen.
 
 ## Erster Start
@@ -53,8 +53,11 @@ Jede Person hat ihre eigene lokale Datenbank. `seed` erzeugt bei allen dieselben
 
 Das Repo bringt Werkzeuge für Claude Code mit, die nach `git pull` automatisch da sind:
 
-- **Design-Skills** in `.claude/skills/`: `/impeccable` (Design, Kritik, Feinschliff), `design-taste-frontend` (Taste) und Emil Kowalskis Skills zu Animation und UI (z. B. `/emil-design-eng`, `/review-animations`).
-- **Playwright** (`.mcp.json`): Claude kann damit die Seite im Browser öffnen, klicken und Screenshots machen. Beim ersten Start fragt Claude Code, ob es den Server aus `.mcp.json` verwenden darf; mit Ja bestätigen. Fehlt der Browser, einmal `npx playwright install chromium` ausführen.
+- **Design-Skills** in `.claude/skills/`, kopiert aus den Upstream-Repos am 27.11.2026, ohne Änderungen:
+  - `/impeccable` (Design, Kritik, Feinschliff), Version 4.11.1, [pbakaus/impeccable](https://github.com/pbakaus/impeccable). Lädt beim ersten Aufruf sein Programm (Engine) von den GitHub-Releases nach `~/.impeccable/` und prüft es per SHA-256. Dafür braucht es Internet und `curl` oder `wget`.
+  - `design-taste-frontend` (Taste), Version 2.5.1, [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill). Enthält einen Stop-Hook: Ist der Skill aktiv, prüft er beim Beenden die Seite in Chrome (`node gate.mjs`, bis zu 10 min) und kann das Beenden blockieren. Braucht Node 22.
+  - Emil Kowalskis Skills zu Animation und UI, z. B. `/emil-design-eng`, `/review-animations` ([emilkowalski/skill](https://github.com/emilkowalski/skill)).
+- **Playwright** (`.mcp.json`, Version 0.0.86): Claude kann damit die Seite im Browser öffnen, klicken und Screenshots machen. Der Browser läuft mit eigenem, flüchtigem Profil (`--isolated`) und lädt nur `localhost:8000` und Google Fonts (`--allowed-origins`, laut Playwright keine harte Sicherheitsgrenze). Er nutzt das installierte Google Chrome. Beim ersten Start fragt Claude Code, ob es den Server aus `.mcp.json` verwenden darf; mit Ja bestätigen.
 
 ## Häufige Probleme
 

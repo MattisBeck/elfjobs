@@ -2,7 +2,13 @@
   "mcpServers": {
     "playwright": {
       "command": "npx",
-      "args": ["-y", "@playwright/mcp@0.0.86"]
+      "args": [
+        "-y",
+        "@playwright/mcp@0.0.86",
+        "--isolated",
+        "--allowed-origins",
+        "http://localhost:8000;https://fonts.googleapis.com;https://fonts.gstatic.com"
+      ]
     }
   }
 }
