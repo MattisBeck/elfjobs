@@ -38,6 +38,27 @@ def test_calendar_without_weekly_events_says_so():
     assert parse_ics(ics) == ([], 0)
 
 
+def calendar_with(*events):
+    body = "".join(f"BEGIN:VEVENT\r\nSUMMARY:{title}\r\n{lines}END:VEVENT\r\n" for title, lines in events)
+    return f"BEGIN:VCALENDAR\r\nVERSION:2.0\r\n{body}END:VCALENDAR\r\n".encode()
+
+
+# Review #114: einzelne kaputte Termine werden übersprungen, statt einen 500 auszulösen.
+BROKEN_EVENTS = [
+    ("Ende als Datum", "DTSTART:20261019T091500\r\nDTEND;VALUE=DATE:20261020\r\nRRULE:FREQ=WEEKLY\r\n"),
+    ("Beginn kaputt", "DTSTART:kaputt\r\nDTEND:20261019T104500\r\nRRULE:FREQ=WEEKLY\r\n"),
+    ("Wochentag kaputt", "DTSTART:20261019T091500\r\nDTEND:20261019T104500\r\nRRULE:FREQ=WEEKLY;BYDAY=XX\r\n"),
+]
+GOOD_EVENT = ("PT1", "DTSTART:20261019T091500\r\nDTEND:20261019T104500\r\nRRULE:FREQ=WEEKLY\r\n")
+
+
+def test_broken_events_are_skipped_and_counted():
+    slots, skipped = parse_ics(calendar_with(GOOD_EVENT, *BROKEN_EVENTS))
+
+    assert [(slot["title"], slot["weekday"], slot["start"]) for slot in slots] == [("PT1", 0, time(9, 15))]
+    assert skipped == 3
+
+
 @pytest.fixture
 def profile(client, db):
     user = User.objects.create_user("mia", password="pw-12345678")
@@ -101,3 +122,17 @@ def test_timetable_page_has_upload_form(client, profile):
 
     assert 'action="/stundenplan/import/"' in content
     assert 'enctype="multipart/form-data"' in content
+
+
+def test_upload_with_broken_events_shows_preview(client, profile):
+    response = upload(client, calendar_with(GOOD_EVENT, *BROKEN_EVENTS))
+
+    assert response.status_code == 302
+    assert "1 Termin gefunden, 3 übersprungen" in client.get(response.url).content.decode()
+
+
+def test_too_large_file_is_rejected(client, profile):
+    response = upload(client, b"BEGIN:VCALENDAR\r\n" + b"X" * (1024 * 1024))
+
+    assert response.status_code == 200
+    assert "höchstens 1 MB" in response.content.decode()

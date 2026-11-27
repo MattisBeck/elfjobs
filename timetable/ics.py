@@ -50,30 +50,40 @@ def parse_ics(data):
     slots = []
     skipped = 0
     for event in calendar.walk("VEVENT"):
-        start = event.get("DTSTART")
-        rule = event.get("RRULE")
         # Geänderte Einzeltermine einer Serie (RECURRENCE-ID) gehören zur Serie, die schon zählt.
         if event.get("RECURRENCE-ID"):
             continue
-        if start is None or not isinstance(start.dt, datetime) or not rule or rule.get("FREQ") != ["WEEKLY"]:
+        try:
+            event_slots = _slots_of(event)
+        except (ValueError, AttributeError, TypeError, KeyError):
+            # Kaputte Angaben in einem Termin (z. B. "DTSTART:kaputt"): Termin überspringen.
+            event_slots = []
+        if not event_slots:
             skipped += 1
-            continue
-        start_dt = _local(start.dt)
-        if event.get("DTEND") is not None:
-            end_dt = _local(event["DTEND"].dt)
-        elif event.get("DURATION") is not None:
-            end_dt = start_dt + event["DURATION"].dt
-        else:
-            skipped += 1
-            continue
-        weekdays = _weekdays(event, start_dt)
-        if not weekdays or end_dt.date() != start_dt.date() or end_dt <= start_dt:
-            skipped += 1
-            continue
-        title = str(event.get("SUMMARY", "")).strip()[:100] or "Termin"
-        for weekday in weekdays:
-            slot = {"weekday": weekday, "start": start_dt.time(), "end": end_dt.time(), "title": title}
+        for slot in event_slots:
             if slot not in slots:
                 slots.append(slot)
     slots.sort(key=lambda slot: (slot["weekday"], slot["start"], slot["title"]))
     return slots, skipped
+
+
+def _slots_of(event):
+    """Termine eines wöchentlichen VEVENT, [] wenn er nicht passt (Einzeltermin, ganztägig, Wochenende)."""
+    start = event.get("DTSTART")
+    rule = event.get("RRULE")
+    if start is None or not isinstance(start.dt, datetime) or not rule or rule.get("FREQ") != ["WEEKLY"]:
+        return []
+    start_dt = _local(start.dt)
+    if event.get("DTEND") is not None:
+        if not isinstance(event["DTEND"].dt, datetime):
+            return []
+        end_dt = _local(event["DTEND"].dt)
+    elif event.get("DURATION") is not None:
+        end_dt = start_dt + event["DURATION"].dt
+    else:
+        return []
+    weekdays = _weekdays(event, start_dt)
+    if not weekdays or end_dt.date() != start_dt.date() or end_dt <= start_dt:
+        return []
+    title = str(event.get("SUMMARY", "")).strip()[:100] or "Termin"
+    return [{"weekday": weekday, "start": start_dt.time(), "end": end_dt.time(), "title": title} for weekday in weekdays]

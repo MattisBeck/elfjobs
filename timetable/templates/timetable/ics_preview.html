@@ -5,7 +5,7 @@
 {% block content %}
 <section class="form-page">
   <h1>Aus dem Kalender übernehmen</h1>
-  <p>{{ slots|length }} Termine gefunden, {{ skipped }} übersprungen.</p>
+  <p>{{ slots|length }} Termin{{ slots|length|pluralize:"e" }} gefunden, {{ skipped }} übersprungen.</p>
   <p class="muted">Übersprungen werden Einzeltermine (z. B. Klausuren), ganztägige Termine und Termine am Wochenende.</p>
   <ul class="ics-preview">
     {% for slot in slots %}

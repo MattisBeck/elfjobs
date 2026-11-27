@@ -20,7 +20,17 @@ class LectureSlotForm(forms.ModelForm):
         return cleaned
 
 
+# Ein Semester-Stundenplan hat wenige KB; größere Dateien lesen wir gar nicht erst ein.
+MAX_ICS_BYTES = 1024 * 1024
+
+
 class IcsUploadForm(forms.Form):
     """Stundenplan als Kalenderdatei (#43), z. B. aus dem Uni-Kalender exportiert."""
 
     datei = forms.FileField(label="Kalenderdatei (.ics)", widget=forms.ClearableFileInput(attrs={"accept": ".ics,text/calendar"}))
+
+    def clean_datei(self):
+        datei = self.cleaned_data["datei"]
+        if datei.size > MAX_ICS_BYTES:
+            raise forms.ValidationError("Die Datei ist zu groß, höchstens 1 MB.")
+        return datei
