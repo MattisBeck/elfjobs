@@ -33,9 +33,9 @@ Beides fließt in die Sortierung der Stellen ein („Passt am besten“, #42).
 |---|---|---|
 | Alter, Studium | 18, Politikwissenschaft | 19, BWL |
 | Finanzierung | muss ihr Studium selbst finanzieren, erste Studierende in der Familie | wird von den Eltern finanziert, Eltern sind Akademiker\*innen |
-| Braucht | Geld zum Leben, aber auch Zeit zum Studieren. Wenig Zeit, sonst leidet das Studium. | Berufserfahrung (Employability), Geld für Urlaub mit Freunden. Kann es sich leisten, für Erfahrung zu arbeiten. |
+| Braucht | Geld zum Leben, aber auch Zeit zum Studieren. Wenig Zeit, sonst leidet das Studium. Sucht irgendwas, Hauptsache Geld (nicht unbedingt im späteren Arbeitsbereich). | Berufserfahrung (Employability), Geld für Urlaub mit Freunden. Kann es sich leisten, für Erfahrung zu arbeiten und länger zu studieren. |
 | Paradox | mehr arbeiten heißt weniger Zeit für die Uni, die Uni ist ihr aber wichtig | ohne Berufserfahrung kein Job, ohne Job keine Berufserfahrung |
-| Wir helfen durch | Planbarkeit: Arbeitszeiten, die genau in die Freizeit passen | einen einfachen Weg zu einem Job in seinem Bereich, Lernen und Job in einem |
+| Wir helfen durch | Planbarkeit: Arbeitszeiten, die genau in die Freizeit passen. Lernen und Job in einem. | einen einfachen Weg zu einem Job in seinem Bereich |
 
 ## Erkenntnisse aus den Interviews
 
