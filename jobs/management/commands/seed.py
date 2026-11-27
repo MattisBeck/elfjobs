@@ -9,8 +9,10 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from faker import Faker
 
-from accounts.models import StudentProfile
+from accounts.models import ProfileSkill, StudentProfile
 from jobs.models import Company, Fair, JobPosting, Shift, Tag
+from studies.curriculum import CURRICULUM
+from studies.models import Course, StudyProgram
 
 SEED = 42
 NUM_COMPANIES = 20
@@ -106,6 +108,35 @@ def make_shifts(posting, rng):
     return shifts
 
 
+# Skills aus dem Lehrplan, die manche Stellen zusätzlich abfragen (je 1–2 davon).
+CURRICULUM_REQUIREMENTS = {
+    "Werkstudent*in Softwareentwicklung": ["C-Grundlagen", "Memory Management", "Git", "Java", "SQL"],
+    "Werkstudent*in Data Analytics": ["SQL", "Statistik"],
+    "Werkstudent*in IT-Support": ["Linux", "Netzwerke"],
+}
+
+
+def create_curriculum():
+    """Studiengänge und Module aus studies/curriculum.py, fehlende Tags werden angelegt.
+
+    Studiengänge und Module werden aktualisiert statt gelöscht, damit Profile ihre
+    Auswahl behalten.
+    """
+    for name, abbreviation, university, standard_semesters, courses in CURRICULUM:
+        program, _ = StudyProgram.objects.update_or_create(
+            university=university,
+            abbreviation=abbreviation,
+            defaults={"name": name, "standard_semesters": standard_semesters},
+        )
+        for semester, short_name, course_name, skills in courses:
+            course, _ = Course.objects.update_or_create(
+                program=program,
+                name=course_name,
+                defaults={"short_name": short_name, "semester": semester},
+            )
+            course.skills.set([Tag.objects.get_or_create(name=skill)[0] for skill in skills])
+
+
 DEMO_EMAIL = "mia@student.hpi.uni-potsdam.de"
 
 
@@ -116,15 +147,20 @@ def create_demo_student(password):
     user.first_name = "Mia"
     user.set_password(password)
     user.save()
+    itse = StudyProgram.objects.get(university="HPI", abbreviation="ITSE")
     profile, _ = StudentProfile.objects.update_or_create(
         user=user,
-        defaults={"study_program": "ITSE", "semester": 1, "home_town": "Potsdam"},
+        defaults={"study_program": itse, "semester": 1, "home_town": "Potsdam"},
     )
-    profile.skills.set(Tag.objects.filter(name__in=["Python", "Englisch", "Informatik"]))
+    profile.skills.set(
+        Tag.objects.filter(name__in=["Python", "Englisch", "Informatik"]),
+        through_defaults={"source": ProfileSkill.Source.PROFILE},
+    )
+    profile.courses.set(itse.courses.filter(short_name__in=["PT1", "MA1"]))
 
 
 class Command(BaseCommand):
-    help = "Füllt die Datenbank mit reproduzierbaren Beispieldaten (Messen, Firmen, Tags, Stellen)."
+    help = "Füllt die Datenbank mit reproduzierbaren Beispieldaten (Messen, Firmen, Tags, Stellen, Lehrpläne)."
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -193,9 +229,20 @@ class Command(BaseCommand):
             for weekday, start, end in make_shifts(posting, shift_random):
                 Shift.objects.create(posting=posting, weekday=weekday, start=start, end=end)
 
+        # Lehrpläne (#30) nach den Stellen, mit eigenem Zufallsgenerator für die Anforderungen.
+        create_curriculum()
+        requirement_random = random.Random(SEED)
+        postings = JobPosting.objects.filter(title__in=CURRICULUM_REQUIREMENTS).order_by("id")
+        for posting in postings:
+            options = CURRICULUM_REQUIREMENTS[posting.title]
+            names = requirement_random.sample(options, requirement_random.randint(1, 2))
+            posting.tags.add(*Tag.objects.filter(name__in=names))
+
         create_demo_student(demo_password)
 
         self.stdout.write(self.style.SUCCESS(
             f"{NUM_POSTINGS} Stellen von {NUM_COMPANIES} Firmen angelegt "
-            f"({len(fairs)} Messen, {len(tags)} Tags), Demo-Login: {DEMO_EMAIL}."
+            f"({len(fairs)} Messen, {Tag.objects.count()} Tags, "
+            f"{StudyProgram.objects.count()} Studiengänge mit {Course.objects.count()} Modulen), "
+            f"Demo-Login: {DEMO_EMAIL}."
         ))

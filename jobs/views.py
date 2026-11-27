@@ -4,6 +4,9 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
+from accounts.models import StudentProfile
+from studies.skills import skill_sources
+
 from .models import JobPosting
 
 # Filter-Chips der Stellenliste: GET-Parameter "filter", mehrere kombinierbar.
@@ -77,8 +80,18 @@ def job_detail(request, pk):
     )
     postings, chips, filter_params = filtered_postings(request)
     view = "woche" if request.GET.get("ansicht") == "woche" else "details"
+
+    # "Das bringst du mit": Skills, die die Studentin hat, mit Quelle ("aus PT1").
+    sources = {}
+    if request.user.is_authenticated:
+        profile = StudentProfile.objects.filter(user=request.user).first()
+        if profile:
+            sources = skill_sources(profile)
+    requirements = [{"tag": tag, "source": sources.get(tag.id)} for tag in posting.tags.all()]
+
     return render(request, "jobs/job_detail.html", {
         "posting": posting,
+        "requirements": requirements,
         # Nur Messen, die noch kommen.
         "fairs": posting.company.fairs.filter(date__gte=timezone.localdate()).order_by("date"),
         "view": view,

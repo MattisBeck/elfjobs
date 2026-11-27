@@ -42,12 +42,16 @@
             <p>{{ posting.description|linebreaksbr }}</p>
           </section>
 
-          {% if posting.tags.all %}
+          {% if requirements %}
             <section>
               <h2>Das bringst du mit</h2>
               <ul class="tags">
-                {% for tag in posting.tags.all %}
-                  <li class="tag">{{ tag.name }}</li>
+                {% for requirement in requirements %}
+                  {% if requirement.source %}
+                    <li class="tag tag-learned">✓ {{ requirement.tag.name }} · {{ requirement.source }}</li>
+                  {% else %}
+                    <li class="tag">{{ requirement.tag.name }}</li>
+                  {% endif %}
                 {% endfor %}
               </ul>
             </section>
