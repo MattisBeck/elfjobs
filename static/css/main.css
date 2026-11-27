@@ -1324,6 +1324,98 @@ a.button {
   margin: 4px 0;
 }
 
+/* Firmen: Verfügbarkeit als Heatmap (#67). Je dunkler, desto mehr frei; die Zahl steht immer dabei. */
+.availability-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.availability-page h1 {
+  margin: 0 0 var(--space-2);
+  font-size: 20px;
+}
+
+.availability-form fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.availability-form legend {
+  margin-bottom: var(--space-2);
+  font-weight: 500;
+}
+
+.availability-form #id_skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.availability-form #id_skills label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  font-weight: 400;
+}
+
+.availability-page .button {
+  align-self: flex-start;
+}
+
+.heatmap-scroll {
+  overflow-x: auto;
+}
+
+.heatmap {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.heatmap th {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.heatmap th[scope="row"] {
+  padding-right: var(--space-2);
+  text-align: right;
+  white-space: nowrap;
+  color: var(--faint);
+}
+
+.heatmap td {
+  height: 36px;
+  border-radius: var(--radius-chip);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.heatmap .heat-0 { background: var(--bg-subtle); color: var(--faint); font-weight: 400; }
+.heatmap .heat-1 { background: var(--accent-wash); color: var(--accent-ink); }
+.heatmap .heat-2 { background: var(--accent-soft); color: var(--accent-ink); }
+.heatmap .heat-3 { background: #A9BDF0; color: var(--ink); }
+.heatmap .heat-4 { background: var(--accent); color: #fff; }
+
+@media (max-width: 720px) {
+  .availability-page {
+    padding: 20px 16px 48px;
+  }
+
+  .heatmap td {
+    font-size: 12px;
+  }
+}
+
 /* Onboarding (#35) */
 .onboarding-actions {
   display: flex;
