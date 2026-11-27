@@ -64,6 +64,13 @@ ONSITE_ONLY_TITLES = {
     "Event-Helfer*in", "Kassenaushilfe", "Flyer-Verteilung", "Promoter*in",
 }
 
+# Fahrzeiten der Firmen aus den Beispielen in docs/design.md, alle anderen zufällig 12–40 min.
+DESIGN_EXAMPLE_COMMUTES = {
+    "Weihmann GbR": 18,
+    "Bauer": 12,
+    "Holsten Förster AG & Co. OHG": 35,
+}
+
 # Schichten der Stellen mit festen Zeiten: höchstens 4 h pro Schicht, meist nachmittags.
 MAX_SHIFT_MINUTES = 4 * 60
 # Die Beispielstelle aus docs/design.md bekommt genau die Zeiten aus dem Design-Canvas.
@@ -173,6 +180,14 @@ class Command(BaseCommand):
             posting.tags.set(random.sample(tags, random.randint(0, 3)))
 
         # Eigener Zufallsgenerator, damit neue Daten die Stellen oben nicht verändern.
+        commute_random = random.Random(SEED)
+        for company in Company.objects.order_by("id"):
+            company.commute_minutes = DESIGN_EXAMPLE_COMMUTES.get(
+                company.name, commute_random.randint(12, 40)
+            )
+            company.save()
+
+
         shift_random = random.Random(SEED)
         for posting in JobPosting.objects.filter(schedule=JobPosting.Schedule.FIXED).order_by("id"):
             for weekday, start, end in make_shifts(posting, shift_random):
