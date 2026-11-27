@@ -2,6 +2,7 @@ from django import forms
 from django.conf import settings
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 
 from jobs.models import Tag
 from studies.models import Course, StudyProgram
@@ -48,6 +49,8 @@ class SignupForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.username = self.cleaned_data["email"]
+        # Erst aktiv, wenn die Mail bestätigt ist (#31, accounts/views.py confirm_email).
+        user.is_active = False
         if commit:
             user.save()
             profile = StudentProfile.objects.create(
@@ -65,6 +68,22 @@ class LoginForm(AuthenticationForm):
 
     def clean_username(self):
         return self.cleaned_data["username"].lower()
+
+    def clean(self):
+        """Django lehnt inaktive Konten mit der allgemeinen Fehlermeldung ab. Stimmt das Passwort,
+        sagen wir stattdessen, dass die Mail noch bestätigt werden muss (#31)."""
+        try:
+            return super().clean()
+        except ValidationError:
+            username = self.cleaned_data.get("username")
+            password = self.cleaned_data.get("password")
+            user = User.objects.filter(username=username, is_active=False).first()
+            if user and password and user.check_password(password):
+                raise ValidationError(
+                    "Bitte bestätige zuerst deine Uni-Mail. Den Link haben wir dir per Mail geschickt.",
+                    code="inactive",
+                ) from None
+            raise
 
 
 class NameForm(forms.ModelForm):

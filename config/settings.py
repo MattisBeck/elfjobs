@@ -74,6 +74,11 @@ USE_I18N = True
 USE_TZ = True
 
 LOGIN_URL = "login"
+
+# Mails (Bestätigung der Uni-Mail, #31). Im Dev-Setup landen sie in der Konsole:
+# docker compose logs backend. Ein echter Mailserver kommt erst für Produktion.
+EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@elfjobs.local")
 # Closed Access: Registrieren nur mit Mail dieser Hochschulen (Domain oder Subdomain,
 # z. B. student.hpi.uni-potsdam.de). Zum Start nur das HPI, weitere Unis hier ergänzen.
 UNI_EMAIL_DOMAINS = [

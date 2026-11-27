@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mail bestätigen · elfjobs{% endblock %}
+
+{% block content %}
+<section class="form-page">
+  <img class="form-logo" src="{% static 'img/elfjobs-logo.svg' %}" alt="elfjobs">
+  <h1>Bitte bestätige deine Mail</h1>
+  {% for message in messages %}
+    <p class="notice">{{ message }}</p>
+  {% endfor %}
+  <p>Wir haben dir einen Link {% if email %}an <strong>{{ email }}</strong> {% endif %}geschickt. Klick ihn an, dann ist dein Konto aktiv. Der Link gilt 3 Tage.</p>
+  <p class="muted">Keine Mail bekommen? Schau im Spam-Ordner nach oder lass sie dir neu schicken.</p>
+  <form method="post" class="form">
+    {% csrf_token %}
+    <div>
+      <label for="id_email">Uni-Mail</label>
+      <input type="email" name="email" id="id_email" value="{{ email }}" required>
+    </div>
+    <button type="submit" class="button">Mail erneut senden</button>
+  </form>
+</section>
+{% endblock %}
