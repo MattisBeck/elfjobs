@@ -7,8 +7,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import StudentProfile
-from studies.qualification import classify, skill_lookup, summary, verdict
-from timetable.fit import FLEXIBEL, PASST, posting_fit
+from studies.qualification import LEARNED, classify, skill_lookup, summary, verdict
+from timetable.fit import FLEXIBEL, KOLLIDIERT, PASST, TEILWEISE, posting_fit
 
 from .filters import (
     FILTER_FIELDS,
@@ -35,6 +35,25 @@ FILTER_CHIPS = {
 # Ausschalten über ?plan=aus (ein eigener Parameter, weil „kein Filter“ sonst
 # nicht von „Chip aus“ zu unterscheiden wäre).
 PLAN_CHIP_LABEL = "Passt in meinen Plan"
+
+
+# Sortierung „Passt am besten“ (#42): erst Stundenplan, dann Lehrplan, dann Lohn.
+FIT_RANK = {PASST: 0, FLEXIBEL: 0, TEILWEISE: 1, KOLLIDIERT: 2}
+
+
+def best_fit_key(posting):
+    """Sortierschlüssel für „Passt am besten“, ohne gewichtete Formel, damit man es nachvollziehen kann:
+
+    1. Passung zum Stundenplan (passt oder flexibel vor teilweise vor kollidiert),
+    2. Anteil der Anforderungen, die man laut Lehrplan schon kann (keine Anforderungen = alles),
+    3. effektiver Stundenlohn, bei Gleichstand der Titel.
+    """
+    fit = getattr(posting, "fit", None)
+    fit_rank = FIT_RANK[fit.status] if fit else 0
+    requirements = posting.requirements
+    learned = sum(1 for r in requirements if r["status"] == LEARNED)
+    share = learned / len(requirements) if requirements else 1
+    return (fit_rank, -share, -posting.effective_wage, posting.title)
 
 
 def with_query(path, params):
@@ -98,6 +117,10 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
         ).distinct()
     search_params = [("q", q)] if q else []
 
+    # Reihenfolge: Mit Lehrplan (skills) ist „Passt am besten“ Standard, ?reihenfolge=lohn wählt den Lohn.
+    by_wage = skills is None or request.GET.get("reihenfolge") == "lohn"
+    order_params = [("reihenfolge", "lohn")] if skills is not None and by_wage else []
+
     # Passung: Stundenplan einmal laden, dann pro Stelle rechnen (ohne weitere Abfragen).
     profile = None
     if request.user.is_authenticated:
@@ -125,7 +148,7 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
             "url": with_query(
                 request.path,
                 [("filter", f) for f in active] + search_params + ([("plan", "aus")] if plan_on else [])
-                + number_params + list(keep_params),
+                + order_params + number_params + list(keep_params),
             ),
         })
     for key, label in FILTER_CHIPS.items():
@@ -135,11 +158,12 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
             "active": key in active,
             "url": with_query(
                 request.path,
-                [("filter", f) for f in toggled] + search_params + plan_params + number_params + list(keep_params),
+                [("filter", f) for f in toggled] + search_params + plan_params + order_params
+                + number_params + list(keep_params),
             ),
         })
 
-    filter_params = [("filter", f) for f in active] + search_params + plan_params + number_params
+    filter_params = [("filter", f) for f in active] + search_params + plan_params + order_params + number_params
 
     # Aktive Suchfilter als Chips mit ✕: der Link lässt nur diesen Filter weg.
     for label, names in filter_labels(filters):
@@ -153,27 +177,40 @@ def filtered_postings(request, skills=None, keep_params=(), fields=FILTER_FIELDS
             ),
         })
 
-    # Sortiert nach effektivem Stundenlohn (#12). Der wird in Python berechnet, nicht in der DB,
-    # deshalb laufen auch die Suchfilter erst hier.
+    # Sortiert nach „Passt am besten“ (#42) oder effektivem Stundenlohn (#12). Beides wird in Python
+    # berechnet, nicht in der DB, deshalb laufen auch die Suchfilter erst hier.
     applied = filters if commute_filter else {k: v for k, v in filters.items() if k != "max_anreise"}
-    postings = sorted(
-        apply_filters(postings, applied), key=lambda posting: (-posting.effective_wage, posting.title)
-    )
+    postings = apply_filters(postings, applied)
     if skills is not None:
         for posting in postings:
-            requirements = classify(skills, posting.tags.all())
-            posting.skill_hint = summary(requirements)
-            posting.verdict = verdict(requirements)
+            posting.requirements = classify(skills, posting.tags.all())
+            posting.skill_hint = summary(posting.requirements)
+            posting.verdict = verdict(posting.requirements)
+    if by_wage:
+        postings = sorted(postings, key=lambda posting: (-posting.effective_wage, posting.title))
+    else:
+        postings = sorted(postings, key=best_fit_key)
+
+    # Umschalter der Reihenfolge, nur mit Lehrplan. Alle anderen Parameter bleiben erhalten.
+    sort_links = []
+    if skills is not None:
+        base = [(name, value) for name, value in filter_params if name != "reihenfolge"]
+        sort_links = [
+            {"label": "Passt am besten", "active": not by_wage, "url": with_query(request.path, base)},
+            {"label": "Effektiver Lohn", "active": by_wage,
+             "url": with_query(request.path, base + [("reihenfolge", "lohn")])},
+        ]
 
     # Formular „Filter“: Schieberegler plus versteckt alles andere, damit nichts verloren geht.
     # Die Suche in der Kopfzeile behält alles außer q (das ist ihr eigenes Feld).
-    other_params = [("filter", f) for f in active] + plan_params + list(keep_params)
+    other_params = [("filter", f) for f in active] + plan_params + order_params + list(keep_params)
     filter_form = {
         "action": request.path,
         "sliders": slider_settings(filters),
         "hidden": other_params + search_params,
         "search_hidden": other_params + number_params,
         "show_km": "max_km" in fields,
+        "sort_links": sort_links,
         "open": bool(filters),
     }
     return postings, chips, filter_params, filter_form

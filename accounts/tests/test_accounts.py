@@ -40,17 +40,17 @@ def signup_data(**overrides):
 
 
 @pytest.mark.django_db
-def test_signup_with_uni_mail_creates_user_with_profile_and_logs_in(client, itse):
+def test_signup_with_uni_mail_creates_user_with_profile(client, itse):
     response = client.post("/registrieren/", signup_data())
 
+    # Erst nach Bestätigung der Mail aktiv und eingeloggt (#31, accounts/tests/test_confirm_email.py).
     assert response.status_code == 302
-    assert response.url == "/profil/"
+    assert response.url == "/registrieren/bestaetigen/"
     user = User.objects.get(username="lena.kraus@student.hpi.uni-potsdam.de")
     assert user.email == "lena.kraus@student.hpi.uni-potsdam.de"
     assert user.profile.summary == "ITSE · 3. Semester"
     # Vorauswahl: alle Module bis zum aktuellen Semester.
     assert sorted(user.profile.courses.values_list("short_name", flat=True)) == ["DBS1", "PT1"]
-    assert client.get("/profil/").status_code == 200
 
 
 @pytest.mark.django_db

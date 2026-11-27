@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Link ungültig · elfjobs{% endblock %}
+
+{% block content %}
+<section class="form-page">
+  <img class="form-logo" src="{% static 'img/elfjobs-logo.svg' %}" alt="elfjobs">
+  <h1>Link ungültig oder abgelaufen</h1>
+  <p>Dieser Bestätigungslink funktioniert nicht mehr. Vielleicht hast du ihn schon benutzt, oder er ist älter als 3 Tage.</p>
+  <p><a class="button button-primary" href="{% url 'confirm_pending' %}">Neue Mail anfordern</a></p>
+  <p class="muted">Schon bestätigt? <a href="{% url 'login' %}">Anmelden</a></p>
+</section>
+{% endblock %}
