@@ -1,6 +1,6 @@
 {# Bewertungen der Firma im Stellendetail (#32). Daten aus reviews/ratings.py (review_context). #}
 <section id="bewertungen" class="reviews">
-  <h2>Bewertungen für {{ review.company.name }}</h2>
+  <h2>Bewertungen für {% include "jobs/_company_logo.html" with company=review.company decorative=True %}{{ review.company.name }}</h2>
   {% if review.count %}
     <p class="reviews-summary"><strong>{{ review.average|floatformat:1 }} von 5 Sternen</strong> · {{ review.count }} Bewertung{{ review.count|pluralize:"en" }}</p>
     <ul class="review-list">

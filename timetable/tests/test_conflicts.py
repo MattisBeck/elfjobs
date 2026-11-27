@@ -161,7 +161,8 @@ def test_shifts_are_in_json_for_the_grid(mia_client, profile):
     response = mia_client.get("/stundenplan/")
 
     assert response.context["calendar"]["shifts"] == [{
-        "id": shift.pk, "title": "Promoter*in", "company": "Weihmann GbR", "weekday": 0,
+        "id": shift.pk, "title": "Promoter*in", "company": "Weihmann GbR",
+        "logo_url": None, "initials": "W", "weekday": 0,
         "start": "12:00", "end": "15:00", "url": f"/jobs/{posting.pk}/?ansicht=woche",
         "conflict": "kollidiert mit Mathematik I",
     }]

@@ -4,7 +4,7 @@
 
 {% block content %}
 <section class="form-page company-home">
-  <h1>{{ company.name }}</h1>
+  <h1>{% include "jobs/_company_logo.html" with company=company decorative=True %}{{ company.name }}</h1>
   {% for message in messages %}
     <p class="notice">{{ message }}</p>
   {% endfor %}

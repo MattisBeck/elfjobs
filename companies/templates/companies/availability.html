@@ -4,7 +4,7 @@
 
 {% block content %}
 <section class="availability-page">
-  <a class="back-link" href="{% url 'company_home' %}">← {{ company.name }}</a>
+  <a class="back-link" href="{% url 'company_home' %}">← {% include "jobs/_company_logo.html" with company=company decorative=True %}{{ company.name }}</a>
   <h1>Wann haben passende Studierende Zeit?</h1>
   <p class="muted">Frei heißt: keine Vorlesung laut Stundenplan, mit {{ company.commute_minutes }} min Fahrzeit als Puffer davor und danach. Ihr seht nur Anzahlen, keine Namen. Unter {{ min_count }} Studierenden zeigen wir keine genaue Zahl.</p>
 

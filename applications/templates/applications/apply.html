@@ -6,7 +6,7 @@
 <section class="form-page apply-step">
   <a class="back-link-plain" href="{% url 'job_detail' posting.pk %}">← {{ posting.title }}</a>
   <h1>Wann würdest du arbeiten?</h1>
-  <p class="muted">{{ posting.title }} bei {{ posting.company.name }}, {{ posting.hours_per_week }} h pro Woche</p>
+  <p class="muted">{{ posting.title }} bei {% include "jobs/_company_logo.html" with company=posting.company decorative=True %}{{ posting.company.name }}, {{ posting.hours_per_week }} h pro Woche</p>
 
   {% for message in messages %}
     <p class="notice">{{ message }}</p>

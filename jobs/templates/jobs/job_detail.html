@@ -225,7 +225,7 @@
           <section class="share-links">
             {% with company=posting.company %}
               {% if company.instagram_url or company.linkedin_url or company.tiktok_url %}
-                <h2>{{ company.name }} im Netz</h2>
+                <h2>{% include "jobs/_company_logo.html" with company=company decorative=True %}{{ company.name }} im Netz</h2>
                 <ul class="link-list">
                   {% if company.instagram_url %}<li><a href="{{ company.instagram_url }}" target="_blank" rel="noopener noreferrer">Instagram</a></li>{% endif %}
                   {% if company.linkedin_url %}<li><a href="{{ company.linkedin_url }}" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>{% endif %}

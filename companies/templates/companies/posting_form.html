@@ -4,7 +4,7 @@
 
 {% block content %}
 <section class="form-page">
-  <a class="back-link" href="{% url 'company_home' %}">← {{ company.name }}</a>
+  <a class="back-link" href="{% url 'company_home' %}">← {% include "jobs/_company_logo.html" with company=company decorative=True %}{{ company.name }}</a>
   <h1>{% if posting.pk %}Stelle bearbeiten{% else %}Neue Stelle{% endif %}</h1>
   <form method="post" class="form">
     {% csrf_token %}
