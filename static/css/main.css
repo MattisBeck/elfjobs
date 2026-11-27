@@ -1737,10 +1737,11 @@ a.button {
     var(--bg-subtle);
 }
 
+/* Überlappende Blöcke stehen nebeneinander (#135): --left und --width rechnet der Server */
 .week-block {
   position: absolute;
-  left: 2px;
-  right: 2px;
+  left: calc(var(--left, 0%) + 2px);
+  width: calc(var(--width, 100%) - 4px);
   overflow: hidden;
   padding: 2px 4px;
   border-radius: var(--radius-chip);
@@ -1767,6 +1768,12 @@ a.button {
 
 .week-shift { background: var(--shift); }
 .week-conflict { background: var(--conflict); }
+
+/* Vorlesung, mit der eine Schicht kollidiert, und Termine, die sich überschneiden (#135) */
+.week-lecture-conflict,
+.tt-overlap {
+  box-shadow: inset 0 0 0 2px var(--conflict);
+}
 
 /* Flexible Stellen (#11): freie Blöcke gestrichelt blau, eigene Schichten blau gefüllt */
 .week-free {

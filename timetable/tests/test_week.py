@@ -50,6 +50,7 @@ def test_shift_position_in_percent_of_eight_to_twenty(posting):
         "kind": "shift", "label": "Schicht", "time": "15:00–18:30",
         # 15 Uhr = 7 von 12 Stunden, 3,5 Stunden lang
         "top": "58.3333", "height": "29.1667",
+        "left": "0.0000", "width": "100.0000",
     }]
 
 
@@ -59,6 +60,49 @@ def test_lectures_grey_and_colliding_shift_red(posting):
     wednesday = blocks(week, 2)
     assert [(b["kind"], b["label"]) for b in wednesday] == [("lecture", "Mathematik I"), ("conflict", "Konflikt")]
     assert blocks(week, 1)[0]["kind"] == "shift"
+
+
+def test_colliding_shift_stands_next_to_the_lecture_which_stays_visible(posting):
+    """#135: Die Schicht liegt nicht mehr über der Vorlesung, beide teilen sich die Breite."""
+    week = week_view(posting, [lecture(2, time(16, 0), time(17, 30), "Mathematik I")])
+
+    math, conflict = blocks(week, 2)
+    assert (math["kind"], math["left"], math["width"]) == ("lecture", "0.0000", "50.0000")
+    assert (conflict["kind"], conflict["left"], conflict["width"]) == ("conflict", "50.0000", "50.0000")
+    assert math["conflict"] is True
+
+
+def test_lecture_without_collision_keeps_full_width_and_no_mark(posting):
+    week = week_view(posting, [lecture(0, time(9, 15), time(12, 30))])
+
+    (monday,) = blocks(week, 0)
+    assert (monday["left"], monday["width"], monday["conflict"]) == ("0.0000", "100.0000", False)
+
+
+def test_conflict_only_through_commute_buffer_marks_lecture_but_keeps_full_width(posting):
+    posting.company.commute_minutes = 30
+    posting.company.save()
+    # Vorlesung endet 16:15, Schicht Mi beginnt 16:30: kein Überlappen, aber der Weg fehlt.
+    week = week_view(posting, [lecture(2, time(14, 45), time(16, 15))])
+
+    math, conflict = blocks(week, 2)
+    assert conflict["kind"] == "conflict"
+    assert math["conflict"] is True
+    assert math["width"] == conflict["width"] == "100.0000"
+
+
+def test_detail_page_places_overlapping_blocks_side_by_side(client, posting):
+    user = User.objects.create_user("lea@student.hpi.uni-potsdam.de")
+    profile = StudentProfile.objects.create(user=user, semester=1)
+    LectureSlot.objects.create(profile=profile, weekday=2, start=time(16, 0), end=time(17, 30), title="Mathematik I")
+    client.force_login(user)
+
+    html = client.get(f"/jobs/{posting.pk}/?ansicht=woche").content.decode()
+
+    assert "week-lecture week-lecture-conflict" in html
+    assert "--left: 0.0000%; --width: 50.0000%" in html
+    assert "--left: 50.0000%; --width: 50.0000%" in html
+    assert "Kollidiert mit einer Schicht" in html
 
 
 def test_blocks_outside_eight_to_twenty_are_clipped():

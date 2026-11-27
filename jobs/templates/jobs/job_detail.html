@@ -84,15 +84,16 @@
                       <strong>{{ block.label }}</strong> <span>{{ block.time }}</span>
                     </a>
                   {% elif block.kind == "own" %}
-                    <form class="week-block week-own" method="post" action="{% url 'planned_shift_delete' posting.pk block.id %}" style="top: {{ block.top }}%; height: {{ block.height }}%">
+                    <form class="week-block week-own" method="post" action="{% url 'planned_shift_delete' posting.pk block.id %}" style="top: {{ block.top }}%; height: {{ block.height }}%; --left: {{ block.left }}%; --width: {{ block.width }}%">
                       {% csrf_token %}
                       <button type="submit" aria-label="Deine Schicht {{ day.label }} {{ block.time }} entfernen">
                         <strong>{{ block.label }}</strong> <span>{{ block.time }}</span>
                       </button>
                     </form>
                   {% else %}
-                    <div class="week-block week-{{ block.kind }}" style="top: {{ block.top }}%; height: {{ block.height }}%">
+                    <div class="week-block week-{{ block.kind }}{% if block.conflict %} week-lecture-conflict{% endif %}" style="top: {{ block.top }}%; height: {{ block.height }}%; --left: {{ block.left }}%; --width: {{ block.width }}%">
                       <strong>{{ block.label }}</strong> <span>{{ block.time }}</span>
+                      {% if block.conflict %}<span class="visually-hidden">Kollidiert mit einer Schicht</span>{% endif %}
                     </div>
                   {% endif %}
                 {% endfor %}
