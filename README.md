@@ -48,5 +48,6 @@ Danach ist das Admin unter http://localhost:8000/admin erreichbar. Ein Frontend 
 
 - Pakete nur mit `uv add <paket>` hinzufügen. Danach die Container mit `docker compose up --build` neu bauen.
 - Arbeit in Feature-Branches, Änderungen per Pull Request in `main`.
+- Jede Änderung kommt mit pytest-Tests. Tests ausführen: `docker compose exec backend uv run pytest`.
 - Bei einem Konflikt in `uv.lock` eine Seite übernehmen und anschließend `uv lock` ausführen.
 - Datenbank zurücksetzen: `docker compose down -v`. Das löscht alle Daten; danach `migrate` und `seed` erneut ausführen.
