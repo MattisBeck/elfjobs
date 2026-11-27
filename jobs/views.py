@@ -2,11 +2,13 @@ from urllib.parse import urlencode
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import StudentProfile
 from studies.qualification import classify, skill_lookup, summary
 
+from .geo import BERLIN_MITTE, haversine_km, parse_start
 from .models import JobPosting
 
 # Filter-Chips der Stellenliste: GET-Parameter "filter", mehrere kombinierbar.
@@ -31,8 +33,11 @@ def student_skills(request):
     return skill_lookup(profile) if profile else None
 
 
-def filtered_postings(request, skills=None):
+def filtered_postings(request, skills=None, keep_params=()):
     """Stellen und Filter-Chips für die linke Spalte, gesteuert über ?filter=... und ?q=...
+
+    keep_params sind weitere (Name, Wert)-Paare, die in den Chip-Links erhalten bleiben,
+    z. B. der Startpunkt lat/lon auf der Karte.
 
     Mit skills (aus student_skills) bekommt jede Stelle einen Hinweis wie
     „2 von 3 Anforderungen aus dem Studium“ (posting.skill_hint).
@@ -67,7 +72,9 @@ def filtered_postings(request, skills=None):
         chips.append({
             "label": label,
             "active": key in active,
-            "url": with_query(request.path, [("filter", f) for f in toggled] + search_params),
+            "url": with_query(
+                request.path, [("filter", f) for f in toggled] + search_params + list(keep_params)
+            ),
         })
 
     filter_params = [("filter", f) for f in active] + search_params
@@ -114,4 +121,51 @@ def job_detail(request, pk):
         "chips": chips,
         "filter_query": urlencode(filter_params),
         "selected_pk": posting.pk,
+    })
+
+
+def job_map(request):
+    """Karte mit allen Stellen und Liste nach Luftlinie zum Startpunkt (?lat=...&lon=...)."""
+    start = parse_start(request.GET.get("lat"), request.GET.get("lon"))
+    if start:
+        start_params = [("lat", request.GET["lat"]), ("lon", request.GET["lon"])]
+    else:
+        start, start_params = BERLIN_MITTE, []
+    postings, chips, filter_params = filtered_postings(request, student_skills(request), start_params)
+
+    # Stellen mit Ort nach Entfernung, Stellen ohne Ort (remote) in einem eigenen Abschnitt.
+    nearby = []
+    remote = []
+    for posting in postings:
+        if posting.has_location:
+            posting.distance_km = haversine_km(
+                start[0], start[1], float(posting.latitude), float(posting.longitude)
+            )
+            nearby.append(posting)
+        else:
+            remote.append(posting)
+    nearby.sort(key=lambda posting: (posting.distance_km, posting.title))
+
+    filter_query = urlencode(filter_params)
+    # Daten für die Marker, kommen per json_script ins Template (escaped).
+    markers = []
+    for posting in nearby:
+        url = reverse("job_detail", args=[posting.pk])
+        markers.append({
+            "lat": float(posting.latitude),
+            "lon": float(posting.longitude),
+            "title": posting.title,
+            "company": posting.company.name,
+            "wage": f"{posting.effective_wage} €".replace(".", ","),
+            "url": f"{url}?{filter_query}" if filter_query else url,
+        })
+
+    return render(request, "jobs/job_map.html", {
+        "nearby": nearby,
+        "remote": remote,
+        "chips": chips,
+        "filter_query": filter_query,
+        "start": {"lat": start[0], "lon": start[1]},
+        "has_start": bool(start_params),
+        "markers": markers,
     })

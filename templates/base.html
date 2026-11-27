@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  {% block head %}{% endblock %}
 </head>
 <body>
   <header class="site-header">
@@ -15,12 +16,18 @@
 
     <nav class="main-nav" aria-label="Hauptnavigation">
       <a href="{% url 'job_list' %}"{% if request.resolver_match.url_name == "job_list" or request.resolver_match.url_name == "job_detail" %} aria-current="page"{% endif %}>Jobs</a>
+      <a href="{% url 'job_map' %}"{% if request.resolver_match.url_name == "job_map" %} aria-current="page"{% endif %}>Karte</a>
       {# Gemerkt (#13) und Messen bekommen ihre Seiten mit eigenen Issues. #}
       <span aria-disabled="true">Gemerkt</span>
       <span aria-disabled="true">Messen</span>
     </nav>
 
-    <form class="search" action="{% url 'job_list' %}" method="get" role="search">
+    {# Auf der Karte bleibt die Suche auf der Karte, mit demselben Startpunkt. #}
+    <form class="search" action="{% if request.resolver_match.url_name == "job_map" %}{% url 'job_map' %}{% else %}{% url 'job_list' %}{% endif %}" method="get" role="search">
+      {% if request.resolver_match.url_name == "job_map" and request.GET.lat and request.GET.lon %}
+        <input type="hidden" name="lat" value="{{ request.GET.lat }}">
+        <input type="hidden" name="lon" value="{{ request.GET.lon }}">
+      {% endif %}
       <input type="search" name="q" value="{{ request.GET.q }}" placeholder="Titel, Firma oder Skill" aria-label="Suche">
     </form>
 
