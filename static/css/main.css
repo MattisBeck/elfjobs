@@ -1,0 +1,203 @@
+/* Design-Tokens aus docs/design.md (Richtung A „Wochenplan“) */
+:root {
+  --bg: #FFFFFF;
+  --bg-subtle: #FAFBFC;
+  --surface-muted: #F1F3F6;
+  --line: #E6E8EC;
+  --line-strong: #E1E4E9;
+  --ink: #1B1E25;
+  --ink-2: #3B404B;
+  --muted: #646B78;
+  --faint: #8A909C;
+  --accent: #2F5BD8;
+  --accent-ink: #2A4FBF;
+  --accent-soft: #EAF0FD;
+  --accent-wash: #F3F6FE;
+  --lecture: #E9ECF1;
+  --lecture-ink: #454B57;
+  --shift: #1F7A50;
+  --ok-soft: #E3F3EA;
+  --ok-ink: #1F6E48;
+  --conflict: #C8402F;
+  --part-soft: #FCF0DE;
+  --part-ink: #8F4C0A;
+  --part-dot: #C77A1E;
+
+  --radius-chip: 6px;
+  --radius-control: 8px;
+  --radius-row: 10px;
+  --radius-panel: 12px;
+  --radius-pill: 16px;
+
+  --font: "Inter", system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+/* Kopfzeile */
+.site-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 60px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.wordmark {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.wordmark span {
+  color: var(--accent);
+}
+
+.main-nav {
+  display: flex;
+  gap: 4px;
+}
+
+.main-nav a {
+  padding: 6px 12px;
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.main-nav a:hover {
+  background: var(--surface-muted);
+}
+
+.main-nav a[aria-current="page"] {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+.search {
+  flex: 1;
+  max-width: 360px;
+  margin-left: auto;
+}
+
+.search input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  font: inherit;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+.search input::placeholder {
+  color: var(--faint);
+}
+
+.profile-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.profile-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.profile-name {
+  font-weight: 600;
+}
+
+.profile-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.login-link {
+  margin-left: auto;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.search + .login-link {
+  margin-left: 0;
+}
+
+/* Handy: Wortmarke und Profil oben, Navigation darunter, Suche ausgeblendet */
+@media (max-width: 720px) {
+  .site-header {
+    flex-wrap: wrap;
+    height: auto;
+    gap: 8px 16px;
+    padding: 10px 16px;
+  }
+
+  .search,
+  .profile-text {
+    display: none;
+  }
+
+  /* Die Suche ist hier nur ausgeblendet, steht aber noch davor: deshalb auch .search + .login-link. */
+  .profile-button,
+  .login-link,
+  .search + .login-link {
+    margin-left: auto;
+  }
+
+  .main-nav {
+    order: 3;
+    width: 100%;
+  }
+
+  /* Klickflächen auf dem Handy mindestens 44 px hoch (docs/design.md) */
+  .main-nav a,
+  .wordmark,
+  .profile-button,
+  .login-link {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
