@@ -1,9 +1,12 @@
 """Lehrpläne für den Seed: Studiengänge mit ihren Modulen und den Skills, die sie vermitteln.
 
 Stark vereinfacht und nur „angelehnt an“ die echten Studienordnungen (ITSE grob am
-HPI-Bachelor, Semester 1 bis 3). Es geht um Skills, die für Nebenjobs zählen, nicht um
+HPI-Bachelor, Semester 1 bis 4). Es geht um Skills, die für Nebenjobs zählen, nicht um
 jedes Modul. Jeder Skill ist ein Tag aus jobs.Tag, fehlende Tags legt der Seed an.
-Später kommt der Lehrplan per Import aus dem Modulkatalog (#40).
+Den vollständigen ITSE-Lehrplan liest `python manage.py import_lehrplan itse` aus dem
+Modulkatalog. Kürzel und Semester der ITSE-Module stimmen deshalb mit dem Katalog
+überein (HPI-MO → MO, Semester aus SEMESTER_BY_CODE in import_lehrplan.py), damit Seed
+und Import dasselbe Modul treffen.
 
 Aufbau: (Name, Kürzel, Hochschule, Regelstudienzeit, [(Semester, Kurzname, Modul, [Skills]), ...])
 """
@@ -13,16 +16,16 @@ CURRICULUM = [
         (1, "PT1", "Programmiertechnik I", ["C-Grundlagen", "Memory Management", "Git"]),
         (1, "MA1", "Mathematik I", ["Lineare Algebra", "Logik"]),
         (1, "DS", "Digitale Systeme", ["Digitale Systeme", "Boolesche Algebra"]),
-        (1, "MOD1", "Modellierung I", ["UML", "Datenmodellierung"]),
+        (1, "MO", "Modellierung I", ["UML", "Datenmodellierung"]),
         (1, "WG", "Wirtschaftliche Grundlagen", ["BWL"]),
         (2, "PT2", "Programmiertechnik II", ["Java", "Objektorientierte Programmierung"]),
         (2, "MA2", "Mathematik II", ["Analysis", "Statistik"]),
-        (2, "TI1", "Theoretische Informatik I", ["Theoretische Informatik"]),
         (2, "RA", "Rechnerarchitektur", ["Rechnerarchitektur", "Assembler"]),
+        (3, "TI1", "Theoretische Informatik I", ["Theoretische Informatik"]),
         (3, "DBS1", "Datenbanksysteme I", ["SQL", "Datenmodellierung"]),
-        (3, "SWT1", "Softwaretechnik I", ["Softwaretechnik", "Scrum", "Testen"]),
-        (3, "BS1", "Betriebssysteme I", ["Linux", "Nebenläufigkeit"]),
+        (3, "BS", "Betriebssysteme I", ["Linux", "Nebenläufigkeit"]),
         (3, "WWW", "Internet- und WWW-Technologien", ["HTML/CSS", "JavaScript", "Netzwerke"]),
+        (4, "SWT", "Softwaretechnik I", ["Softwaretechnik", "Scrum", "Testen"]),
     ]),
     ("Wirtschaftsinformatik", "WI", "Uni Potsdam", 6, [
         (1, "EWI", "Einführung in die Wirtschaftsinformatik", ["Excel", "BWL"]),

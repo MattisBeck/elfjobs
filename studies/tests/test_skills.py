@@ -71,7 +71,7 @@ def test_seed_creates_curriculum_and_postings_asking_for_c():
     call_command("seed")
 
     itse = StudyProgram.objects.get(university="HPI", abbreviation="ITSE")
-    assert set(itse.courses.values_list("semester", flat=True)) == {1, 2, 3}
+    assert set(itse.courses.values_list("semester", flat=True)) == {1, 2, 3, 4}
     pt1 = itse.courses.get(short_name="PT1")
     assert pt1.name == "Programmiertechnik I"
     assert {"C-Grundlagen", "Memory Management"} <= set(pt1.skills.values_list("name", flat=True))
@@ -91,6 +91,21 @@ def test_seed_keeps_course_choices_of_other_students():
 
     assert list(profile.courses.values_list("short_name", flat=True)) == ["DBS1"]
     assert profile.courses.get().skills.filter(name="SQL").exists()
+
+
+@pytest.mark.django_db
+def test_seed_finds_course_with_old_short_name():
+    """Ältere Datenbanken haben Modellierung I noch als MOD1, heute heißt das Kürzel MO."""
+    call_command("seed")
+    course = Course.objects.get(short_name="MO")
+    course.short_name = "MOD1"
+    course.save()
+
+    call_command("seed")
+
+    course.refresh_from_db()
+    assert course.short_name == "MO"
+    assert Course.objects.filter(name="Modellierung I").count() == 1
 
 
 @pytest.mark.django_db

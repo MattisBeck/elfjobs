@@ -1,11 +1,14 @@
 import urllib.error
-from io import StringIO
+from email.message import Message
+from io import BytesIO, StringIO
 from pathlib import Path
 
 import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
+from accounts.models import StudentProfile
+from jobs.management.commands.seed import DEMO_EMAIL
 from studies.models import Course, StudyProgram
 
 FIXTURE = Path(__file__).parent / "fixtures" / "modulkatalog_itse.html"
@@ -123,3 +126,49 @@ def test_unreachable_page_raises_error(monkeypatch):
 
     with pytest.raises(CommandError, match="nicht erreichbar"):
         call_command("import_lehrplan", "itse", stdout=StringIO())
+
+
+def fake_response(body, content_type):
+    """Antwort wie von urlopen: lesbar, als with-Block nutzbar, mit Headern."""
+    response = BytesIO(body)
+    response.headers = Message()
+    response.headers["Content-Type"] = content_type
+    return response
+
+
+@pytest.mark.django_db
+def test_download_uses_charset_from_header(monkeypatch):
+    page = "<summary><span> HPI-MO </span><span> - <strong>Modellierung für Größere</strong></span></summary>"
+    monkeypatch.setattr(
+        "urllib.request.urlopen",
+        lambda url, timeout: fake_response(page.encode("iso-8859-1"), "text/html; charset=ISO-8859-1"),
+    )
+
+    call_command("import_lehrplan", "itse", stdout=StringIO())
+
+    assert Course.objects.get(short_name="MO").name == "Modellierung für Größere"
+
+
+def test_broken_download_raises_error(monkeypatch):
+    def broken(url, timeout):
+        raise ConnectionResetError("Verbindung abgebrochen")
+
+    monkeypatch.setattr("urllib.request.urlopen", broken)
+
+    with pytest.raises(CommandError, match="nicht vollständig laden"):
+        call_command("import_lehrplan", "itse", stdout=StringIO())
+
+
+@pytest.mark.django_db
+def test_seed_and_import_alternately_create_no_duplicates():
+    """seed → import → seed → import: Jedes Kürzel gibt es danach nur einmal (Review #60)."""
+    call_command("seed", stdout=StringIO())
+    run_import()
+    call_command("seed", stdout=StringIO())
+    run_import()
+
+    program = StudyProgram.objects.get(university="HPI", abbreviation="ITSE")
+    short_names = list(program.courses.values_list("short_name", flat=True))
+    assert len(short_names) == len(set(short_names))
+    mia = StudentProfile.objects.get(user__username=DEMO_EMAIL)
+    assert sorted(mia.courses.values_list("short_name", flat=True)) == ["MA1", "PT1"]
