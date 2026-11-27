@@ -96,6 +96,7 @@ a {
   color: var(--ink-2);
   font-weight: 500;
   text-decoration: none;
+  white-space: nowrap; /* „Gemerkt · 2“ bleibt auf einer Zeile (#124) */
 }
 
 .main-nav span {
@@ -114,6 +115,7 @@ a {
 
 .search {
   flex: 1;
+  min-width: 160px; /* sonst schrumpft die Suche bei mittlerer Breite zu einem leeren Kästchen (#124) */
   max-width: 360px;
   margin-left: auto;
 }
@@ -156,6 +158,7 @@ a {
   display: flex;
   flex-direction: column;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .profile-name {
@@ -202,6 +205,32 @@ a {
   color: var(--ink);
 }
 
+/* Mittlere Breite (#124): engere Abstände, beim Profil nur der Avatar (Name steht im Tooltip). */
+@media (max-width: 1180px) {
+  .site-header {
+    gap: 16px;
+  }
+
+  .profile-text {
+    display: none;
+  }
+}
+
+/* Schmaler Desktop (#124): Navigation in die zweite Zeile wie auf dem Handy, die Suche bleibt oben. */
+@media (min-width: 721px) and (max-width: 1000px) {
+  .site-header {
+    flex-wrap: wrap;
+    height: auto;
+    gap: 8px 16px;
+    padding: 10px 24px;
+  }
+
+  .main-nav {
+    order: 3;
+    width: 100%;
+  }
+}
+
 /* Handy: Wortmarke und Profil oben, Navigation darunter, Suche ausgeblendet */
 @media (max-width: 720px) {
   .site-header {
@@ -214,6 +243,19 @@ a {
   .search,
   .profile-text {
     display: none;
+  }
+
+  /* Hinweis, Profil und Abmelden passen so in die erste Zeile (#124). */
+  .site-header {
+    column-gap: 10px;
+  }
+
+  .alert-hint-long {
+    display: none;
+  }
+
+  .logout-button {
+    padding: 0 10px;
   }
 
   /* Die Suche ist hier nur ausgeblendet, steht aber noch davor: deshalb auch .search + .login-link. */

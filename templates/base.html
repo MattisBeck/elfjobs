@@ -38,11 +38,12 @@
 
     {% if alert_new_count %}
       {# Job-Alerts (#34): neue passende Stellen seit dem letzten Ansehen. #}
-      <a class="alert-hint" href="{% url 'alert_list' %}">{{ alert_new_count }} neue passende Stelle{{ alert_new_count|pluralize:"n" }}</a>
+      {# Auf dem Handy nur „3 neue“, damit Abmelden in die Zeile passt (#124). #}
+      <a class="alert-hint" href="{% url 'alert_list' %}" title="{{ alert_new_count }} neue passende Stelle{{ alert_new_count|pluralize:'n' }}">{{ alert_new_count }} neue<span class="alert-hint-long"> passende Stelle{{ alert_new_count|pluralize:"n" }}</span></a>
     {% endif %}
     {% if user.is_authenticated %}
       {# Firmenkonten (#66) landen im Firmenbereich, Studierende im Profil. #}
-      <a class="profile-button" href="{% if user.company_member %}{% url 'company_home' %}{% else %}{% url 'profile' %}{% endif %}">
+      <a class="profile-button" href="{% if user.company_member %}{% url 'company_home' %}{% else %}{% url 'profile' %}{% endif %}" title="{{ user.get_full_name|default:user.username }}{% if user.profile.summary %} · {{ user.profile.summary }}{% endif %}">
         <span class="avatar" aria-hidden="true">{{ user.get_full_name|default:user.username|first|upper }}</span>
         <span class="profile-text">
           <span class="profile-name">{{ user.get_full_name|default:user.username }}</span>
