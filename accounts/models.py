@@ -1,10 +1,18 @@
+import uuid
+
 from django.conf import settings
+from django.core.validators import FileExtensionValidator
 from django.db import models
+
+
+def cv_upload_to(instance, filename):
+    """Zufälliger Dateiname, damit der Name auf der Platte nichts über die Person verrät."""
+    return f"lebenslaeufe/{uuid.uuid4().hex}.pdf"
 
 
 class StudentProfile(models.Model):
     class CvSample(models.TextChoices):
-        """Beispiel-Lebensläufe aus accounts/sample_cvs/ (#50). Der echte Upload kommt mit #38."""
+        """Beispiel-Lebensläufe aus accounts/sample_cvs/ (#50). Ein hochgeladener Lebenslauf (#38) geht vor."""
 
         MIA = "mia-itse", "Mia Sommer · IT-Systems Engineering"
         JULIA = "julia-politik", "Julia Brandt · Politikwissenschaft"
@@ -38,6 +46,10 @@ class StudentProfile(models.Model):
         "studies.Course", related_name="students", blank=True, verbose_name="Belegte Module"
     )
     cv_sample = models.CharField("Beispiel-Lebenslauf", max_length=50, choices=CvSample.choices, blank=True)
+    # Eigener Lebenslauf als PDF (#38), liegt unter MEDIA_ROOT und ist nur über cv_pdf abrufbar.
+    cv_file = models.FileField(
+        "Lebenslauf", upload_to=cv_upload_to, blank=True, validators=[FileExtensionValidator(["pdf"])]
+    )
 
     class Meta:
         verbose_name = "Studi-Profil"

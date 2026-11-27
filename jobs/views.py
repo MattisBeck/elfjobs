@@ -47,6 +47,10 @@ FILTER_CHIPS = {
 PLAN_CHIP_LABEL = "Passt in meinen Plan"
 
 
+# Kontext „Gemerkt“ (#127): Das Stellendetail zeigt links die gemerkten Stellen statt der Stellenliste.
+SAVED_QUERY = "liste=gemerkt"
+
+
 # Sortierung „Passt am besten“ (#42): erst Stundenplan, dann Lehrplan, dann Lohn.
 FIT_RANK = {PASST: 0, FLEXIBEL: 0, TEILWEISE: 1, KOLLIDIERT: 2}
 
@@ -247,7 +251,12 @@ def job_detail(request, pk):
     view = "woche" if request.GET.get("ansicht") == "woche" else "details"
     # Die Wochenansicht bleibt über Chips, Filterformular und Suche erhalten.
     view_params = [("ansicht", "woche")] if view == "woche" else []
+    # Aus „Gemerkt“ geöffnet (#127): links stehen die gemerkten Stellen, nur für Studierende.
+    from_saved = request.GET.get("liste") == "gemerkt" and is_student(request.user)
     postings, chips, filter_params, filter_form = filtered_postings(request, skills, view_params)
+    if from_saved:
+        postings = saved_postings(request.user)
+        filter_params = [("liste", "gemerkt")]
 
     # Passung der geöffneten Stelle für den Punkt am Tab „In meiner Woche“.
     profile = StudentProfile.objects.filter(user=request.user).first() if request.user.is_authenticated else None
@@ -280,6 +289,7 @@ def job_detail(request, pk):
 
     return render(request, "jobs/job_detail.html", {
         "posting": posting,
+        "detail_map": detail_map_data(posting, profile) if view == "details" else None,
         "week": week,
         "planning": planning,
         "has_profile": profile is not None,
@@ -296,6 +306,7 @@ def job_detail(request, pk):
         "chips": chips,
         "filter_form": filter_form,
         "filter_query": urlencode(filter_params),
+        "from_saved": from_saved,
         "selected_pk": posting.pk,
         # Merken (#13): nur Studierende, Firmenkonten sehen keinen Knopf.
         "can_save": is_student(request.user),
@@ -305,6 +316,31 @@ def job_detail(request, pk):
         "applications_left": applications_left,
         "weekly_application_limit": quota.weekly_limit(profile),
     })
+
+
+def detail_map_data(posting, profile):
+    """Daten für das Kartenfenster im Stellendetail (#75), oder None ohne Ort / bei Remote.
+
+    Zweiter Marker „Du“ nur mit Wohnort im Profil. Die Anreisedauer kommt nur aus dem
+    Cache (cached_travel_times), nie aus einer neuen Abfrage.
+    """
+    if not posting.has_location or posting.workplace == JobPosting.Workplace.REMOTE:
+        return None
+    data = {
+        "lat": float(posting.latitude),
+        "lon": float(posting.longitude),
+        "title": posting.title,
+        "company": posting.company.name,
+        "home": None,
+        "travel": "",
+    }
+    data["map_url"] = with_query(reverse("job_map"), [("lat", data["lat"]), ("lon", data["lon"])])
+    if profile and profile.home:
+        data["home"] = {"lat": profile.home[0], "lon": profile.home[1]}
+        minutes = cached_travel_times(profile.home, [posting]).get(posting.id)
+        if minutes is not None:
+            data["travel"] = f"ca. {minutes} min mit ÖPNV"
+    return data
 
 
 def is_student(user):
@@ -328,25 +364,36 @@ def job_save(request, pk):
     return redirect("job_detail", pk=posting.pk)
 
 
-@login_required
-def saved_list(request):
-    """Seite „Gemerkt“ (#13): die eigenen gemerkten Stellen, zuletzt gemerkte zuerst."""
-    if not is_student(request.user):
-        raise PermissionDenied("Nur Studierende können Stellen merken.")
+def saved_postings(user):
+    """Gemerkte Stellen von user, zuletzt gemerkte zuerst, mit Lohn und Passung wie in der Stellenliste.
+
+    Gemeinsam genutzt von „Gemerkt“ und vom Stellendetail mit ?liste=gemerkt (#127).
+    """
     saved = (
-        request.user.saved_postings.select_related("posting__company")
+        user.saved_postings.select_related("posting__company")
         .prefetch_related("posting__shifts")
         .order_by("-created_at")
     )
     postings = [entry.posting for entry in saved]
-    # Lohn und Passung wie in der Stellenliste.
-    profile = StudentProfile.objects.filter(user=request.user).first()
+    profile = StudentProfile.objects.filter(user=user).first()
     if profile:
         apply_home_commutes(profile, postings)
         lectures = list(profile.lectures.all())
         for posting in postings:
             posting.fit = posting_fit(posting, lectures)
-    return render(request, "jobs/saved_list.html", {"postings": postings})
+    return postings
+
+
+@login_required
+def saved_list(request):
+    """Seite „Gemerkt“ (#13): die eigenen gemerkten Stellen, zuletzt gemerkte zuerst."""
+    if not is_student(request.user):
+        raise PermissionDenied("Nur Studierende können Stellen merken.")
+    # Die Zeilen verlinken das Detail mit ?liste=gemerkt, damit links die gemerkten Stellen stehen bleiben (#127).
+    return render(request, "jobs/saved_list.html", {
+        "postings": saved_postings(request.user),
+        "filter_query": SAVED_QUERY,
+    })
 
 
 def job_map(request):
@@ -503,6 +550,13 @@ def fair_attend(request, pk):
     return redirect(f"{reverse('fair_list')}#messe-{fair.pk}")
 
 
+def week_query(request):
+    """?ansicht=woche, bei Aufruf aus „Gemerkt“ (verstecktes Feld liste) mit ?liste=gemerkt (#127)."""
+    if request.POST.get("liste") == "gemerkt":
+        return "?ansicht=woche&" + SAVED_QUERY
+    return "?ansicht=woche"
+
+
 @login_required
 @require_POST
 def planned_shift_add(request, pk):
@@ -522,7 +576,7 @@ def planned_shift_add(request, pk):
         for errors in form.errors.values():
             for error in errors:
                 messages.error(request, error)
-    return redirect(reverse("job_detail", args=[posting.pk]) + "?ansicht=woche")
+    return redirect(reverse("job_detail", args=[posting.pk]) + week_query(request))
 
 
 @login_required
@@ -532,4 +586,4 @@ def planned_shift_delete(request, pk, shift_pk):
     shift = get_object_or_404(PlannedShift, pk=shift_pk, posting_id=pk, profile__user=request.user)
     shift.delete()
     messages.success(request, f"Schicht entfernt: {shift_label(shift.weekday, shift.start, shift.end)}.")
-    return redirect(reverse("job_detail", args=[pk]) + "?ansicht=woche")
+    return redirect(reverse("job_detail", args=[pk]) + week_query(request))
