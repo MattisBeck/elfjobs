@@ -676,7 +676,8 @@ a {
     position: sticky;
     top: 0;
     align-self: start;
-    max-height: 100vh;
+    /* Feste Höhe statt max-height: Bei kurzen Listen (Gemerkt, #127) reicht der graue Hintergrund bis unten. */
+    height: 100vh;
     overflow-y: auto;
   }
 }
