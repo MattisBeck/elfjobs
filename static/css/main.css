@@ -1347,21 +1347,75 @@ a.button {
   font-weight: 500;
 }
 
+/* Skill-Auswahl zugeklappt (#109): oben steht nur, was gewählt ist. */
+.skill-picker {
+  margin-bottom: var(--space-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-chip);
+}
+
+.skill-picker summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.skill-picker summary::-webkit-details-marker {
+  display: none;
+}
+
+.skill-picker-label {
+  font-weight: 500;
+}
+
+.skill-picker-toggle {
+  margin-left: auto;
+  color: var(--accent-ink);
+  font-size: 13px;
+}
+
+.skill-picker[open] .skill-picker-toggle {
+  visibility: hidden;
+}
+
+.skill-picker fieldset,
+.skill-picker .button {
+  margin: 0 12px 12px;
+}
+
+.availability-form legend {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 400;
+}
+
 .availability-form #id_skills {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .availability-form #id_skills label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 0 12px;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 10px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-pill);
+  font-size: 13px;
   font-weight: 400;
+  cursor: pointer;
+}
+
+.availability-form #id_skills label:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  color: var(--accent-ink);
 }
 
 .availability-page .button {

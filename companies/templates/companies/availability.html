@@ -9,11 +9,19 @@
   <p class="muted">Frei heißt: keine Vorlesung laut Stundenplan, mit {{ company.commute_minutes }} min Fahrzeit als Puffer davor und danach. Ihr seht nur Anzahlen, keine Namen. Unter {{ min_count }} Studierenden zeigen wir keine genaue Zahl.</p>
 
   <form method="get" class="form availability-form">
-    <fieldset>
-      <legend>Skills (alle müssen passen, ohne Auswahl zählen alle)</legend>
-      {{ form.skills }}
-    </fieldset>
-    <button type="submit" class="button button-primary">Anzeigen</button>
+    {# Zugeklappt, damit die Heatmap ohne Scrollen sichtbar ist (#109). #}
+    <details class="skill-picker">
+      <summary>
+        <span class="skill-picker-label">Skills:</span>
+        {% if tags %}{% for tag in tags %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}alle Studierenden{% endif %}
+        <span class="skill-picker-toggle">ändern</span>
+      </summary>
+      <fieldset>
+        <legend class="muted">Alle gewählten Skills müssen passen, ohne Auswahl zählen alle.</legend>
+        {{ form.skills }}
+      </fieldset>
+      <button type="submit" class="button button-primary">Anzeigen</button>
+    </details>
   </form>
 
   <p>
