@@ -181,6 +181,27 @@ a {
   margin-left: 0;
 }
 
+/* Abmelden neben dem Profil-Knopf (#118), sieht aus wie „Anmelden“. */
+.logout-header {
+  margin: 0;
+}
+
+.logout-button {
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.logout-button:hover {
+  border-color: var(--ink-2);
+  color: var(--ink);
+}
+
 /* Handy: Wortmarke und Profil oben, Navigation darunter, Suche ausgeblendet */
 @media (max-width: 720px) {
   .site-header {
@@ -215,7 +236,8 @@ a {
   .main-nav a,
   .wordmark,
   .profile-button,
-  .login-link {
+  .login-link,
+  .logout-button {
     display: flex;
     align-items: center;
     min-height: 44px;
