@@ -689,13 +689,15 @@ a {
   color: var(--conflict);
 }
 
-.form #id_skills {
+.form #id_skills,
+.skill-choices {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.form #id_skills label {
+.form #id_skills label,
+.skill-choices label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -715,6 +717,39 @@ a {
   border-radius: var(--radius-control);
   background: var(--ok-soft);
   color: var(--ok-ink);
+}
+
+.form select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  font: inherit;
+}
+
+/* Lebenslauf im Profil (#50) */
+.cv-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.cv-section h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.cv-section p {
+  margin: 0;
+}
+
+.cv-heading {
+  font-weight: 500;
 }
 
 .logout-form {
