@@ -287,6 +287,98 @@ a {
   color: var(--bg);
 }
 
+/* Suchfilter (#71): aufklappbar unter den Chips. */
+/* Abstand vor dem ✕ in entfernbaren Filter-Chips (inline-flex verschluckt das Leerzeichen). */
+.chip [aria-hidden="true"] {
+  margin-left: 6px;
+}
+
+.filter-panel {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--bg);
+}
+
+.filter-panel summary {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filter-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 4px 14px 14px;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.filter-field small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.filter-field legend {
+  margin-bottom: 4px;
+  padding: 0;
+}
+
+.filter-field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  font: inherit;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.filter-range {
+  grid-column: 1 / -1;
+}
+
+.filter-range-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-form .button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+@media (max-width: 720px) {
+  .filter-panel summary,
+  .filter-field input,
+  .filter-form .button {
+    min-height: 44px;
+  }
+
+  .filter-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .job-list-meta {
   display: flex;
   justify-content: space-between;

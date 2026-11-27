@@ -8,9 +8,15 @@
 
   <div class="chips" role="group" aria-label="Filter">
     {% for chip in chips %}
-      <a class="chip{% if chip.active %} is-active{% endif %}" href="{{ chip.url }}"{% if chip.active %} aria-current="true"{% endif %}>{{ chip.label }}</a>
+      {% if chip.remove %}
+        <a class="chip is-active" href="{{ chip.url }}" aria-label="Filter {{ chip.label }} entfernen">{{ chip.label }} <span aria-hidden="true">✕</span></a>
+      {% else %}
+        <a class="chip{% if chip.active %} is-active{% endif %}" href="{{ chip.url }}"{% if chip.active %} aria-current="true"{% endif %}>{{ chip.label }}</a>
+      {% endif %}
     {% endfor %}
   </div>
+
+  {% include "jobs/_filter_form.html" %}
 
   <p class="job-list-meta">
     <strong>{{ postings|length }} Stelle{{ postings|length|pluralize:"n" }}</strong>

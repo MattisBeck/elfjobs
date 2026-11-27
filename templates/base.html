@@ -22,12 +22,11 @@
       <span aria-disabled="true">Messen</span>
     </nav>
 
-    {# Auf der Karte bleibt die Suche auf der Karte, mit demselben Startpunkt. #}
+    {# Auf der Karte bleibt die Suche auf der Karte. Chips, Suchfilter und Startpunkt bleiben erhalten. #}
     <form class="search" action="{% if request.resolver_match.url_name == "job_map" %}{% url 'job_map' %}{% else %}{% url 'job_list' %}{% endif %}" method="get" role="search">
-      {% if request.resolver_match.url_name == "job_map" and request.GET.lat and request.GET.lon %}
-        <input type="hidden" name="lat" value="{{ request.GET.lat }}">
-        <input type="hidden" name="lon" value="{{ request.GET.lon }}">
-      {% endif %}
+      {% for name, value in filter_form.search_hidden %}
+        <input type="hidden" name="{{ name }}" value="{{ value }}">
+      {% endfor %}
       <input type="search" name="q" value="{{ request.GET.q }}" placeholder="Titel, Firma oder Skill" aria-label="Suche">
     </form>
 
