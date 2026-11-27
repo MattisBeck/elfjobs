@@ -2113,3 +2113,26 @@ a.button {
   margin: 0 0 var(--space-2);
   font-size: 14px;
 }
+
+/* Freemium (#62): Kontingent unter „Mit Profil bewerben“. Die Knöpfe bleiben oben bündig. */
+.job-actions {
+  align-items: flex-start;
+}
+
+.apply {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.apply-quota {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 720px) {
+  .apply {
+    flex: 1;
+  }
+}

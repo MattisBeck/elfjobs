@@ -17,6 +17,7 @@ from timetable.planning import planned_hours, shift_label
 
 from .forms import ApplyShiftForm
 from .models import Application
+from .quota import applications_left
 from .shifts import suggest_shifts
 
 
@@ -39,21 +40,28 @@ def apply(request, pk):
         raise PermissionDenied("Firmenkonten können sich nicht bewerben.")
     if request.method == "POST":
         profile, _ = StudentProfile.objects.get_or_create(user=request.user)
-        # get_or_create: Ein zweiter Klick legt keine zweite Bewerbung an.
-        application, created = Application.objects.get_or_create(profile=profile, posting=posting)
-        if created:
-            application.attach_cv()  # Lebenslauf mitschicken (#38)
-            copy_fixed_shifts(profile, posting)
-            messages.success(
-                request,
-                format_html(
-                    'Bewerbung gesendet. Deine Schichten stehen in deinem <a href="{}">Stundenplan</a>.',
-                    reverse("timetable"),
-                ),
-            )
+        already_applied = Application.objects.filter(profile=profile, posting=posting).exists()
+        # Freemium (#62): Ist das Wochenkontingent aufgebraucht, entsteht keine neue Bewerbung.
+        # Das Stellendetail zeigt dann den deaktivierten Knopf mit dem Hinweis.
+        if not already_applied and applications_left(profile) > 0:
+            # get_or_create: Ein zweiter Klick legt keine zweite Bewerbung an.
+            application, created = Application.objects.get_or_create(profile=profile, posting=posting)
+            if created:
+                application.attach_cv()  # Lebenslauf mitschicken (#38)
+                copy_fixed_shifts(profile, posting)
+                messages.success(
+                    request,
+                    format_html(
+                        'Bewerbung gesendet. Deine Schichten stehen in deinem <a href="{}">Stundenplan</a>.',
+                        reverse("timetable"),
+                    ),
+                )
         return redirect("job_detail", pk=posting.pk)
-    if posting.applications.filter(profile__user=request.user).exists():
+    profile = StudentProfile.objects.filter(user=request.user).first()
+    if profile and posting.applications.filter(profile=profile).exists():
         return redirect("job_detail", pk=posting.pk)  # schon beworben
+    if profile and applications_left(profile) == 0:
+        return redirect("job_detail", pk=posting.pk)  # Kontingent aufgebraucht (#62)
     return render(request, "applications/apply.html", apply_step_context(request, posting))
 
 

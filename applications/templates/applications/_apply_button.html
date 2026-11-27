@@ -1,6 +1,17 @@
 {# Knopf „Mit Profil bewerben“ (#14). Führt zum Schritt „Wann würdest du arbeiten?“ (#141). Firmenkonten sehen ihn nicht. #}
+{# Freemium (#62): Darunter steht, wie viele Bewerbungen diese Woche noch frei sind. #}
 {% if application %}
   <button type="button" class="button button-primary" disabled title="Bewerbung gesendet">✓ Beworben am {{ application.applied_at|date:"d.m.Y" }}</button>
 {% elif not is_company %}
-  <a class="button button-primary" href="{% url 'apply' posting.pk %}">Mit Profil bewerben</a>
+  <div class="apply">
+    {% if applications_left == 0 %}
+      <button type="button" class="button button-primary" disabled>Ab Montag wieder möglich</button>
+      <p class="apply-quota">Diese Woche schon {{ weekly_application_limit }} von {{ weekly_application_limit }} Bewerbungen gesendet.</p>
+    {% else %}
+      <a class="button button-primary" href="{% url 'apply' posting.pk %}">Mit Profil bewerben</a>
+      {% if applications_left is not None %}
+        <p class="apply-quota">Noch {{ applications_left }} von {{ weekly_application_limit }} Bewerbungen diese Woche</p>
+      {% endif %}
+    {% endif %}
+  </div>
 {% endif %}
