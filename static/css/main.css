@@ -1066,6 +1066,29 @@ a.button {
   align-self: flex-start;
 }
 
+/* Bewerben: Schritt „Wann würdest du arbeiten?“ (#141) */
+.apply-step {
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.apply-shifts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.apply-shifts li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
 .notice {
   padding: 10px 14px;
   border-radius: var(--radius-control);

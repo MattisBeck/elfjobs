@@ -86,17 +86,18 @@ def test_applying_twice_keeps_one_application(student_client, posting):
     assert Application.objects.count() == 1
 
 
-def test_get_changes_nothing(student_client, posting):
+def test_get_shows_step_and_changes_nothing(student_client, posting):
     response = student_client.get(apply_url(posting))
 
-    assert response.status_code == 302
+    assert response.status_code == 200
+    assert "Wann würdest du arbeiten?" in response.content.decode()
     assert not Application.objects.exists()
 
 
 def test_detail_shows_disabled_button_after_applying(student_client, posting):
     content = student_client.get(f"/jobs/{posting.pk}/").content.decode()
     assert "Mit Profil bewerben" in content
-    assert f'action="/jobs/{posting.pk}/bewerben/"' in content
+    assert f'href="/jobs/{posting.pk}/bewerben/"' in content
 
     content = student_client.post(apply_url(posting), follow=True).content.decode()
 

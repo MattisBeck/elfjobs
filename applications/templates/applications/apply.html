@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Bewerben: {{ posting.title }} · elfjobs{% endblock %}
+
+{% block content %}
+<section class="form-page apply-step">
+  <a class="back-link-plain" href="{% url 'job_detail' posting.pk %}">← {{ posting.title }}</a>
+  <h1>Wann würdest du arbeiten?</h1>
+  <p class="muted">{{ posting.title }} bei {{ posting.company.name }}, {{ posting.hours_per_week }} h pro Woche</p>
+
+  {% for message in messages %}
+    <p class="notice">{{ message }}</p>
+  {% endfor %}
+
+  {% if not has_lectures %}
+    <p class="notice">Du hast noch keinen <a href="{% url 'timetable' %}">Stundenplan</a> eingetragen. Wir gehen davon aus, dass du zwischen 8 und 20 Uhr Zeit hast. Du kannst dich trotzdem bewerben.</p>
+  {% endif %}
+
+  {% if posting.schedule == "flexible" %}
+    <p><strong>{{ hours|floatformat:"-1" }} von {{ posting.hours_per_week }} h verplant</strong></p>
+    {% if planned %}
+      <ul class="apply-shifts">
+        {% for shift in planned %}
+          <li>
+            {{ shift }}
+            <form method="post" action="{% url 'apply_shift_delete' posting.pk shift.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="button">Entfernen</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">Noch keine Schichten geplant.</p>
+    {% endif %}
+
+    <form method="post" action="{% url 'apply_suggest' posting.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="button">Vorschlag: Schichten in meine freien Blöcke legen</button>
+    </form>
+
+    <form class="plan-form" method="post" action="{% url 'apply_shift_add' posting.pk %}">
+      {% csrf_token %}
+      <h3>Schicht von Hand hinzufügen</h3>
+      <label>{{ form.weekday.label }} {{ form.weekday }}</label>
+      <label>{{ form.start.label }} {{ form.start }}</label>
+      <label>{{ form.end.label }} {{ form.end }}</label>
+      <button type="submit" class="button">Hinzufügen</button>
+    </form>
+  {% else %}
+    <p>Diese Stelle hat feste Schichten. Mit deiner Bewerbung kommen sie in deinen Stundenplan.</p>
+    <ul class="apply-shifts">
+      {% for row in shift_rows %}
+        <li>{{ row.label }}{% if row.collides %} <span class="muted">· kollidiert mit deiner Vorlesung</span>{% endif %}</li>
+      {% empty %}
+        <li class="muted">Für diese Stelle sind keine Schichten eingetragen.</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <form method="post" action="{% url 'apply' posting.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="button button-primary">Bewerbung senden</button>
+  </form>
+</section>
+{% endblock %}
