@@ -1428,6 +1428,16 @@ a.button {
   color: var(--accent-ink);
 }
 
+/* Tippflächen auf dem Handy mindestens 44 px (docs/design.md, #115). */
+@media (max-width: 720px) {
+  .fair-company ul a,
+  .fair-more a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
 .my-fairs p,
 .my-applications p {
   margin: 4px 0;
@@ -1536,6 +1546,18 @@ a.button {
   border-color: var(--accent);
   background: var(--accent-wash);
   color: var(--accent-ink);
+}
+
+/* Tippflächen auf dem Handy mindestens 44 px (docs/design.md, #115). */
+@media (max-width: 720px) {
+  .skill-picker summary,
+  .availability-form #id_skills label {
+    min-height: 44px;
+  }
+
+  .skill-picker summary {
+    align-items: center;
+  }
 }
 
 .availability-page .button {
