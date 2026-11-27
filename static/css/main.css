@@ -373,6 +373,13 @@ a {
 .fit-kollidiert { color: var(--conflict); }
 .fit-flexibel { color: var(--accent-ink); }
 
+/* „2 von 3 Anforderungen aus dem Studium“, über die ganze Zeilenbreite. */
+.job-row-skills {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .job-list-empty {
   padding: 24px 0;
   color: var(--muted);
@@ -448,6 +455,19 @@ a {
 .tag-learned {
   background: var(--accent-soft);
   color: var(--accent-ink);
+}
+
+/* Skill kommt laut Lehrplan in einem späteren Semester: grau mit „ab 3. Semester“. */
+.tag-upcoming {
+  color: var(--ink-2);
+}
+
+/* Skill kommt im Studium nicht vor: grau und zurückgenommen, nur der Name. */
+.tag-missing {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  padding: 2px 7px;
+  color: var(--muted);
 }
 
 .job-title {
@@ -726,13 +746,15 @@ a {
   color: var(--conflict);
 }
 
-.form #id_skills {
+.form #id_skills,
+.skill-choices {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.form #id_skills label {
+.form #id_skills label,
+.skill-choices label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -752,6 +774,39 @@ a {
   border-radius: var(--radius-control);
   background: var(--ok-soft);
   color: var(--ok-ink);
+}
+
+.form select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  font: inherit;
+}
+
+/* Lebenslauf im Profil (#50) */
+.cv-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.cv-section h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.cv-section p {
+  margin: 0;
+}
+
+.cv-heading {
+  font-weight: 500;
 }
 
 .logout-form {

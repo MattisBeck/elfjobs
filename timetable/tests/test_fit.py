@@ -4,6 +4,8 @@ from decimal import Decimal
 import pytest
 from django.contrib.auth.models import User
 from django.core.management import call_command
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
 from accounts.models import StudentProfile
 from jobs.management.commands.seed import DEMO_EMAIL
@@ -242,18 +244,26 @@ def test_detail_page_uses_the_same_filter(client, mia, four_postings):
     assert titles(response) == ["Flexibel", "Passt"]
 
 
-def test_query_count_does_not_grow_with_postings(client, mia, django_assert_max_num_queries):
+def test_query_count_does_not_grow_with_postings(client, mia):
+    # Passung (#9) und Qualifikation (#41) laden ihre Daten einmal pro Seite, nicht pro Stelle.
     client.force_login(mia)
     two_shifts = [(MONDAY, time(14, 0), time(16, 0)), (TUESDAY, time(14, 0), time(16, 0))]
+
+    def queries_for_list():
+        with CaptureQueriesContext(connection) as context:
+            client.get("/jobs/?plan=aus")
+        return len(context.captured_queries)
+
     for i in range(3):
         make_posting(f"A{i}", shifts=two_shifts)
-    with django_assert_max_num_queries(8):
-        client.get("/jobs/?plan=aus")
+    few = queries_for_list()
 
     for i in range(30):
         make_posting(f"B{i}", shifts=two_shifts)
-    with django_assert_max_num_queries(8):
-        client.get("/jobs/?plan=aus")
+    many = queries_for_list()
+
+    assert many == few
+    assert few <= 15
 
 
 def test_seed_example_fits_mia_and_all_statuses_occur(client, db):

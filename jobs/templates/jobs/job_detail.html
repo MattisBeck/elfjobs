@@ -46,11 +46,16 @@
             <section>
               <h2>Das bringst du mit</h2>
               <ul class="tags">
+                {# Einordnung nach docs/design.md „Qualifikation“, nur für eingeloggte Studis mit Profil. #}
                 {% for requirement in requirements %}
-                  {% if requirement.source %}
-                    <li class="tag tag-learned">✓ {{ requirement.tag.name }} · {{ requirement.source }}</li>
-                  {% else %}
+                  {% if not classified %}
                     <li class="tag">{{ requirement.tag.name }}</li>
+                  {% elif requirement.status == "gelernt" %}
+                    <li class="tag tag-learned">✓ {{ requirement.tag.name }} · {{ requirement.text }}</li>
+                  {% elif requirement.status == "kommt_noch" %}
+                    <li class="tag tag-upcoming">{{ requirement.tag.name }} · {{ requirement.text }}</li>
+                  {% else %}
+                    <li class="tag tag-missing">{{ requirement.tag.name }}</li>
                   {% endif %}
                 {% endfor %}
               </ul>
