@@ -12,7 +12,9 @@
       <header class="fair-head">
         <div>
           <h2>{{ fair.name }}</h2>
-          <p class="muted">{{ fair.date|date:"l, j. F Y" }} · {{ fair.location }}</p>
+          {% with count=fair.companies.all|length %}
+            <p class="muted">{{ fair.date|date:"l, j. F Y" }} · {{ fair.location }} · {{ count }} Firm{{ count|pluralize:"a,en" }}</p>
+          {% endwith %}
         </div>
         {% if user.is_authenticated %}
           <form method="post" action="{% url 'fair_attend' fair.pk %}">
@@ -26,6 +28,8 @@
         {% endif %}
       </header>
 
+      {# Firmen als Kacheln im Raster, damit eine Messe nicht mehrere Bildschirme lang ist (#111). #}
+      <div class="fair-companies">
       {% for company in fair.companies.all %}
         <div class="fair-company">
           <h3>{{ company.name }} <span class="muted">· {{ company.industry }}</span></h3>
@@ -38,7 +42,7 @@
             </ul>
             {% with total=company.postings.all|length %}
               {% if total > 3 %}
-                <p><a href="{% url 'job_list' %}?q={{ company.name|urlencode:'' }}">+{{ total|add:"-3" }} weitere</a></p>
+                <p class="fair-more"><a href="{% url 'job_list' %}?q={{ company.name|urlencode:'' }}">+{{ total|add:"-3" }} weitere</a></p>
               {% endif %}
             {% endwith %}
           {% else %}
@@ -48,6 +52,7 @@
       {% empty %}
         <p class="muted">Noch keine Firmen angemeldet.</p>
       {% endfor %}
+      </div>
     </article>
   {% empty %}
     <p class="muted">Gerade sind keine Messen geplant.</p>

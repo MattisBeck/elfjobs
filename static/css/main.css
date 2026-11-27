@@ -1307,17 +1307,56 @@ a.button {
   margin: 4px 0 0;
 }
 
-.fair-company {
+/* Firmen einer Messe als Kacheln (#111): zwei Spalten, auf dem Handy eine. */
+.fair-companies {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
   margin-top: var(--space-4);
 }
 
+@media (max-width: 720px) {
+  .fair-companies {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.fair-company {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-chip);
+}
+
 .fair-company h3 {
-  font-size: 1rem;
+  font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
 .fair-company ul {
-  margin: 4px 0 0;
-  padding-left: 1.2em;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.fair-company ul a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.fair-company ul a:hover {
+  color: var(--accent-ink);
+  text-decoration: underline;
+}
+
+.fair-company > p {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
+.fair-more a {
+  color: var(--accent-ink);
 }
 
 .my-fairs p {

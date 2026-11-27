@@ -131,3 +131,19 @@ def test_fair_shows_three_postings_per_company_and_links_the_rest(client):
     assert "Stelle 4" not in content
     assert "+2 weitere" in content
     assert f'{reverse("job_list")}?q=Weihmann%20GbR' in content
+
+
+@pytest.mark.django_db
+def test_fair_head_counts_companies_and_shows_them_as_tiles(client):
+    """Firmen stehen als Kacheln im Raster, im Kopf steht ihre Anzahl (#111)."""
+    one = make_fair("Kleine Messe", 5)
+    two = make_fair("Große Messe", 6)
+    Company.objects.create(name="Allein GmbH", industry="Tech").fairs.add(one)
+    for name in ["Erste AG", "Zweite AG"]:
+        Company.objects.create(name=name, industry="Bank").fairs.add(two)
+
+    content = client.get(reverse("fair_list")).content.decode()
+
+    assert "· 1 Firma</p>" in content
+    assert "· 2 Firmen</p>" in content
+    assert content.count('<div class="fair-companies">') == 2
