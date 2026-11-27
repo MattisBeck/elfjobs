@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Firmen-Login · elfjobs{% endblock %}
+
+{% block content %}
+<section class="form-page">
+  <img class="form-logo" src="{% static 'img/elfjobs-logo.svg' %}" alt="elfjobs">
+  <h1>Anmelden für Firmen</h1>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.as_div }}
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit" class="button button-primary">Anmelden</button>
+  </form>
+  <p class="muted">Noch kein Firmenkonto? <a href="{% url 'company_signup' %}">Registrieren</a></p>
+  <p class="muted">Du studierst? <a href="{% url 'login' %}">Hier anmelden</a></p>
+</section>
+{% endblock %}

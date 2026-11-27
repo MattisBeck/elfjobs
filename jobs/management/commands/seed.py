@@ -11,6 +11,7 @@ from django.db import transaction
 from faker import Faker
 
 from accounts.models import ProfileSkill, StudentProfile
+from companies.models import CompanyMember
 from jobs.models import Company, Fair, JobPosting, Shift, Tag
 from studies.curriculum import CURRICULUM
 from studies.models import Course, StudyProgram
@@ -184,6 +185,20 @@ def create_curriculum():
 
 
 DEMO_EMAIL = "mia@student.hpi.uni-potsdam.de"
+# Demo-Firmenkonto (#66) für die Firma aus docs/design.md, Login unter /firma/anmelden/.
+DEMO_COMPANY_EMAIL = "weihmann@firma.elfjobs.local"
+DEMO_COMPANY = "Weihmann GbR"
+
+
+def create_demo_company_account(password):
+    """Firmenkonto für Weihmann GbR mit DEMO_PASSWORD. Die Firma wird bei jedem Seed neu angelegt,
+    das Konto bleibt und wird neu verknüpft."""
+    user, _ = User.objects.get_or_create(username=DEMO_COMPANY_EMAIL)
+    user.email = DEMO_COMPANY_EMAIL
+    user.first_name = "Weihmann"
+    user.set_password(password)
+    user.save()
+    CompanyMember.objects.update_or_create(user=user, defaults={"company": Company.objects.get(name=DEMO_COMPANY)})
 
 
 # Wochentag 0–4 (Mo–Fr), Beginn, Ende, Veranstaltung
@@ -442,10 +457,11 @@ class Command(BaseCommand):
 
         create_demo_student(demo_password)
         create_demo_students(demo_password)
+        create_demo_company_account(demo_password)
 
         self.stdout.write(self.style.SUCCESS(
             f"{NUM_POSTINGS} Stellen von {NUM_COMPANIES} Firmen angelegt "
             f"({len(fairs)} Messen, {Tag.objects.count()} Tags, "
             f"{StudyProgram.objects.count()} Studiengänge mit {Course.objects.count()} Modulen), "
-            f"{NUM_STUDENTS} Demo-Studierende, Demo-Login: {DEMO_EMAIL}."
+            f"{NUM_STUDENTS} Demo-Studierende, Demo-Login: {DEMO_EMAIL}, Firma: {DEMO_COMPANY_EMAIL}."
         ))

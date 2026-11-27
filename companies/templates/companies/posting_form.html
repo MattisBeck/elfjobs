@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}{% if posting.pk %}{{ posting.title }} bearbeiten{% else %}Neue Stelle{% endif %} · elfjobs{% endblock %}
+
+{% block content %}
+<section class="form-page">
+  <a class="back-link" href="{% url 'company_home' %}">← {{ company.name }}</a>
+  <h1>{% if posting.pk %}Stelle bearbeiten{% else %}Neue Stelle{% endif %}</h1>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.as_div }}
+
+    <fieldset class="shift-fieldset">
+      <legend>Schichten (nur bei festen Zeiten)</legend>
+      {{ shifts.management_form }}
+      {{ shifts.non_form_errors }}
+      {% for shift in shifts %}
+        <div class="shift-row">
+          {{ shift.id }}
+          {{ shift.weekday.errors }}{{ shift.weekday }}
+          {{ shift.start.errors }}{{ shift.start }}
+          <span aria-hidden="true">–</span>
+          {{ shift.end.errors }}{{ shift.end }}
+          {% if shift.instance.pk %}<label>{{ shift.DELETE }} löschen</label>{% endif %}
+          {{ shift.non_field_errors }}
+        </div>
+      {% endfor %}
+    </fieldset>
+
+    <button type="submit" class="button button-primary">Speichern</button>
+  </form>
+</section>
+{% endblock %}
