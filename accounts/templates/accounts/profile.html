@@ -3,23 +3,109 @@
 {% block title %}Mein Profil · elfjobs{% endblock %}
 
 {% block content %}
-<section class="form-page">
-  <h1>Mein Profil</h1>
+<div class="profile-page">
+  {# Kopf (#156): wer bin ich, was studiere ich, wohin geht es weiter. #}
+  <header class="profile-hero">
+    <span class="profile-avatar" aria-hidden="true">{{ user.get_full_name|default:user.email|first|upper }}</span>
+    <div class="profile-hero-text">
+      <h1>{{ user.get_full_name|default:"Mein Profil" }}</h1>
+      <p class="profile-facts">
+        {% if user.profile.study_program %}{{ user.profile.study_program }}{% else %}Studiengang fehlt noch{% endif %}{% if user.profile.semester %} · {{ user.profile.semester }}. Semester{% endif %}{% if user.profile.home_town %} · {{ user.profile.home_town }}{% endif %}
+      </p>
+      <p class="muted">Angemeldet mit {{ user.email }}</p>
+    </div>
+    <nav class="profile-links" aria-label="Kurzlinks">
+      <a class="button" href="{% url 'timetable' %}">Mein Stundenplan</a>
+      <a class="button" href="{% url 'saved_list' %}">Gemerkte Jobs</a>
+      <a class="button" href="{% url 'alert_list' %}">Meine Alerts</a>
+    </nav>
+  </header>
+
+  <ul class="profile-stats">
+    <li><a href="#bewerbungen"><strong>{{ my_applications|length }}</strong> Bewerbungen</a></li>
+    <li><a href="{% url 'saved_list' %}"><strong>{{ saved_count|default:0 }}</strong> gemerkt</a></li>
+    <li><a href="#module"><strong>{{ course_count }}</strong> Module</a></li>
+    <li><a href="#skills"><strong>{{ skill_count }}</strong> Skills</a></li>
+  </ul>
+
   {% for message in messages %}
     <p class="notice">{{ message }}</p>
   {% endfor %}
-  <p class="muted">Angemeldet mit {{ user.email }}</p>
-  <p class="profile-links"><a href="{% url 'timetable' %}">Mein Stundenplan →</a> <a href="{% url 'alert_list' %}">Meine Alerts →</a></p>
-  <form method="post" class="form">
+
+  <section id="bewerbungen" class="profile-card my-applications">
+    <h2>Meine Bewerbungen</h2>
+    {% if my_applications %}
+      <ul class="profile-list">
+        {% for application in my_applications %}
+          <li>
+            {% include "jobs/_company_logo.html" with company=application.posting.company decorative=True %}
+            <div class="profile-list-text">
+              <a href="{% url 'job_detail' application.posting.pk %}">{{ application.posting.title }}</a>
+              <span class="muted">{{ application.posting.company.name }} · {{ application.applied_at|date:"d.m.Y" }}{% if application.cv %} · <a href="{% url 'sent_cv' application.pk %}" target="_blank">mit Lebenslauf</a>{% endif %}</span>
+            </div>
+            <span class="status-pill">{{ application.get_status_display }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">Noch keine. Im Stellendetail bewirbst du dich mit einem Klick: <a href="{% url 'job_list' %}">Jobs ansehen →</a></p>
+    {% endif %}
+  </section>
+
+  <section class="profile-card my-fairs">
+    <h2>Meine Messen</h2>
+    {% if my_fairs %}
+      <ul class="profile-list">
+        {% for fair in my_fairs %}
+          <li>
+            <span class="fair-date" aria-hidden="true"><strong>{{ fair.date|date:"j" }}</strong>{{ fair.date|date:"M" }}</span>
+            <div class="profile-list-text">
+              <a href="{% url 'fair_list' %}#messe-{{ fair.pk }}">{{ fair.name }}</a>
+              <span class="muted">{{ fair.date|date:"j. F Y" }}, {{ fair.location }}</span>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">Noch keine. <a href="{% url 'fair_list' %}">Kommende Messen ansehen →</a></p>
+    {% endif %}
+  </section>
+
+  <form method="post" class="form profile-card profile-form">
     {% csrf_token %}
-    {{ name_form.as_div }}
-    {{ profile_form.as_div }}
+    <h2>Profil bearbeiten</h2>
+    {{ name_form.non_field_errors }}
+    {{ profile_form.non_field_errors }}
+    <div class="profile-grid">
+      {{ name_form.first_name.as_field_group }}
+      {{ name_form.last_name.as_field_group }}
+      {{ profile_form.study_program.as_field_group }}
+      {{ profile_form.semester.as_field_group }}
+      <div class="profile-grid-wide">{{ profile_form.home_town.as_field_group }}</div>
+    </div>
+
+    <details id="module" class="profile-details"{% if profile_form.courses.errors %} open{% endif %}>
+      <summary>Belegte Module <span class="muted">· {{ course_count }} ausgewählt</span></summary>
+      <p class="muted">Aus deinen Modulen leiten wir Skills ab, die Firmen suchen.</p>
+      {{ profile_form.courses }}
+      {{ profile_form.courses.errors }}
+    </details>
+
+    <details id="skills" class="profile-details"{% if profile_form.skills.errors %} open{% endif %}>
+      <summary>Eigene Skills <span class="muted">· {{ own_skill_count }} ausgewählt</span></summary>
+      {{ profile_form.skills }}
+      {{ profile_form.skills.errors }}
+    </details>
+
     <button type="submit" class="button button-primary">Speichern</button>
   </form>
 
   {# Lebenslauf: eigenes PDF hochladen (#38), sonst ein Beispiel-Lebenslauf (#50). Das eigene PDF geht vor. #}
-  <section id="lebenslauf" class="cv-section">
+  <section id="lebenslauf" class="profile-card cv-section">
     <h2>Lebenslauf</h2>
+    {% if has_cv %}
+      <p><a class="button" href="{% url 'cv_pdf' %}" target="_blank">Lebenslauf ansehen (PDF)</a></p>
+    {% endif %}
     <form method="post" action="{% url 'cv_upload' %}" enctype="multipart/form-data" class="form">
       {% csrf_token %}
       {{ cv_upload_form.as_div }}
@@ -40,8 +126,6 @@
     {% endif %}
 
     {% if has_cv %}
-      <p class="muted"><a href="{% url 'cv_pdf' %}" target="_blank">Lebenslauf ansehen (PDF)</a></p>
-
       {% if cv_new_skills %}
         <form method="post" action="{% url 'cv_accept' %}" class="form">
           {% csrf_token %}
@@ -67,25 +151,5 @@
       {% endif %}
     {% endif %}
   </section>
-  <section id="bewerbungen" class="my-applications">
-    <h2>Meine Bewerbungen</h2>
-    {% for application in my_applications %}
-      <p><a href="{% url 'job_detail' application.posting.pk %}">{{ application.posting.title }}</a> <span class="muted">· {{ application.posting.company.name }} · {{ application.applied_at|date:"d.m.Y" }} · {{ application.get_status_display }}{% if application.cv %} · <a href="{% url 'sent_cv' application.pk %}" target="_blank">mit Lebenslauf</a>{% endif %}</span></p>
-    {% empty %}
-      <p class="muted">Noch keine. Im Stellendetail bewirbst du dich mit einem Klick: <a href="{% url 'job_list' %}">Jobs ansehen →</a></p>
-    {% endfor %}
-  </section>
-  <section class="my-fairs">
-    <h2>Meine Messen</h2>
-    {% for fair in my_fairs %}
-      <p><a href="{% url 'fair_list' %}#messe-{{ fair.pk }}">{{ fair.name }}</a> <span class="muted">· {{ fair.date|date:"j. F Y" }}, {{ fair.location }}</span></p>
-    {% empty %}
-      <p class="muted">Noch keine. <a href="{% url 'fair_list' %}">Kommende Messen ansehen →</a></p>
-    {% endfor %}
-  </section>
-  <form method="post" action="{% url 'logout' %}" class="logout-form">
-    {% csrf_token %}
-    <button type="submit" class="button">Abmelden</button>
-  </form>
-</section>
+</div>
 {% endblock %}
